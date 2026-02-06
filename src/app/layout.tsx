@@ -10,7 +10,28 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "Youth Ekselensia Scholarship",
-  description: "Youth Ekselensia Scholarship Landing Page",
+  description: "Mewujudkan mimpi anak bangsa melalui pendidikan yang berkualitas dan berkelanjutan.",
+  icons: {
+    icon: "/images/logo-yes.png",
+    shortcut: "/images/logo-yes.png",
+    apple: "/images/logo-yes.png",
+  },
+  openGraph: {
+    title: "Youth Ekselensia Scholarship",
+    description: "Mewujudkan mimpi anak bangsa melalui pendidikan yang berkualitas dan berkelanjutan.",
+    url: "https://www.youthekselensia.id",
+    siteName: "Youth Ekselensia Scholarship",
+    images: [
+      {
+        url: "/images/logo-yes.png",
+        width: 800,
+        height: 600,
+        alt: "Youth Ekselensia Scholarship",
+      },
+    ],
+    locale: "id_ID",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

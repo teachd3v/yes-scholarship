@@ -1,6 +1,7 @@
 import { client } from '@/sanity/client';
 import { urlFor } from '@/sanity/image';
 import { PortableText } from '@portabletext/react';
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -14,6 +15,39 @@ export async function generateStaticParams() {
     return posts.map((post: any) => ({
         slug: post.slug,
     }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+    const { slug } = await params;
+    const post = await getBlogPost(slug);
+
+    if (!post) {
+        return {
+            title: "Artikel Tidak Ditemukan",
+            description: "Artikel yang Anda cari tidak tersedia.",
+        };
+    }
+
+    const ogImage = post.image ? urlFor(post.image).width(1200).height(630).url() : "/images/logo-yes.png";
+
+    return {
+        title: post.title,
+        description: post.description || "Baca artikel terbaru dari Youth Ekselensia Scholarship via blog kami.",
+        openGraph: {
+            title: post.title,
+            description: post.description || "Baca artikel terbaru dari Youth Ekselensia Scholarship.",
+            url: `https://www.youthekselensia.id/blog/${slug}`,
+            images: [
+                {
+                    url: ogImage,
+                    width: 1200,
+                    height: 630,
+                    alt: post.title,
+                },
+            ],
+            type: "article",
+        },
+    };
 }
 
 async function getBlogPost(slug: string) {
