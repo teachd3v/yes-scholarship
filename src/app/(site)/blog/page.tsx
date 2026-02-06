@@ -4,6 +4,7 @@ import { urlFor } from '@/sanity/image';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const runtime = 'edge';
 
 const MOCK_BLOG_POSTS = [
     {

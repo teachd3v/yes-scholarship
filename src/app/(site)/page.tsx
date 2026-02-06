@@ -67,6 +67,7 @@ const logos = {
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const runtime = 'edge';
 
 async function getHeroData() {
   return await client.fetch(`*[_type == "hero" && _id == "hero"][0]`);
