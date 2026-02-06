@@ -69,7 +69,21 @@ Since the site is static, it needs to be rebuilt to show new content from Sanity
         -   **Trigger**: On "Create", "Update", "Delete".
     -   Save.
 
-Now, every time you publish content in Sanity Studio, Cloudflare will automatically rebuild your site (~1-2 mins) to display the changes.
+## Step 7: Allow Studio Access (CORS)
 
--   **Build Errors**: Check the build logs. If you see errors about `Node.js` version, add a `NODE_VERSION` environment variable set to `20`.
+For the `/studio` page to work on your production site, you must whitelist your Cloudflare domain in Sanity.
+
+1.  Go to **Sanity Management** (https://www.sanity.io/manage).
+2.  Select your project > **API** > **CORS Origins**.
+3.  Click **Add CORS Origin**.
+4.  Enter your production URL (e.g., `https://yes-scholarship.pages.dev`).
+5.  Check **Allow credentials**.
+6.  Save.
+
+Now, refresh your production `/studio` page, and you should be able to log in normally.
+
+## Troubleshooting
+
+-   **Studio 401 Error**: If you see "User is missing grants" or "Register" instead of Login, it means you missed **Step 7** (CORS).
+-   **Build Errors**: Check the build logs.
 -   **Sanity Connection**: If data doesn't load, double-check your Environment Variables and ensure your Sanity dataset is public or the token is correct (though for public reads, the project ID is usually enough configured in the text).

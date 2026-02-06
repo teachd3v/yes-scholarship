@@ -8,6 +8,7 @@ const menus = [
     { name: "Beranda", href: "/" },
     { name: "Tentang Kami", href: "/tentang-kami" },
     { name: "Program", href: "/program" },
+    { name: "Alumni", href: "/alumni" },
     { name: "Blog", href: "/blog" },
 ];
 

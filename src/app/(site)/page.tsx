@@ -3,6 +3,9 @@ import Partners from '@/components/Partners';
 import LatestBlog from '@/components/LatestBlog';
 import Distribution from '@/components/Distribution';
 import { client } from '@/sanity/client';
+import AlumniDistribution from '@/components/AlumniDistribution';
+import Testimonials from '@/components/Testimonials';
+import { groq } from 'next-sanity'; // Assuming groq is needed for the new queries
 
 // Mock data to match original Astro content until Sanity is populated
 const MOCK_DATA = {
@@ -89,12 +92,30 @@ async function getLatestPosts() {
 }
 
 export default async function Home() {
-  const [heroData, statsData, partnersData, faqsData, postsFromSanity] = await Promise.all([
+  const ptnsPromise = client.fetch(groq`*[_type == "ptn"] | order(totalAlumni desc) {
+      _id,
+      name,
+      logo,
+      region,
+      alumni
+  }`);
+
+  const testimonialsPromise = client.fetch(groq`*[_type == "testimonial"]{
+      _id,
+      name,
+      role,
+      quote,
+      avatar
+  }`);
+
+  const [heroData, statsData, partnersData, faqsData, postsFromSanity, ptns, testimonials] = await Promise.all([
     getHeroData(),
     getStatsData(),
     getPartnersData(),
     getFaqsData(),
-    getLatestPosts()
+    getLatestPosts(),
+    ptnsPromise,
+    testimonialsPromise
   ]);
 
   const heroSlider = heroData?.hero_slider || MOCK_DATA.hero_slider;
@@ -130,7 +151,11 @@ export default async function Home() {
 
       <Distribution />
 
+      <AlumniDistribution ptns={ptns} />
+
       <Partners partners={partnersList} />
+
+      <Testimonials testimonials={testimonials} />
 
       <LatestBlog posts={posts} />
 

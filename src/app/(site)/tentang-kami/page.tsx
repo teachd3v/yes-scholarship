@@ -3,20 +3,7 @@ import { client } from '@/sanity/client';
 import { urlFor } from '@/sanity/image';
 import { groq } from 'next-sanity';
 
-async function getTestimonials() {
-    return client.fetch(groq`*[_type == "testimonial"]{
-        _id,
-        name,
-        role,
-        quote,
-        avatar
-    }`);
-}
-
-export const revalidate = 60; // Revalidate every 60 seconds
-
 export default async function TentangKami() {
-    const testimonials = await getTestimonials();
 
     return (
         <main className="bg-[#F8F9FB] min-h-screen">
@@ -135,36 +122,6 @@ export default async function TentangKami() {
                 </div>
             </section>
 
-            <section className="max-w-6xl mx-auto px-6 pb-20">
-                <h2 className="text-3xl font-bold text-center mb-12 text-slate-900">Kata Alumni</h2>
-                {testimonials.length > 0 ? (
-                    <div className="grid md:grid-cols-3 gap-6">
-                        {testimonials.map((testi: any) => (
-                            <div key={testi._id} className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition">
-                                <div className="text-yellow-400 text-4xl font-serif mb-4">“</div>
-                                <p className="text-slate-600 mb-6 italic">{testi.quote}</p>
-                                <div className="flex items-center gap-4">
-                                    {testi.avatar ? (
-                                        <img
-                                            src={urlFor(testi.avatar).width(80).height(80).url()}
-                                            alt={testi.name}
-                                            className="w-10 h-10 rounded-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-10 h-10 bg-slate-200 rounded-full"></div>
-                                    )}
-                                    <div>
-                                        <h4 className="font-bold text-slate-900 text-sm">{testi.name}</h4>
-                                        <p className="text-xs text-slate-500">{testi.role}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-center text-slate-500">Belum ada testimonial.</p>
-                )}
-            </section>
         </main>
     );
 }

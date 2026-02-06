@@ -61,6 +61,7 @@ export default defineConfig({
                         S.documentTypeListItem('program').title('Programs'),
                         S.documentTypeListItem('testimonial').title('Testimonials'),
                         S.documentTypeListItem('distribution').title('Sebaran Penerima'),
+                        S.documentTypeListItem('ptn').title('Sebaran Alumni PTN'),
                     ]),
         }),
         visionTool()
