@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  --background: #F8F9FB;
+  --foreground: #1e293b;
+  --primary: #1e3a8a;
+}
+
+@theme inline {
+  --font-jakarta: "Plus Jakarta Sans", sans-serif;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-jakarta);
+}
+
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+.selection-yellow {
+  ::selection {
+    background-color: #facc15;
+    color: #1e3a8a;
+  }
+}
