@@ -28,10 +28,15 @@ git push origin main
 
 Use the following settings:
 
--   **Framework Preset**: `Next.js (Static HTML Export)` (or select `None` and manually enter settings below if that preset is slightly different)
--   **Build command**: `npm run pages:build`
--   **Build output directory**: `.vercel/output/static`
--   **Node.js Version**: Set to `20` or higher (Cloudflare usually defaults to a recent version, but good to check).
+-   **Framework Preset**: `Next.js (Static HTML Export)`
+-   **Build command**: `npm run build`
+-   **Build output directory**: `out`
+
+> [!IMPORTANT]
+> **If you already created the project**:
+> Go to **Settings** > **Builds & deployments** > **Build configuration** > **Edit**.
+> Change **Build command** to `npm run build` and **Build output directory** to `out`.
+> Then go to **Deployments** and trigger a new deployment (or push a new commit).
 
 ## Step 4: Add Environment Variables
 
@@ -41,17 +46,30 @@ Go to the **Environment variables** section and add the following keys. You can 
 | :--- | :--- | :--- |
 | `NEXT_PUBLIC_SANITY_PROJECT_ID` | Your Sanity Project ID | `xyz123` |
 | `NEXT_PUBLIC_SANITY_DATASET` | Your Sanity Dataset | `production` |
-| `NPM_FLAGS` | Force legacy peer deps | `--legacy-peer-deps` |
 
 > [!IMPORTANT]
-> The `NPM_FLAGS` variable with value `--legacy-peer-deps` is **crucial** because we are using Next.js 16, which is newer than what some Cloudflare adapters expect.
 > The `NEXT_PUBLIC_` prefix is required for these variables to be available to the browser-side code.
 
 ## Step 5: Save and Deploy
 
-Click **Save and Deploy**. Cloudflare will start building your site.
+## Step 6: Automate Content Updates (Deploy Hooks)
 
-## Troubleshooting
+Since the site is static, it needs to be rebuilt to show new content from Sanity. You can automate this:
+
+1.  **In Cloudflare Pages**:
+    -   Go to **Settings** > **Builds & deployments** > **Deploy hooks**.
+    -   Click **Add deploy hook**. Name it "Sanity Update".
+    -   Copy the generated URL.
+
+2.  **In Sanity Management** (https://www.sanity.io/manage):
+    -   Select your project > **API** > **Webhooks**.
+    -   Create a new webhook:
+        -   **Name**: Cloudflare Build
+        -   **URL**: Paste the Cloudflare Hook URL.
+        -   **Trigger**: On "Create", "Update", "Delete".
+    -   Save.
+
+Now, every time you publish content in Sanity Studio, Cloudflare will automatically rebuild your site (~1-2 mins) to display the changes.
 
 -   **Build Errors**: Check the build logs. If you see errors about `Node.js` version, add a `NODE_VERSION` environment variable set to `20`.
 -   **Sanity Connection**: If data doesn't load, double-check your Environment Variables and ensure your Sanity dataset is public or the token is correct (though for public reads, the project ID is usually enough configured in the text).

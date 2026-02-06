@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { client } from '@/sanity/client';
 import { urlFor } from '@/sanity/image';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-export const runtime = 'edge';
+// export const dynamic = 'force-dynamic'; // Default to static for export
+// export const revalidate = 0; 
+// export const runtime = 'edge'; 
 
 const MOCK_BLOG_POSTS = [
     {

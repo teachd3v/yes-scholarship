@@ -4,9 +4,17 @@ import { PortableText } from '@portabletext/react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-export const runtime = 'edge';
+// export const dynamic = 'force-dynamic';
+// export const revalidate = 0;
+// export const runtime = 'edge'; // Not needed for static export
+
+export async function generateStaticParams() {
+    const posts = await client.fetch(`*[_type == "post"]{ "slug": slug.current }`);
+
+    return posts.map((post: any) => ({
+        slug: post.slug,
+    }));
+}
 
 async function getBlogPost(slug: string) {
     return await client.fetch(

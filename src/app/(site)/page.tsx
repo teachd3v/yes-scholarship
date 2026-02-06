@@ -65,9 +65,8 @@ const logos = {
   dd: "https://www.dompetdhuafa.org/wp-content/uploads/2023/09/logo-dompet-dhuafa.jpg"
 }
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-export const runtime = 'edge';
+// export const revalidate = 0;
+// export const runtime = 'edge'; 
 
 async function getHeroData() {
   return await client.fetch(`*[_type == "hero" && _id == "hero"][0]`);
