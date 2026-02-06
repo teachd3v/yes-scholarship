@@ -108,14 +108,22 @@ export default async function Home() {
       avatar
   }`);
 
-  const [heroData, statsData, partnersData, faqsData, postsFromSanity, ptns, testimonials] = await Promise.all([
+  const distributionPromise = client.fetch(groq`*[_type == "distribution" && isActive == true] | order(count desc){
+      region,
+      count,
+      province,
+      coordinates
+  }`);
+
+  const [heroData, statsData, partnersData, faqsData, postsFromSanity, ptns, testimonials, distributionData] = await Promise.all([
     getHeroData(),
     getStatsData(),
     getPartnersData(),
     getFaqsData(),
     getLatestPosts(),
     ptnsPromise,
-    testimonialsPromise
+    testimonialsPromise,
+    distributionPromise
   ]);
 
   const heroSlider = heroData?.hero_slider || MOCK_DATA.hero_slider;
@@ -149,7 +157,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <Distribution />
+      <Distribution distributions={distributionData} />
 
       <AlumniDistribution ptns={ptns} />
 

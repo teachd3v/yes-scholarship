@@ -8,48 +8,24 @@ import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps
 // Indonesia TopoJSON URL (Provinces)
 const INDONESIA_TOPO_JSON = "https://code.highcharts.com/mapdata/countries/id/id-all.topo.json";
 
-async function getDistributions() {
-    return client.fetch(groq`*[_type == "distribution" && isActive == true] | order(count desc){
-        region,
-        count,
-        province,
-        coordinates
-    }`);
+interface DistributionProps {
+    distributions: any[];
 }
 
-export default function Distribution() {
-    const [distributions, setDistributions] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+export default function Distribution({ distributions }: DistributionProps) {
     const [tooltipContent, setTooltipContent] = useState("");
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const data = await getDistributions();
-                if (data.length > 0) {
-                    setDistributions(data);
-                } else {
-                    // Fallback Mock Data with coordinates (approximate)
-                    setDistributions([
-                        { region: "Sinjai", count: 10, province: "Sulawesi Selatan", coordinates: { lat: -5.131, lng: 120.252 } },
-                        { region: "Surabaya", count: 10, province: "Jawa Timur", coordinates: { lat: -7.257, lng: 112.752 } },
-                        { region: "Medan", count: 15, province: "Sumatera Utara", coordinates: { lat: 3.595, lng: 98.672 } },
-                        { region: "Bogor", count: 25, province: "Jawa Barat", coordinates: { lat: -6.597, lng: 106.842 } },
-                        { region: "Padang", count: 12, province: "Sumatera Barat", coordinates: { lat: -0.947, lng: 100.417 } },
-                        { region: "Makassar", count: 20, province: "Sulawesi Selatan", coordinates: { lat: -5.147, lng: 119.432 } },
-                        { region: "Banda Aceh", count: 8, province: "Aceh", coordinates: { lat: 5.548, lng: 95.323 } },
-                        { region: "Semarang", count: 18, province: "Jawa Tengah", coordinates: { lat: -6.966, lng: 110.416 } },
-                    ]);
-                }
-            } catch (error) {
-                console.error("Failed to fetch distribution data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, []);
+    // Fallback if no data provided (though server should handle this)
+    const displayData = distributions?.length > 0 ? distributions : [
+        { region: "Sinjai", count: 10, province: "Sulawesi Selatan", coordinates: { lat: -5.131, lng: 120.252 } },
+        { region: "Surabaya", count: 10, province: "Jawa Timur", coordinates: { lat: -7.257, lng: 112.752 } },
+        { region: "Medan", count: 15, province: "Sumatera Utara", coordinates: { lat: 3.595, lng: 98.672 } },
+        { region: "Bogor", count: 25, province: "Jawa Barat", coordinates: { lat: -6.597, lng: 106.842 } },
+        { region: "Padang", count: 12, province: "Sumatera Barat", coordinates: { lat: -0.947, lng: 100.417 } },
+        { region: "Makassar", count: 20, province: "Sulawesi Selatan", coordinates: { lat: -5.147, lng: 119.432 } },
+        { region: "Banda Aceh", count: 8, province: "Aceh", coordinates: { lat: 5.548, lng: 95.323 } },
+        { region: "Semarang", count: 18, province: "Jawa Tengah", coordinates: { lat: -6.966, lng: 110.416 } },
+    ];
 
     return (
         <section className="py-20 px-6 max-w-7xl mx-auto">
@@ -89,7 +65,7 @@ export default function Distribution() {
                             ))
                         }
                     </Geographies>
-                    {distributions.map((item, index) => {
+                    {displayData.map((item, index) => {
                         // Sanity Geopoint usually returns { lat, lng }
                         // If manually mocked above, it's also { lat, lng }
                         // ComposableMap expects [lng, lat]
@@ -159,7 +135,7 @@ export default function Distribution() {
 
             {/* Mobile/Tablet View: Bento Grid (original design) */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:hidden gap-4 md:gap-6">
-                {distributions.map((item: any, index: number) => (
+                {displayData.map((item: any, index: number) => (
                     <div
                         key={index}
                         className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 group hover:-translate-y-1 relative overflow-hidden"
