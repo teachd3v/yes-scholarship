@@ -1,0 +1,41 @@
+[
+    {
+        "_id": "dist-jakarta",
+        "_type": "distribution",
+        "region": "Jakarta",
+        "province": "DKI Jakarta",
+        "count": 150,
+        "coordinates": {
+            "_type": "geopoint",
+            "lat": -6.2088,
+            "lng": 106.8456
+        },
+        "isActive": true
+    },
+    {
+        "_id": "dist-bandung",
+        "_type": "distribution",
+        "region": "Bandung",
+        "province": "Jawa Barat",
+        "count": 80,
+        "coordinates": {
+            "_type": "geopoint",
+            "lat": -6.9175,
+            "lng": 107.6191
+        },
+        "isActive": true
+    },
+    {
+        "_id": "dist-surabaya",
+        "_type": "distribution",
+        "region": "Surabaya",
+        "province": "Jawa Timur",
+        "count": 95,
+        "coordinates": {
+            "_type": "geopoint",
+            "lat": -7.2575,
+            "lng": 112.7521
+        },
+        "isActive": true
+    }
+]

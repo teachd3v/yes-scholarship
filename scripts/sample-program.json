@@ -1,0 +1,34 @@
+[
+    {
+        "_type": "program",
+        "title": "Beasiswa Sarjana (S1)",
+        "slug": {
+            "_type": "slug",
+            "current": "beasiswa-sarjana-s1"
+        },
+        "desc": "Program beasiswa penuh untuk jenjang pendidikan Sarjana (S1) di perguruan tinggi mitra terbaik di Indonesia. Mencakup biaya pendidikan, biaya hidup, dan pembinaan intensif.",
+        "icon": "🎓",
+        "features": [
+            "Biaya Pendidikan Full Cover",
+            "Uang Saku Bulanan",
+            "Asrama / Tempat Tinggal",
+            "Pembinaan Karakter & Kepemimpinan"
+        ]
+    },
+    {
+        "_type": "program",
+        "title": "Bootcamp Digital Skill",
+        "slug": {
+            "_type": "slug",
+            "current": "bootcamp-digital-skill"
+        },
+        "desc": "Pelatihan intensif bidang teknologi digital seperti Programming, Data Science, dan Digital Marketing untuk mempersiapkan talenta muda bersaing di industri 4.0.",
+        "icon": "💻",
+        "features": [
+            "Kurikulum Berstandar Industri",
+            "Mentor Praktisi Berpengalaman",
+            "Proyek Portofolio Nyata",
+            "Penyaluran Kerja"
+        ]
+    }
+]

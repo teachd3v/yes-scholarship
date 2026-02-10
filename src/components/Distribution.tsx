@@ -14,6 +14,11 @@ interface DistributionProps {
 
 export default function Distribution({ distributions }: DistributionProps) {
     const [tooltipContent, setTooltipContent] = useState("");
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Fallback if no data provided (though server should handle this)
     const displayData = distributions?.length > 0 ? distributions : [
@@ -39,69 +44,71 @@ export default function Distribution({ distributions }: DistributionProps) {
 
             {/* Desktop View: Interactive Map */}
             <div className="hidden lg:block w-full h-[500px] bg-blue-50/50 rounded-[3rem] border border-blue-100 relative overflow-hidden shadow-inner mb-12">
-                <ComposableMap
-                    projection="geoMercator"
-                    projectionConfig={{
-                        center: [118, -2],
-                        scale: 1000
-                    }}
-                    className="w-full h-full"
-                >
-                    <Geographies geography={INDONESIA_TOPO_JSON}>
-                        {({ geographies }: { geographies: any[] }) =>
-                            geographies.map((geo: any) => (
-                                <Geography
-                                    key={geo.rsmKey}
-                                    geography={geo}
-                                    fill="#E2E8F0"
-                                    stroke="#CBD5E1"
-                                    strokeWidth={0.5}
-                                    style={{
-                                        default: { outline: "none" },
-                                        hover: { fill: "#CBD5E1", outline: "none" },
-                                        pressed: { outline: "none" },
+                {isClient && (
+                    <ComposableMap
+                        projection="geoMercator"
+                        projectionConfig={{
+                            center: [118, -2],
+                            scale: 1000
+                        }}
+                        className="w-full h-full"
+                    >
+                        <Geographies geography={INDONESIA_TOPO_JSON}>
+                            {({ geographies }: { geographies: any[] }) =>
+                                geographies.map((geo: any) => (
+                                    <Geography
+                                        key={geo.rsmKey}
+                                        geography={geo}
+                                        fill="#E2E8F0"
+                                        stroke="#CBD5E1"
+                                        strokeWidth={0.5}
+                                        style={{
+                                            default: { outline: "none" },
+                                            hover: { fill: "#CBD5E1", outline: "none" },
+                                            pressed: { outline: "none" },
+                                        }}
+                                    />
+                                ))
+                            }
+                        </Geographies>
+                        {displayData.map((item, index) => {
+                            // Sanity Geopoint usually returns { lat, lng }
+                            // If manually mocked above, it's also { lat, lng }
+                            // ComposableMap expects [lng, lat]
+                            const lat = item.coordinates?.lat;
+                            const lng = item.coordinates?.lng;
+
+                            if (!lat || !lng) return null;
+
+                            return (
+                                <Marker
+                                    key={index}
+                                    coordinates={[lng, lat]}
+                                    onMouseEnter={() => {
+                                        setTooltipContent(`${item.region}|${item.count}|${item.province || ''}`);
                                     }}
-                                />
-                            ))
-                        }
-                    </Geographies>
-                    {displayData.map((item, index) => {
-                        // Sanity Geopoint usually returns { lat, lng }
-                        // If manually mocked above, it's also { lat, lng }
-                        // ComposableMap expects [lng, lat]
-                        const lat = item.coordinates?.lat;
-                        const lng = item.coordinates?.lng;
-
-                        if (!lat || !lng) return null;
-
-                        return (
-                            <Marker
-                                key={index}
-                                coordinates={[lng, lat]}
-                                onMouseEnter={() => {
-                                    setTooltipContent(`${item.region}|${item.count}|${item.province || ''}`);
-                                }}
-                                onMouseLeave={() => {
-                                    setTooltipContent("");
-                                }}
-                            >
-                                <circle
-                                    r={8}
-                                    fill="#FBBF24"
-                                    stroke="#FFF"
-                                    strokeWidth={2}
-                                    className="cursor-pointer hover:scale-125 transition-transform duration-300"
-                                />
-                                <circle
-                                    r={20}
-                                    fill="#FBBF24"
-                                    opacity={0.3}
-                                    className="animate-ping pointer-events-none"
-                                />
-                            </Marker>
-                        )
-                    })}
-                </ComposableMap>
+                                    onMouseLeave={() => {
+                                        setTooltipContent("");
+                                    }}
+                                >
+                                    <circle
+                                        r={8}
+                                        fill="#FBBF24"
+                                        stroke="#FFF"
+                                        strokeWidth={2}
+                                        className="cursor-pointer hover:scale-125 transition-transform duration-300"
+                                    />
+                                    <circle
+                                        r={20}
+                                        fill="#FBBF24"
+                                        opacity={0.3}
+                                        className="animate-ping pointer-events-none"
+                                    />
+                                </Marker>
+                            )
+                        })}
+                    </ComposableMap>
+                )}
 
                 {/* Custom Tooltip / Popup */}
                 {tooltipContent && (

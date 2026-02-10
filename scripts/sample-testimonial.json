@@ -1,0 +1,28 @@
+[
+    {
+        "_type": "testimonial",
+        "name": "Sarah Amalia",
+        "role": "Alumni UI - Software Engineer",
+        "quote": "Berkat beasiswa YES, saya tidak hanya mendapatkan bantuan finansial tetapi juga mentoring yang luar biasa yang membentuk karakter saya menjadi lebih tangguh.",
+        "avatar": {
+            "_type": "image",
+            "asset": {
+                "_type": "reference",
+                "_ref": "image-asset-id-here"
+            }
+        }
+    },
+    {
+        "_type": "testimonial",
+        "name": "Rizky Pratama",
+        "role": "Mahasiswa Berprestasi ITB",
+        "quote": "Program pembinaan kepemimpinan di YES sangat membuka wawasan saya. Saya belajar banyak tentang kontribusi sosial dan bagaimana menjadi pemimpin yang berdampak.",
+        "avatar": {
+            "_type": "image",
+            "asset": {
+                "_type": "reference",
+                "_ref": "image-asset-id-here"
+            }
+        }
+    }
+]

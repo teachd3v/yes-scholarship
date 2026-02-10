@@ -2,6 +2,7 @@ import { defineConfig } from 'sanity'
 import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
 import { schema, singletonTypes } from './src/sanity/schemaTypes'
+import { bulkImportTool } from './src/sanity/tools/BulkImportTool'
 
 export default defineConfig({
     name: 'default',
@@ -66,6 +67,7 @@ export default defineConfig({
         }),
         visionTool()
     ],
+    tools: [bulkImportTool()],
 
     schema: {
         types: schema.types,
