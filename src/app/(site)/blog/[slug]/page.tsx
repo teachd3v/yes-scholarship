@@ -1,24 +1,27 @@
-import { client } from '@/sanity/client';
+import { safeFetch, client } from '@/sanity/client';
 import { urlFor } from '@/sanity/image';
-import { PortableText } from '@portabletext/react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-// export const dynamic = 'force-dynamic';
-// export const revalidate = 0;
-// export const runtime = 'edge'; // Not needed for static export
+export const dynamicParams = false;
 
-export async function generateStaticParams() {
-    const posts = await client.fetch(`*[_type == "post"]{ "slug": slug.current }`);
-
-    return posts.map((post: any) => ({
-        slug: post.slug,
-    }));
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+    if (!client) return [{ slug: '_placeholder' }];
+    try {
+        const posts = await client.fetch(`*[_type == "post"]{ "slug": slug.current }`);
+        const params = (posts || []).map((post: any) => ({ slug: post.slug }));
+        return params.length > 0 ? params : [{ slug: '_placeholder' }];
+    } catch {
+        return [{ slug: '_placeholder' }];
+    }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const { slug } = await params;
+    if (slug === '_placeholder') {
+        return { title: "Blog | YES Scholarship" };
+    }
     const post = await getBlogPost(slug);
 
     if (!post) {
@@ -51,63 +54,65 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 async function getBlogPost(slug: string) {
-    return await client.fetch(
+    return await safeFetch<any>(
         `*[_type == "post" && slug.current == $slug][0]`,
         { slug }
     );
 }
 
-// Custom components for PortableText to match the Astro design
-const ptComponents = {
-    block: {
-        h1: ({ children }: any) => <h1 className="text-3xl font-bold text-blue-900 mt-8 mb-4">{children}</h1>,
-        h2: ({ children }: any) => <h2 className="text-2xl font-bold text-blue-900 mt-8 mb-4">{children}</h2>,
-        h3: ({ children }: any) => <h3 className="text-xl font-bold text-blue-900 mt-6 mb-3">{children}</h3>,
-        normal: ({ children }: any) => <p className="text-slate-600 leading-relaxed mb-6">{children}</p>,
-        blockquote: ({ children }: any) => (
-            <blockquote className="border-l-4 border-yellow-400 bg-yellow-50 py-4 px-6 rounded-r-lg italic text-slate-700 my-8">
-                {children}
-            </blockquote>
-        ),
-    },
-    list: {
-        bullet: ({ children }: any) => <ul className="list-disc list-inside space-y-2 mb-6 text-slate-600">{children}</ul>,
-        number: ({ children }: any) => <ol className="list-decimal list-inside space-y-2 mb-6 text-slate-600">{children}</ol>,
-    },
-    marks: {
-        link: ({ children, value }: any) => (
-            <a href={value.href} className="text-blue-600 font-semibold no-underline hover:underline">
-                {children}
-            </a>
-        ),
-        strong: ({ children }: any) => <strong className="text-blue-900 font-bold">{children}</strong>,
-    },
-    types: {
-        image: ({ value }: any) => (
-            <div className="my-8">
-                <img
-                    src={urlFor(value).url()}
-                    alt={value.alt || 'Blog Image'}
-                    className="rounded-2xl shadow-md w-full"
-                />
-            </div>
-        ),
-    },
-};
-
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
     const post = await getBlogPost(slug);
 
-    if (!post) {
+    if (!post || slug === '_placeholder') {
         return notFound();
     }
+
+    // Dynamic import PortableText
+    const { PortableText } = await import('@portabletext/react');
 
     const formattedDate = new Date(post.pubDate).toLocaleDateString('id-ID', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
     });
+
+    const ptComponents = {
+        block: {
+            h1: ({ children }: any) => <h1 className="text-3xl font-bold text-blue-900 mt-8 mb-4">{children}</h1>,
+            h2: ({ children }: any) => <h2 className="text-2xl font-bold text-blue-900 mt-8 mb-4">{children}</h2>,
+            h3: ({ children }: any) => <h3 className="text-xl font-bold text-blue-900 mt-6 mb-3">{children}</h3>,
+            normal: ({ children }: any) => <p className="text-slate-600 leading-relaxed mb-6">{children}</p>,
+            blockquote: ({ children }: any) => (
+                <blockquote className="border-l-4 border-yellow-400 bg-yellow-50 py-4 px-6 rounded-r-lg italic text-slate-700 my-8">
+                    {children}
+                </blockquote>
+            ),
+        },
+        list: {
+            bullet: ({ children }: any) => <ul className="list-disc list-inside space-y-2 mb-6 text-slate-600">{children}</ul>,
+            number: ({ children }: any) => <ol className="list-decimal list-inside space-y-2 mb-6 text-slate-600">{children}</ol>,
+        },
+        marks: {
+            link: ({ children, value }: any) => (
+                <a href={value.href} className="text-blue-600 font-semibold no-underline hover:underline">
+                    {children}
+                </a>
+            ),
+            strong: ({ children }: any) => <strong className="text-blue-900 font-bold">{children}</strong>,
+        },
+        types: {
+            image: ({ value }: any) => (
+                <div className="my-8">
+                    <img
+                        src={urlFor(value).url()}
+                        alt={value.alt || 'Blog Image'}
+                        className="rounded-2xl shadow-md w-full"
+                    />
+                </div>
+            ),
+        },
+    };
 
     return (
         <main className="bg-[#F8F9FB] min-h-screen pb-20">

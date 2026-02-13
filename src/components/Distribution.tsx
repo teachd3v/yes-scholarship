@@ -1,8 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { client } from '@/sanity/client'
-import { groq } from 'next-sanity'
 import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps"
 
 // Indonesia TopoJSON URL (Provinces)

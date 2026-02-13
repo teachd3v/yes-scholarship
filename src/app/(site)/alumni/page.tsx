@@ -1,9 +1,8 @@
-import { client } from '@/sanity/client';
+import { safeFetch } from '@/sanity/client';
 import { urlFor } from '@/sanity/image';
 import { groq } from 'next-sanity';
 import React from 'react';
 
-// Re-use types if possible, or define here
 interface Alumni {
     name: string;
     major: string;
@@ -25,7 +24,7 @@ export const metadata = {
 };
 
 async function getPtns() {
-    return client.fetch(groq`*[_type == "ptn"] | order(name asc) {
+    return safeFetch<PTN[]>(groq`*[_type == "ptn"] | order(name asc) {
         _id,
         name,
         logo,

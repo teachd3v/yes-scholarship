@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import { client } from '@/sanity/client';
+import { safeFetch } from '@/sanity/client';
 import { urlFor } from '@/sanity/image';
 import { groq } from 'next-sanity';
 
 async function getPrograms() {
-    return client.fetch(groq`*[_type == "program"]{
+    return safeFetch(groq`*[_type == "program"]{
         _id,
         title,
         desc,

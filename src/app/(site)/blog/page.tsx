@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { client } from '@/sanity/client';
+import { safeFetch } from '@/sanity/client';
 import { urlFor } from '@/sanity/image';
 
 // export const dynamic = 'force-dynamic'; // Default to static for export
@@ -28,7 +28,7 @@ const MOCK_BLOG_POSTS = [
 ];
 
 async function getBlogPosts() {
-    return await client.fetch(`*[_type == "post"] | order(pubDate desc) {
+    return await safeFetch(`*[_type == "post"] | order(pubDate desc) {
         title,
         "slug": slug.current,
         description,
