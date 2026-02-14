@@ -82,7 +82,7 @@ export default function Navbar() {
             </div>
 
             <div
-                className={`fixed inset-0 top-[72px] bg-white z-40 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col justify-start pt-10 items-center gap-8 text-center shadow-inner ${isOpen ? 'translate-y-0' : '-translate-y-full'
+                className={`fixed inset-0 top-[72px] bg-white z-40 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col justify-start pt-8 pb-10 items-center gap-6 text-center shadow-inner overflow-y-auto ${isOpen ? 'translate-y-0' : '-translate-y-full'
                     }`}
             >
                 {menus.map((menu) => (
@@ -90,7 +90,7 @@ export default function Navbar() {
                         key={menu.href}
                         href={menu.href}
                         onClick={closeMenu}
-                        className="mobile-link text-xl font-bold text-slate-800 hover:text-blue-900 py-2 border-b-2 border-transparent hover:border-yellow-400 transition-all"
+                        className="mobile-link text-lg font-bold text-slate-800 hover:text-blue-900 py-2 border-b-2 border-transparent hover:border-yellow-400 transition-all"
                     >
                         {menu.name}
                     </Link>
@@ -98,7 +98,7 @@ export default function Navbar() {
                 <Link
                     href="/pendaftaran"
                     onClick={closeMenu}
-                    className="mt-4 bg-blue-900 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl hover:bg-blue-800 transition transform hover:scale-105"
+                    className="mt-2 bg-blue-900 text-white px-8 py-3 rounded-full text-base font-bold shadow-xl hover:bg-blue-800 transition transform hover:scale-105"
                 >
                     Daftar YES 2026
                 </Link>
