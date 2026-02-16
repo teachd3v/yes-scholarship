@@ -55,15 +55,17 @@ export const biodataSchema = z.object({
     whatsapp: z.string().min(10, "Nomor Whatsapp minimal 10 digit").regex(/^\d+$/, "Hanya angka"),
 
     // k - m. Wilayah (Menyimpan ID wilayah dari API)
-    provinsi: z.string().min(1, "Pilih Provinsi"),
-    kabupaten: z.string().min(1, "Pilih Kabupaten/Kota"),
+    provinsi: z.string().min(1, "Provinsi wajib diisi"),
+    provinsi_nama: z.string().optional(),
+    kabupaten: z.string().min(1, "Kabupaten wajib diisi"),
     kabupaten_nama: z.string().optional(),
-    provinsi_nama: z.string().optional(), // Nama provinsi untuk pre-screening domisili
-    kecamatan: z.string().min(1, "Pilih Kecamatan"),
-    kelurahan: z.string().min(1, "Pilih Kelurahan"),
+    kecamatan: z.string().min(1, "Kecamatan wajib diisi"),
+    kecamatan_nama: z.string().optional(),
+    kelurahan: z.string().min(1, "Kelurahan wajib diisi"),
+    kelurahan_nama: z.string().optional(),
 
     // o. Alamat Detail (Hanya muncul jika kelurahan terisi)
-    alamat_detail: z.string().min(5, "Alamat detail wajib diisi lengkap"),
+    alamat_detail: z.string().min(10, "Alamat detail wajib diisi lengkap"),
 });
 
 export type BiodataSchemaType = z.infer<typeof biodataSchema>;

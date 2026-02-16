@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { MasterSchemaType } from "@/lib/schema-master";
 import { Upload, FileText } from "lucide-react";
@@ -32,6 +32,16 @@ export default function SectionBiodata() {
     const selectedKabupaten = useWatch({ control, name: "kabupaten" });
     const selectedKecamatan = useWatch({ control, name: "kecamatan" });
     const selectedKelurahan = useWatch({ control, name: "kelurahan" });
+
+    // Cleanup Object URL untuk preview foto
+    const fotoDiriPreview = useMemo(() => {
+        if (fotoDiri?.[0]) return URL.createObjectURL(fotoDiri[0]);
+        return null;
+    }, [fotoDiri]);
+
+    useEffect(() => {
+        return () => { if (fotoDiriPreview) URL.revokeObjectURL(fotoDiriPreview); };
+    }, [fotoDiriPreview]);
 
     const BASE_URL = "https://www.emsifa.com/api-wilayah-indonesia/api";
 
@@ -96,8 +106,19 @@ export default function SectionBiodata() {
                 .finally(() => setLoadingWilayah(null));
             setValue("kecamatan", "");
             setValue("kelurahan", "");
+            // Reset names
+            setValue("kecamatan_nama", "");
+            setValue("kelurahan_nama", "");
         }
     }, [selectedKabupaten, setValue]);
+
+    // 3b. Simpan nama kecamatan
+    useEffect(() => {
+        if (selectedKecamatan && districts.length > 0) {
+            const found = districts.find((d) => d.id === selectedKecamatan);
+            if (found) setValue("kecamatan_nama", found.name);
+        }
+    }, [selectedKecamatan, districts, setValue]);
 
     // 4. Fetch Kelurahan saat Kecamatan berubah
     useEffect(() => {
@@ -112,8 +133,17 @@ export default function SectionBiodata() {
                 .catch((err) => console.error(err.message))
                 .finally(() => setLoadingWilayah(null));
             setValue("kelurahan", "");
+            setValue("kelurahan_nama", "");
         }
     }, [selectedKecamatan, setValue]);
+
+    // 4b. Simpan nama kelurahan
+    useEffect(() => {
+        if (selectedKelurahan && villages.length > 0) {
+            const found = villages.find((v) => v.id === selectedKelurahan);
+            if (found) setValue("kelurahan_nama", found.name);
+        }
+    }, [selectedKelurahan, villages, setValue]);
 
     return (
         <div className="w-full max-w-4xl mx-auto bg-white shadow-xl rounded-2xl border border-gray-100 my-4 md:my-10 p-4 md:p-8 overflow-hidden">
@@ -136,11 +166,11 @@ export default function SectionBiodata() {
                             id="upload-foto"
                         />
                         <label htmlFor="upload-foto" className="cursor-pointer flex flex-col items-center">
-                            {fotoDiri?.[0] ? (
+                            {fotoDiri?.[0] && fotoDiriPreview ? (
                                 <>
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
-                                        src={URL.createObjectURL(fotoDiri[0])}
+                                        src={fotoDiriPreview}
                                         alt="Preview foto diri"
                                         className="w-32 h-32 object-cover rounded-full mb-2 border-2 border-blue-300"
                                     />

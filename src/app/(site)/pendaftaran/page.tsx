@@ -211,16 +211,56 @@ export default function PendaftaranPage() {
     console.table(score.detail);
     console.log("TOTAL SKOR:", score.total);
 
-    if (!screening.lolos) {
-      alert("Tidak Lolos Pre-Screening. Cek Console untuk detail.");
-      return;
+    // if (!screening.lolos) {
+    //   alert("Tidak Lolos Pre-Screening. Cek Console untuk detail.");
+    //   return;
+    // }
+
+    // Construct FormData
+    const formData = new FormData();
+    
+    // Helper function to append data
+    const appendToFormData = (key: string, value: any) => {
+      if (value instanceof FileList) {
+        if (value.length > 0) formData.append(key, value[0]);
+      } else if (value instanceof File) {
+        formData.append(key, value);
+      } else if (Array.isArray(value)) {
+        value.forEach((item, index) => {
+          if (typeof item === 'object') {
+            Object.entries(item).forEach(([k, v]) => {
+              formData.append(`${key}[${index}][${k}]`, String(v));
+            });
+          } else {
+             formData.append(`${key}[]`, String(item));
+          }
+        });
+        if (value.length === 0) formData.append(key, "[]"); // Send empty array hints
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    };
+
+    Object.entries(data).forEach(([key, value]) => appendToFormData(key, value));
+
+    try {
+      const response = await fetch('/api/application/submit', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Gagal mengirim data");
+      }
+
+      setSuccessEmail(data.email);
+      setShowSuccess(true);
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("Terjadi kesalahan saat mengirim pendaftaran. Silakan coba lagi.");
     }
-
-    // Simulasi pengiriman data
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    setSuccessEmail(data.email);
-    setShowSuccess(true);
   };
 
   return (

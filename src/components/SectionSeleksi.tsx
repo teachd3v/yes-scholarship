@@ -2,7 +2,9 @@
 
 import { useFormContext, useFieldArray, useWatch } from "react-hook-form";
 import { MasterSchemaType } from "@/lib/schema-master";
-import { Upload, Plus, Trash2, Trophy, Users, BookOpen, FileText } from "lucide-react";
+import { Plus, Trash2, Trophy, Users, BookOpen } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import FileUploadField from "./FileUploadField";
 
 export default function SectionSeleksi() {
     const {
@@ -34,37 +36,22 @@ export default function SectionSeleksi() {
     const wFotoRaport2 = useWatch({ control, name: "foto_raport_2" });
     const wFotoRaport3 = useWatch({ control, name: "foto_raport_3" });
 
-    // Helper UI File Upload dengan Preview
-    const FileUpload = ({ label, name, fileData }: { label: string, name: keyof MasterSchemaType, fileData?: any }) => {
-        const file = fileData?.[0];
-        const isImage = file && file.type?.startsWith("image/");
+    // Cleanup Object URLs untuk preview raport
+    const raport1Preview = useMemo(() => {
+        const f = wFotoRaport1?.[0]; return f?.type?.startsWith("image/") ? URL.createObjectURL(f) : null;
+    }, [wFotoRaport1]);
+    const raport2Preview = useMemo(() => {
+        const f = wFotoRaport2?.[0]; return f?.type?.startsWith("image/") ? URL.createObjectURL(f) : null;
+    }, [wFotoRaport2]);
+    const raport3Preview = useMemo(() => {
+        const f = wFotoRaport3?.[0]; return f?.type?.startsWith("image/") ? URL.createObjectURL(f) : null;
+    }, [wFotoRaport3]);
 
-        return (
-            <div>
-                <label className="label-text">{label} <span className="text-red-500">*</span></label>
-                <div className="border border-dashed border-gray-300 rounded p-3 bg-gray-50 text-center cursor-pointer relative hover:bg-gray-100">
-                    <input type="file" accept="image/*,application/pdf" {...register(name)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    {file ? (
-                        <div className="flex flex-col items-center gap-1 pointer-events-none">
-                            {isImage ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={URL.createObjectURL(file)} alt="Preview" className="w-16 h-16 object-cover rounded border" />
-                            ) : (
-                                <FileText size={32} className="text-blue-500" />
-                            )}
-                            <span className="text-xs text-green-600 font-medium truncate max-w-full">{file.name}</span>
-                            <span className="text-xs text-blue-500">Klik untuk ganti</span>
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-center gap-2 text-gray-500 pointer-events-none">
-                            <Upload size={16} /> <span className="text-xs">Upload (Max 10MB)</span>
-                        </div>
-                    )}
-                </div>
-                {errors[name] && <p className="error-text">{String(errors[name]?.message)}</p>}
-            </div>
-        );
-    };
+    useEffect(() => { return () => { if (raport1Preview) URL.revokeObjectURL(raport1Preview); }; }, [raport1Preview]);
+    useEffect(() => { return () => { if (raport2Preview) URL.revokeObjectURL(raport2Preview); }; }, [raport2Preview]);
+    useEffect(() => { return () => { if (raport3Preview) URL.revokeObjectURL(raport3Preview); }; }, [raport3Preview]);
+
+    // (FileUpload extracted to shared FileUploadField component)
 
     return (
         <div className="w-full max-w-4xl mx-auto bg-white shadow-xl rounded-2xl border border-gray-100 my-4 md:my-10 p-4 md:p-8 overflow-hidden">
@@ -98,7 +85,7 @@ export default function SectionSeleksi() {
                     {/* Grid Raport: Foto & Nilai */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 bg-slate-50 p-4 rounded-lg border">
                         {/* Semester 1 */}
-                        <FileUpload label="Foto Raport Semester 1" name="foto_raport_1" fileData={wFotoRaport1} />
+                        <FileUploadField label="Foto Raport Semester 1" name="foto_raport_1" preview={raport1Preview} fileData={wFotoRaport1} compact />
                         <div>
                             <label className="label-text">Nilai Rata-rata Sem 1</label>
                             <input type="number" step="0.01" {...register("nilai_raport_1")} className="input-field" placeholder="85.50" />
@@ -106,7 +93,7 @@ export default function SectionSeleksi() {
                         </div>
 
                         {/* Semester 2 */}
-                        <FileUpload label="Foto Raport Semester 2" name="foto_raport_2" fileData={wFotoRaport2} />
+                        <FileUploadField label="Foto Raport Semester 2" name="foto_raport_2" preview={raport2Preview} fileData={wFotoRaport2} compact />
                         <div>
                             <label className="label-text">Nilai Rata-rata Sem 2</label>
                             <input type="number" step="0.01" {...register("nilai_raport_2")} className="input-field" placeholder="85.50" />
@@ -114,7 +101,7 @@ export default function SectionSeleksi() {
                         </div>
 
                         {/* Semester 3 */}
-                        <FileUpload label="Foto Raport Semester 3" name="foto_raport_3" fileData={wFotoRaport3} />
+                        <FileUploadField label="Foto Raport Semester 3" name="foto_raport_3" preview={raport3Preview} fileData={wFotoRaport3} compact />
                         <div>
                             <label className="label-text">Nilai Rata-rata Sem 3</label>
                             <input type="number" step="0.01" {...register("nilai_raport_3")} className="input-field" placeholder="85.50" />
@@ -184,9 +171,9 @@ export default function SectionSeleksi() {
                                             <label className="label-text text-xs">Level Jabatan</label>
                                             <select {...register(`list_organisasi.${index}.jabatan`)} className="input-field text-sm">
                                                 <option value="">Pilih...</option>
-                                                <option value="Ketua">Ketua/Wakil Ketua (skor 10)</option>
-                                                <option value="Pengurus">Pengurus Inti (skor 8)</option>
-                                                <option value="Anggota">Anggota (skor 5)</option>
+                                                <option value="Ketua">Ketua/Wakil Ketua</option>
+                                                <option value="Pengurus">Pengurus Inti</option>
+                                                <option value="Anggota">Anggota</option>
                                             </select>
                                         </div>
                                     </div>

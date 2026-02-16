@@ -2,7 +2,8 @@
 
 import { useFormContext, useWatch } from "react-hook-form";
 import { MasterSchemaType } from "@/lib/schema-master";
-import { FileText, Upload } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import FileUploadField from "./FileUploadField";
 
 export default function SectionKeluarga() {
     const {
@@ -23,45 +24,20 @@ export default function SectionKeluarga() {
     const isOrtuNonAktif = (kondisiAyah === "Tidak Bekerja" || kondisiAyah === "Wafat") &&
         (kondisiIbu === "Tidak Bekerja" || kondisiIbu === "Wafat");
 
-    // Component Helper untuk File Upload dengan Preview
-    const FileUploadField = ({ label, name, placeholder, fileData }: { label: string, name: keyof MasterSchemaType, placeholder: string, fileData?: any }) => {
-        const file = fileData?.[0];
-        const isImage = file && file.type?.startsWith("image/");
+    // Cleanup Object URLs untuk preview file
+    const kkPreview = useMemo(() => {
+        const f = wFileKK?.[0]; return f?.type?.startsWith("image/") ? URL.createObjectURL(f) : null;
+    }, [wFileKK]);
+    const sktmPreview = useMemo(() => {
+        const f = wFileSKTM?.[0]; return f?.type?.startsWith("image/") ? URL.createObjectURL(f) : null;
+    }, [wFileSKTM]);
+    const skbPreview = useMemo(() => {
+        const f = wFileSKB?.[0]; return f?.type?.startsWith("image/") ? URL.createObjectURL(f) : null;
+    }, [wFileSKB]);
 
-        return (
-            <div className="mb-4">
-                <label className="label-text">{label} <span className="text-red-500">*</span></label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:bg-gray-50 transition cursor-pointer text-center relative">
-                    <input
-                        type="file"
-                        accept="image/*,application/pdf"
-                        {...register(name)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        id={`upload-${name}`}
-                    />
-                    {file ? (
-                        <div className="flex flex-col items-center pointer-events-none">
-                            {isImage ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={URL.createObjectURL(file)} alt="Preview" className="w-20 h-20 object-cover rounded-lg border mb-2" />
-                            ) : (
-                                <FileText className="w-8 h-8 text-blue-500 mb-2" />
-                            )}
-                            <span className="text-xs text-green-600 font-medium truncate max-w-full">{file.name}</span>
-                            <span className="text-xs text-blue-500 mt-1">Klik untuk ganti</span>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center pointer-events-none">
-                            <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                            <span className="text-sm font-medium text-gray-600">{placeholder}</span>
-                            <span className="text-xs text-gray-400 mt-1">File size &lt;10MB, Format JPG/PNG/PDF (Hanya 1 file)</span>
-                        </div>
-                    )}
-                </div>
-                {errors[name] && <p className="error-text">{String(errors[name]?.message)}</p>}
-            </div>
-        );
-    };
+    useEffect(() => { return () => { if (kkPreview) URL.revokeObjectURL(kkPreview); }; }, [kkPreview]);
+    useEffect(() => { return () => { if (sktmPreview) URL.revokeObjectURL(sktmPreview); }; }, [sktmPreview]);
+    useEffect(() => { return () => { if (skbPreview) URL.revokeObjectURL(skbPreview); }; }, [skbPreview]);
 
     return (
         <div className="w-full max-w-4xl mx-auto bg-white shadow-xl rounded-2xl border border-gray-100 my-4 md:my-10 p-4 md:p-8 overflow-hidden">
@@ -78,18 +54,21 @@ export default function SectionKeluarga() {
                         label="Unggah Kartu Keluarga"
                         name="file_kk"
                         placeholder="Foto Dokumen tidak boleh blur"
+                        preview={kkPreview}
                         fileData={wFileKK}
                     />
                     <FileUploadField
                         label="Surat Keterangan Tidak Mampu"
                         name="file_sktm"
                         placeholder="Foto Dokumen tidak boleh blur"
+                        preview={sktmPreview}
                         fileData={wFileSKTM}
                     />
                     <FileUploadField
                         label="Surat Kelakuan Baik dari Sekolah"
                         name="file_skb"
                         placeholder="Foto Dokumen tidak boleh blur"
+                        preview={skbPreview}
                         fileData={wFileSKB}
                     />
                 </div>

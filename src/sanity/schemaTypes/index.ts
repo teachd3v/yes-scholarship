@@ -9,6 +9,7 @@ import { testimonialType } from './testimonial'
 import { programType } from './program'
 import distribution from './distribution'
 import ptn from './ptn'
+import application from './application'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
     types: [
@@ -20,7 +21,9 @@ export const schema: { types: SchemaTypeDefinition[] } = {
         faqsType,
         testimonialType,
         distribution,
-        ptn
+
+        ptn,
+        application
     ],
 }
 
