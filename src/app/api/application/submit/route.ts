@@ -3,7 +3,7 @@ import { writeClient } from "@/sanity/client";
 import { calculateScore, checkPreScreening } from "@/lib/scoring";
 import { sendConfirmationEmail } from "@/lib/mail";
 
-export const runtime = 'edge';
+// export const runtime = 'edge'; // Removed for Vercel
 
 if (!writeClient) throw new Error("Sanity writeClient not configured");
 const client = writeClient;
