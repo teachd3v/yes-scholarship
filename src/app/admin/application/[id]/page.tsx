@@ -9,7 +9,7 @@ import { formatIncome } from "@/lib/types";
 import DetailActions from "./DetailActions";
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 export default async function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
