@@ -5,8 +5,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function sendConfirmationEmail(to: string, name: string) {
   try {
     const { data, error } = await resend.emails.send({
-      from: 'YES Scholarship <onboarding@resend.dev>', // Use this for testing/free tier
-      to: [to], // Must be your own email in free tier unless domain is verified
+      from: 'YES Scholarship <admin@youthekselensia.id>',
+      to: [to],
       subject: 'Pendaftaran Berhasil - YES Scholarship 2026',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
