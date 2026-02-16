@@ -3,7 +3,7 @@ import { getApplications } from "./actions";
 import { logoutAction } from "./auth-actions";
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const params = await searchParams;

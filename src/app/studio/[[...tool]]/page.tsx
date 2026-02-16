@@ -1,6 +1,6 @@
 import { Studio } from './Studio'
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 // Required for static export to work with dynamic routes
 // export function generateStaticParams() {
