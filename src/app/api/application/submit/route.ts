@@ -3,7 +3,7 @@ import { writeClient } from "@/sanity/client";
 import { calculateScore, checkPreScreening } from "@/lib/scoring";
 import { sendConfirmationEmail } from "@/lib/mail";
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 if (!writeClient) throw new Error("Sanity writeClient not configured");
 const client = writeClient;
