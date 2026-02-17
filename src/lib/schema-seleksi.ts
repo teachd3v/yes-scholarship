@@ -31,7 +31,7 @@ export const seleksiSchema = z.object({
     list_organisasi: z.array(z.object({
         jenis: z.string().min(1, "Pilih jenis organisasi"),
         ket_lainnya: z.string().optional(),
-        jabatan: z.string().min(1, "Pilih jabatan"),
+        jabatan: z.enum(["Ketua", "Pengurus", "Anggota"], { message: "Pilih jabatan" }),
     })).optional(),
 
     // k. Prestasi (Toggle & Array)
@@ -85,7 +85,18 @@ export const seleksiSchema = z.object({
         });
     }
 
-    // 3. Validasi Conditional Hafalan
+    // 3. Validasi Conditional Prestasi
+    if (data.toggle_prestasi) {
+        if (!data.list_prestasi || data.list_prestasi.length === 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["list_prestasi"],
+                message: "Minimal isi 1 prestasi jika diaktifkan",
+            });
+        }
+    }
+
+    // 4. Validasi Conditional Hafalan
     if (data.toggle_hafalan && !data.kategori_hafalan) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
