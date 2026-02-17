@@ -186,7 +186,7 @@ export default function SectionSeleksi() {
 
                             {/* Tombol Tambah */}
                             {orgFields.length < 3 && (
-                                <button type="button" onClick={() => appendOrg({ jenis: "", jabatan: "" })} className="text-sm font-bold text-blue-600 flex items-center gap-1 hover:underline">
+                                <button type="button" onClick={() => appendOrg({ jenis: "", jabatan: "" as "Ketua" })} className="text-sm font-bold text-blue-600 flex items-center gap-1 hover:underline">
                                     <Plus size={16} /> Tambah Pengalaman Terbaik (Max 3)
                                 </button>
                             )}
