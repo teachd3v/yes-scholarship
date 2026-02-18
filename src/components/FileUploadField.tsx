@@ -37,8 +37,11 @@ export default function FileUploadField({ label, name, placeholder, preview, fil
                             <span className="text-xs text-blue-500">Klik untuk ganti</span>
                         </div>
                     ) : (
-                        <div className="flex items-center justify-center gap-2 text-gray-500 pointer-events-none">
-                            <Upload size={16} /> <span className="text-xs">Upload (Max 10MB)</span>
+                        <div className="flex flex-col items-center justify-center gap-1 text-gray-500 pointer-events-none">
+                            <div className="flex items-center gap-2">
+                                <Upload size={16} /> <span className="text-xs font-medium">{placeholder || "Klik untuk unggah"}</span>
+                            </div>
+                            <span className="text-[10px] text-gray-400">Format JPG/PNG (Max 10MB, Hanya 1 file)</span>
                         </div>
                     )}
                 </div>

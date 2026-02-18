@@ -10,6 +10,8 @@ export default function SectionSeleksi() {
     const {
         register,
         control,
+        setValue,
+        getValues,
         formState: { errors },
     } = useFormContext<MasterSchemaType>();
 
@@ -25,11 +27,32 @@ export default function SectionSeleksi() {
     });
 
     // useWatch agar compatible dengan React Compiler
+    const wAgama = useWatch({ control, name: "agama" });
     const wBeasiswa = useWatch({ control, name: "status_beasiswa" });
     const wToggleOrg = useWatch({ control, name: "toggle_organisasi" });
     const wTogglePres = useWatch({ control, name: "toggle_prestasi" });
     const wToggleHafalan = useWatch({ control, name: "toggle_hafalan" });
     const wListOrg = useWatch({ control, name: "list_organisasi" });
+
+    const isIslam = wAgama === "Islam";
+
+    // Reset hafalan & Rohis saat agama bukan Islam
+    useEffect(() => {
+        if (wAgama && !isIslam) {
+            // Reset hafalan quran
+            setValue("toggle_hafalan", false);
+            setValue("kategori_hafalan", "");
+
+            // Reset organisasi yg jenis-nya Rohis
+            const currentOrg = getValues("list_organisasi");
+            currentOrg?.forEach((item, index) => {
+                if (item.jenis === "Rohis") {
+                    setValue(`list_organisasi.${index}.jenis`, "");
+                }
+            });
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [wAgama]);
 
     // Watch file fields untuk preview
     const wFotoRaport1 = useWatch({ control, name: "foto_raport_1" });
@@ -85,7 +108,7 @@ export default function SectionSeleksi() {
                     {/* Grid Raport: Foto & Nilai */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 bg-slate-50 p-4 rounded-lg border">
                         {/* Semester 1 */}
-                        <FileUploadField label="Foto Raport Semester 1" name="foto_raport_1" preview={raport1Preview} fileData={wFotoRaport1} compact />
+                        <FileUploadField label="Foto Raport Semester 1" name="foto_raport_1" placeholder="Foto Raport tidak boleh blur" preview={raport1Preview} fileData={wFotoRaport1} compact />
                         <div>
                             <label className="label-text">Nilai Rata-rata Sem 1</label>
                             <input type="number" step="0.01" {...register("nilai_raport_1")} className="input-field" placeholder="85.50" />
@@ -93,7 +116,7 @@ export default function SectionSeleksi() {
                         </div>
 
                         {/* Semester 2 */}
-                        <FileUploadField label="Foto Raport Semester 2" name="foto_raport_2" preview={raport2Preview} fileData={wFotoRaport2} compact />
+                        <FileUploadField label="Foto Raport Semester 2" name="foto_raport_2" placeholder="Foto Raport tidak boleh blur" preview={raport2Preview} fileData={wFotoRaport2} compact />
                         <div>
                             <label className="label-text">Nilai Rata-rata Sem 2</label>
                             <input type="number" step="0.01" {...register("nilai_raport_2")} className="input-field" placeholder="85.50" />
@@ -101,7 +124,7 @@ export default function SectionSeleksi() {
                         </div>
 
                         {/* Semester 3 */}
-                        <FileUploadField label="Foto Raport Semester 3" name="foto_raport_3" preview={raport3Preview} fileData={wFotoRaport3} compact />
+                        <FileUploadField label="Foto Raport Semester 3" name="foto_raport_3" placeholder="Foto Raport tidak boleh blur" preview={raport3Preview} fileData={wFotoRaport3} compact />
                         <div>
                             <label className="label-text">Nilai Rata-rata Sem 3</label>
                             <input type="number" step="0.01" {...register("nilai_raport_3")} className="input-field" placeholder="85.50" />
@@ -151,7 +174,7 @@ export default function SectionSeleksi() {
                                             <select {...register(`list_organisasi.${index}.jenis`)} className="input-field text-sm">
                                                 <option value="">Pilih...</option>
                                                 <option value="OSIS">OSIS</option>
-                                                <option value="Rohis">Rohis</option>
+                                                {isIslam && <option value="Rohis">Rohis</option>}
                                                 <option value="UKM">UKM</option>
                                                 <option value="Komunitas">Komunitas</option>
                                                 <option value="Lainnya">Lainnya</option>
@@ -255,7 +278,8 @@ export default function SectionSeleksi() {
                     )}
                 </section>
 
-                {/* --- l. HAFALAN QURAN (Toggle) --- */}
+                {/* --- l. HAFALAN QURAN (Toggle) — hanya tampil jika agama Islam --- */}
+                {isIslam && (
                 <section className="border rounded-xl p-4 md:p-5 bg-white shadow-sm">
                     <div className="flex items-start md:items-center justify-between gap-2 mb-4">
                         <div className="flex items-center gap-2 min-w-0">
@@ -282,6 +306,7 @@ export default function SectionSeleksi() {
                         </div>
                     )}
                 </section>
+                )}
 
                 {/* --- m & n. ESAI & SUMBER INFO --- */}
                 <section className="space-y-4 border-t pt-6">

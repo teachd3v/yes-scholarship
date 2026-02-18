@@ -181,7 +181,7 @@ export default function SectionBiodata() {
                                 <>
                                     <Upload className="w-8 h-8 text-gray-400 mb-2" />
                                     <span className="text-sm font-medium text-gray-600">Klik untuk unggah</span>
-                                    <span className="text-xs text-gray-400 mt-1">Close Up Wajah/Setengah badan (size file &lt;1MB hanya 1 file)</span>
+                                    <span className="text-xs text-gray-400 mt-1">Close Up Wajah/Setengah badan, Format JPG/PNG (Max 1MB, Hanya 1 file)</span>
                                 </>
                             )}
                         </label>
