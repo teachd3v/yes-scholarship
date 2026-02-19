@@ -122,23 +122,17 @@ export async function POST(req: NextRequest) {
         }
     }
     if (fileErrors.length > 0) {
-        return NextResponse.json({ success: false, message: fileErrors.join("; ") }, { status: 400 });
+        return NextResponse.json({ success: false, message: fileErrors.join(" | "), code: "FILE_ERROR" }, { status: 400 });
     }
 
-    const uploadPromises = fileKeys.map(async (key) => {
+    // Upload files sequentially to avoid Sanity rate limits
+    const fileUploads: any = {};
+    for (const key of fileKeys) {
         const file = formData.get(key) as File;
         if (file && file.size > 0) {
-            // ALL uploads are now images
-            return { key, id: await uploadImageToSanity(file) };
+            fileUploads[key] = await uploadImageToSanity(file);
         }
-        return null;
-    });
-
-    const uploadResults = await Promise.all(uploadPromises);
-    const fileUploads: any = {};
-    uploadResults.forEach(result => {
-        if (result) fileUploads[result.key] = result.id;
-    });
+    }
 
     // 2. Prepare Data for Sanity
     const biodata = {

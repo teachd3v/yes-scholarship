@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { MasterSchemaType } from "@/lib/schema-master";
-import { Upload, FileText } from "lucide-react";
+import { Upload, AlertCircle } from "lucide-react";
+
+const MAX_FOTO_SIZE = 1 * 1024 * 1024; // 1MB
+const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 // Tipe Data API Emsifa
 type Region = {
@@ -18,6 +21,33 @@ export default function SectionBiodata() {
         setValue,
         formState: { errors },
     } = useFormContext<MasterSchemaType>();
+
+    const [fotoError, setFotoError] = useState<string | null>(null);
+
+    const { onChange: fotoRhfOnChange, ...fotoRestRegister } = register("foto_diri");
+
+    const handleFotoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        setFotoError(null);
+
+        if (file) {
+            const issues: string[] = [];
+            if (!ACCEPTED_TYPES.includes(file.type)) {
+                issues.push("Format file harus JPG, PNG, atau WebP");
+            }
+            if (file.size > MAX_FOTO_SIZE) {
+                const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+                issues.push(`Ukuran file ${sizeMB}MB melebihi batas maksimal 1MB`);
+            }
+            if (issues.length > 0) {
+                setFotoError(issues.join(". "));
+                e.target.value = "";
+                setValue("foto_diri", undefined as any, { shouldValidate: false });
+                return;
+            }
+        }
+        fotoRhfOnChange(e);
+    }, [fotoRhfOnChange, setValue]);
 
     // --- STATE UNTUK API WILAYAH ---
     const [provinces, setProvinces] = useState<Region[]>([]);
@@ -157,11 +187,12 @@ export default function SectionBiodata() {
                 {/* a. FOTO DIRI */}
                 <div>
                     <label className="label-text">Unggah Foto Diri <span className="text-red-500">*</span></label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:bg-gray-50 transition cursor-pointer text-center">
+                    <div className={`border-2 border-dashed rounded-lg p-6 hover:bg-gray-50 transition cursor-pointer text-center ${fotoError || errors.foto_diri ? "border-red-400 bg-red-50" : "border-gray-300"}`}>
                         <input
                             type="file"
                             accept="image/*"
-                            {...register("foto_diri")}
+                            {...fotoRestRegister}
+                            onChange={handleFotoChange}
                             className="hidden"
                             id="upload-foto"
                         />
@@ -181,12 +212,17 @@ export default function SectionBiodata() {
                                 <>
                                     <Upload className="w-8 h-8 text-gray-400 mb-2" />
                                     <span className="text-sm font-medium text-gray-600">Klik untuk unggah</span>
-                                    <span className="text-xs text-gray-400 mt-1">Close Up Wajah/Setengah badan, Format JPG/PNG (Max 1MB, Hanya 1 file)</span>
+                                    <span className="text-xs text-gray-400 mt-1">Close Up Wajah/Setengah badan, Format JPG/PNG/WebP (Max 1MB, Hanya 1 file)</span>
                                 </>
                             )}
                         </label>
                     </div>
-                    {errors.foto_diri && <p className="error-text">{String(errors.foto_diri.message)}</p>}
+                    {(fotoError || errors.foto_diri) && (
+                        <p className="error-text flex items-center gap-1">
+                            <AlertCircle size={12} className="shrink-0" />
+                            {fotoError || String(errors.foto_diri?.message)}
+                        </p>
+                    )}
                 </div>
 
                 {/* b. NAMA LENGKAP */}

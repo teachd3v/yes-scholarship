@@ -3,12 +3,71 @@
 import SectionBiodata from "@/components/SectionBiodata";
 import SectionKeluarga from "@/components/SectionKeluarga";
 import SectionSeleksi from "@/components/SectionSeleksi";
-import { useForm, FormProvider, useWatch, Control } from "react-hook-form";
+import { useForm, FormProvider, useWatch, Control, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { masterSchema, MasterSchemaType } from "@/lib/schema-master";
 import { checkPreScreening, calculateScore } from "@/lib/scoring";
-import { Save, Loader2, User, Users, GraduationCap, CheckCircle, Mail, X, Check, AlertTriangle } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { Save, Loader2, User, Users, GraduationCap, CheckCircle, Mail, X, Check, AlertTriangle, ChevronRight } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+
+// Mapping field key → [Label, sectionId]
+const FIELD_LABELS: Record<string, [string, string]> = {
+  // Biodata
+  foto_diri: ["Foto Diri", "biodata"],
+  nama: ["Nama Lengkap", "biodata"],
+  nik: ["NIK (No KTP)", "biodata"],
+  no_kk: ["No KK", "biodata"],
+  jenis_kelamin: ["Jenis Kelamin", "biodata"],
+  agama: ["Agama", "biodata"],
+  tempat_lahir: ["Tempat Lahir", "biodata"],
+  tanggal_lahir: ["Tanggal Lahir", "biodata"],
+  email: ["Email", "biodata"],
+  whatsapp: ["No Whatsapp", "biodata"],
+  provinsi: ["Provinsi", "biodata"],
+  kabupaten: ["Kabupaten/Kota", "biodata"],
+  kecamatan: ["Kecamatan", "biodata"],
+  kelurahan: ["Kelurahan", "biodata"],
+  alamat_detail: ["Alamat Detail", "biodata"],
+  // Keluarga
+  file_kk: ["File Kartu Keluarga", "keluarga"],
+  file_sktm: ["File SKTM", "keluarga"],
+  file_skb: ["File Surat Kelakuan Baik", "keluarga"],
+  nama_ayah: ["Nama Ayah", "keluarga"],
+  nama_ibu: ["Nama Ibu", "keluarga"],
+  kondisi_ayah: ["Kondisi Ayah", "keluarga"],
+  kondisi_ibu: ["Kondisi Ibu", "keluarga"],
+  penghasilan_ortu: ["Penghasilan Orang Tua", "keluarga"],
+  kontak_ortu: ["Kontak Orang Tua", "keluarga"],
+  jumlah_saudara: ["Jumlah Saudara", "keluarga"],
+  // Seleksi
+  asal_sekolah: ["Asal Sekolah", "seleksi"],
+  jenjang_pendidikan: ["Jenjang Pendidikan", "seleksi"],
+  foto_raport_1: ["Foto Raport Semester 1", "seleksi"],
+  foto_raport_2: ["Foto Raport Semester 2", "seleksi"],
+  foto_raport_3: ["Foto Raport Semester 3", "seleksi"],
+  nilai_raport_1: ["Nilai Raport Semester 1", "seleksi"],
+  nilai_raport_2: ["Nilai Raport Semester 2", "seleksi"],
+  nilai_raport_3: ["Nilai Raport Semester 3", "seleksi"],
+  status_beasiswa: ["Status Beasiswa", "seleksi"],
+  keterangan_beasiswa: ["Keterangan Beasiswa", "seleksi"],
+  list_organisasi: ["Daftar Organisasi", "seleksi"],
+  list_prestasi: ["Daftar Prestasi", "seleksi"],
+  kategori_hafalan: ["Kategori Hafalan", "seleksi"],
+  motivasi: ["Motivasi", "seleksi"],
+  sumber_info: ["Sumber Informasi", "seleksi"],
+};
+
+const SECTION_LABELS: Record<string, string> = {
+  biodata: "Biodata Diri",
+  keluarga: "Data Keluarga",
+  seleksi: "Data Seleksi",
+};
+
+type ValidationErrorGroup = {
+  sectionId: string;
+  sectionLabel: string;
+  items: { field: string; message: string }[];
+};
 
 const SECTIONS = [
   { id: "biodata", label: "Biodata", icon: User },
@@ -161,8 +220,10 @@ export default function PendaftaranPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [successEmail, setSuccessEmail] = useState("");
   const [submitError, setSubmitError] = useState("");
+  const [validationErrors, setValidationErrors] = useState<ValidationErrorGroup[]>([]);
   const [activeSection, setActiveSection] = useState(0);
   const { isSubmitting } = methods.formState;
+  const errorBannerRef = useRef<HTMLDivElement>(null);
 
   // Track active section on scroll
   useEffect(() => {
@@ -194,7 +255,60 @@ export default function PendaftaranPage() {
     }
   }, []);
 
+  // Collect & group Zod validation errors by section
+  const onError = useCallback((errors: FieldErrors<MasterSchemaType>) => {
+    setSubmitError("");
+    const grouped: Record<string, ValidationErrorGroup> = {};
+
+    function addError(fieldKey: string, message: string) {
+      const meta = FIELD_LABELS[fieldKey];
+      const label = meta?.[0] ?? fieldKey;
+      const sectionId = meta?.[1] ?? "lainnya";
+      const sectionLabel = SECTION_LABELS[sectionId] ?? "Lainnya";
+      if (!grouped[sectionId]) {
+        grouped[sectionId] = { sectionId, sectionLabel, items: [] };
+      }
+      grouped[sectionId].items.push({ field: label, message });
+    }
+
+    Object.entries(errors).forEach(([key, error]) => {
+      if (!error) return;
+
+      // Array fields (list_organisasi, list_prestasi)
+      if (Array.isArray(error)) {
+        error.forEach((itemError, idx) => {
+          if (!itemError) return;
+          Object.values(itemError).forEach((subErr: any) => {
+            if (subErr?.message) {
+              addError(key, `Item ${idx + 1}: ${subErr.message}`);
+            }
+          });
+        });
+      } else if (error.root?.message) {
+        // superRefine array-level errors
+        addError(key, String(error.root.message));
+      } else if (error.message) {
+        addError(key, String(error.message));
+      }
+    });
+
+    // Sort sections in order: biodata → keluarga → seleksi
+    const order = ["biodata", "keluarga", "seleksi"];
+    const sorted = order
+      .filter((id) => grouped[id])
+      .map((id) => grouped[id]);
+
+    setValidationErrors(sorted);
+    // Scroll to error banner after render
+    setTimeout(() => {
+      errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+  }, []);
+
   const onSubmit = async (data: MasterSchemaType) => {
+    // Clear any previous validation errors since Zod passed
+    setValidationErrors([]);
+
     console.log("DATA PENDAFTARAN LENGKAP:", data);
 
     const screening = checkPreScreening(data);
@@ -212,15 +326,10 @@ export default function PendaftaranPage() {
     console.table(score.detail);
     console.log("TOTAL SKOR:", score.total);
 
-    // if (!screening.lolos) {
-    //   alert("Tidak Lolos Pre-Screening. Cek Console untuk detail.");
-    //   return;
-    // }
-
     // Construct FormData
     const formData = new FormData();
-    
-    // Helper function to append data
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const appendToFormData = (key: string, value: any) => {
       if (value instanceof FileList) {
         if (value.length > 0) formData.append(key, value[0]);
@@ -236,7 +345,7 @@ export default function PendaftaranPage() {
              formData.append(`${key}[]`, String(item));
           }
         });
-        if (value.length === 0) formData.append(key, "[]"); // Send empty array hints
+        if (value.length === 0) formData.append(key, "[]");
       } else if (value !== undefined && value !== null) {
         formData.append(key, String(value));
       }
@@ -256,7 +365,16 @@ export default function PendaftaranPage() {
       if (!response.ok) {
         if (result.code === "DUPLICATE_ENTRY") {
           setSubmitError(result.message);
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          setTimeout(() => {
+            errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }, 100);
+          return;
+        }
+        if (result.code === "FILE_ERROR") {
+          setSubmitError(result.message);
+          setTimeout(() => {
+            errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }, 100);
           return;
         }
         throw new Error(result.message || "Gagal mengirim data");
@@ -266,8 +384,11 @@ export default function PendaftaranPage() {
       setShowSuccess(true);
     } catch (error) {
       console.error("Submission error:", error);
-      setSubmitError("Terjadi kesalahan saat mengirim pendaftaran. Silakan coba lagi.");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      const msg = error instanceof Error ? error.message : "Terjadi kesalahan saat mengirim pendaftaran.";
+      setSubmitError(`${msg} Silakan coba lagi atau hubungi panitia jika masalah berlanjut.`);
+      setTimeout(() => {
+        errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
     }
   };
 
@@ -286,8 +407,49 @@ export default function PendaftaranPage() {
           <p className="text-slate-500 mt-2 text-sm md:text-base">Mohon isi data secara berurutan dan teliti.</p>
         </header>
 
+        {/* Validation Errors (Zod) */}
+        {validationErrors.length > 0 && (
+          <div ref={errorBannerRef} className="bg-red-50 border border-red-200 rounded-xl p-4 md:p-5">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-red-800">
+                  Pendaftaran Gagal — {validationErrors.reduce((s, g) => s + g.items.length, 0)} data belum lengkap/valid
+                </p>
+                <p className="text-xs text-red-500 mt-1">Perbaiki data berikut lalu kirim ulang:</p>
+              </div>
+              <button type="button" onClick={() => setValidationErrors([])} className="text-red-400 hover:text-red-600">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-3">
+              {validationErrors.map((group) => (
+                <div key={group.sectionId}>
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection(group.sectionId)}
+                    className="flex items-center gap-1 text-xs font-bold text-red-700 hover:text-red-900 hover:underline mb-1"
+                  >
+                    <ChevronRight size={14} />
+                    Bagian {group.sectionLabel} ({group.items.length} error)
+                  </button>
+                  <ul className="ml-5 space-y-0.5">
+                    {group.items.map((item, i) => (
+                      <li key={i} className="text-xs text-red-600">
+                        <span className="font-medium">{item.field}</span>: {item.message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* API / Server Errors */}
         {submitError && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+          <div ref={validationErrors.length === 0 ? errorBannerRef : undefined} className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
             <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
             <div className="flex-1">
               <p className="text-sm font-semibold text-red-800">Pendaftaran Gagal</p>
@@ -300,7 +462,7 @@ export default function PendaftaranPage() {
         )}
 
         <FormProvider {...methods}>
-          <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-6 md:space-y-10">
+          <form onSubmit={methods.handleSubmit(onSubmit, onError)} className="space-y-6 md:space-y-10">
             <div id="biodata"><SectionBiodata /></div>
             <div id="keluarga"><SectionKeluarga /></div>
             <div id="seleksi"><SectionSeleksi /></div>
