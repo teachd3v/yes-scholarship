@@ -7,7 +7,7 @@ import { useForm, FormProvider, useWatch, Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { masterSchema, MasterSchemaType } from "@/lib/schema-master";
 import { checkPreScreening, calculateScore } from "@/lib/scoring";
-import { Save, Loader2, User, Users, GraduationCap, CheckCircle, Mail, X, Check } from "lucide-react";
+import { Save, Loader2, User, Users, GraduationCap, CheckCircle, Mail, X, Check, AlertTriangle } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
 const SECTIONS = [
@@ -160,6 +160,7 @@ export default function PendaftaranPage() {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [successEmail, setSuccessEmail] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const [activeSection, setActiveSection] = useState(0);
   const { isSubmitting } = methods.formState;
 
@@ -244,6 +245,7 @@ export default function PendaftaranPage() {
     Object.entries(data).forEach(([key, value]) => appendToFormData(key, value));
 
     try {
+      setSubmitError("");
       const response = await fetch('/api/application/submit', {
         method: 'POST',
         body: formData,
@@ -252,6 +254,11 @@ export default function PendaftaranPage() {
       const result = await response.json();
 
       if (!response.ok) {
+        if (result.code === "DUPLICATE_ENTRY") {
+          setSubmitError(result.message);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
         throw new Error(result.message || "Gagal mengirim data");
       }
 
@@ -259,7 +266,8 @@ export default function PendaftaranPage() {
       setShowSuccess(true);
     } catch (error) {
       console.error("Submission error:", error);
-      alert("Terjadi kesalahan saat mengirim pendaftaran. Silakan coba lagi.");
+      setSubmitError("Terjadi kesalahan saat mengirim pendaftaran. Silakan coba lagi.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -277,6 +285,19 @@ export default function PendaftaranPage() {
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Formulir Seleksi YES 2026</h1>
           <p className="text-slate-500 mt-2 text-sm md:text-base">Mohon isi data secara berurutan dan teliti.</p>
         </header>
+
+        {submitError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-800">Pendaftaran Gagal</p>
+              <p className="text-sm text-red-600 mt-1">{submitError}</p>
+            </div>
+            <button type="button" onClick={() => setSubmitError("")} className="text-red-400 hover:text-red-600">
+              <X size={16} />
+            </button>
+          </div>
+        )}
 
         <FormProvider {...methods}>
           <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-6 md:space-y-10">

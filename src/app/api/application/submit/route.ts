@@ -80,9 +80,30 @@ export async function POST(req: NextRequest) {
     
     console.log("Raw Data Received:", JSON.stringify(rawData, null, 2));
 
-    // Zod Validation (Rough check, detailed validation is tricky with FormData + Files)
-    // We will trust the types for now and validate critical logic manually or via schema-master if adapted
-    // Note: Schema validation with files in API route is complex, we'll proceed processing valid inputs.
+    // Duplicate check: reject if NIK or email already exists
+    const nik = rawData.nik as string;
+    const email = rawData.email as string;
+
+    const existing = await client.fetch(
+      `*[_type == "application" && (biodata.nik == $nik || biodata.email == $email)][0]{
+        biodata { nik, email }
+      }`,
+      { nik, email }
+    );
+
+    if (existing) {
+      const reasons: string[] = [];
+      if (existing.biodata?.nik === nik) reasons.push("NIK");
+      if (existing.biodata?.email === email) reasons.push("Email");
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Data dengan ${reasons.join(" dan ")} yang sama sudah terdaftar. Setiap pendaftar hanya dapat mengirim satu kali.`,
+          code: "DUPLICATE_ENTRY",
+        },
+        { status: 409 }
+      );
+    }
 
     // 1. Upload Files
     // 1. Upload Files - Optimized with Promise.all for parallelism
