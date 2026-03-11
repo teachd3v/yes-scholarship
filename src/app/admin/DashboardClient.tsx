@@ -8,15 +8,18 @@ import Link from 'next/link';
 import type { ApplicationListItem } from '@/lib/types';
 import { formatIncome } from '@/lib/types';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import * as XLSX from 'xlsx';
 
 interface DashboardProps {
     applications: ApplicationListItem[];
     currentPage: number;
     totalPages: number;
     totalItems: number;
+    role?: 'superadmin' | 'admin_wilayah';
+    region?: string;
 }
 
-export default function DashboardClient({ applications, currentPage, totalPages, totalItems }: DashboardProps) {
+export default function DashboardClient({ applications, currentPage, totalPages, totalItems, role, region }: DashboardProps) {
     const router = useRouter();
     const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -102,6 +105,45 @@ export default function DashboardClient({ applications, currentPage, totalPages,
         router.push(`/admin?page=${page}`);
     };
 
+    // Export Handler
+    const handleExportExcel = () => {
+        // Build export data
+        const exportData = applications.map((app, index) => {
+            let detailSkorData: any = app.detail_skor;
+            if (typeof detailSkorData === 'string') {
+                try {
+                    detailSkorData = JSON.parse(detailSkorData);
+                } catch {
+                    detailSkorData = {};
+                }
+            }
+            return {
+                'No': index + 1,
+                'Nama Lengkap': app.nama || '-',
+                'Email': app.email || '-',
+                'Whatsapp': app.whatsapp || '-',
+                'Provinsi': app.provinsi_nama || '-',
+                'Penghasilan Ortu': app.penghasilan_ortu ? formatIncome(app.penghasilan_ortu) : '-',
+                'Rata-rata Nilai': (detailSkorData as any)?.nilai_raport || 0,
+                'Total Skor': app.total_skor || 0,
+                'Status Lolos Screening': app.lolos_screening ? 'Lolos' : 'Tidak Lolos',
+                'Status Akhir': app.status === 'approved' ? 'Diterima' : app.status === 'rejected' ? 'Ditolak' : 'Pending',
+                'Tanggal Daftar': new Date(app._createdAt).toLocaleString('id-ID'),
+            };
+        });
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        XLSX.utils.book_append_sheet(wb, ws, "Data Pendaftar");
+
+        // Format filename based on role/region
+        const filename = role === 'superadmin' 
+            ? 'Rekap_Pendaftar_Lolos_YES.xlsx'
+            : `Rekap_Pendaftar_YES_${region?.replace(/\s+/g, '_')}.xlsx`;
+
+        XLSX.writeFile(wb, filename);
+    };
+
     // Derived Data: Unique Provinces for Filter
     const provinces = useMemo(() => {
         const provs = new Set(applications.map(app => app.provinsi_nama).filter(Boolean));
@@ -178,6 +220,17 @@ export default function DashboardClient({ applications, currentPage, totalPages,
                 <StatCard label="Approved" value={stats.approved} icon={<Check size={16} />} color="bg-emerald-100 text-emerald-800" />
                 <StatCard label="Pending" value={stats.pending} icon={<Clock size={16} />} color="bg-yellow-100 text-yellow-800" />
                 <StatCard label="Rejected" value={stats.rejected} icon={<X size={16} />} color="bg-gray-100 text-gray-800" />
+            </div>
+
+            {/* Export Section for Super Admin / Admin */}
+            <div className="flex justify-end">
+                 <button 
+                    onClick={handleExportExcel}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Export Excel {role === 'superadmin' ? "(Data Lolos)" : ""}
+                 </button>
             </div>
 
             {/* 2. Filters & Actions */}

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'secure-admin-token'
-
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
@@ -11,9 +9,17 @@ export function middleware(request: NextRequest) {
         return NextResponse.next()
     }
 
-    const authToken = request.cookies.get('admin_token')
-    if (!authToken || authToken.value !== ADMIN_TOKEN) {
+    const authToken = request.cookies.get('admin_token')?.value
+    if (!authToken) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+
+    try {
+        const decoded = atob(authToken);
+        const user = JSON.parse(decoded);
+        if (!user || !user.role) throw new Error("Invalid Token");
+    } catch {
+        return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }
 

@@ -9,6 +9,7 @@ import { masterSchema, MasterSchemaType } from "@/lib/schema-master";
 import { checkPreScreening, calculateScore } from "@/lib/scoring";
 import { Save, Loader2, User, Users, GraduationCap, CheckCircle, Mail, X, Check, AlertTriangle, ChevronRight } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { compressImage } from "@/lib/image-compression";
 
 // Mapping field key → [Label, sectionId]
 const FIELD_LABELS: Record<string, [string, string]> = {
@@ -225,6 +226,55 @@ export default function PendaftaranPage() {
   const { isSubmitting } = methods.formState;
   const errorBannerRef = useRef<HTMLDivElement>(null);
 
+  // Auto-save & Restore Draft Logic
+  const DRAFT_KEY = "yes-scholarship-draft";
+
+  // Watch all values to save them
+  const allValues = useWatch({ control: methods.control });
+
+  // 1. Restore from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Do not restore files, as FileList/File objects can't be serialized simply
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const {
+          file_kk, file_sktm, file_skb, foto_diri,
+          foto_raport_1, foto_raport_2, foto_raport_3,
+          ...safeData
+        } = parsed;
+        
+        methods.reset((prev) => ({ ...prev, ...safeData }));
+      }
+    } catch (error) {
+      console.error("Failed to restore draft:", error);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  // 2. Save to localStorage when values change
+  useEffect(() => {
+    // Debounce saving slightly to avoid thrashing
+    const timeoutId = setTimeout(() => {
+        try {
+            // Remove file references before saving, as they cause errors/huge sizes
+             // eslint-disable-next-line @typescript-eslint/no-unused-vars
+             const {
+                file_kk, file_sktm, file_skb, foto_diri,
+                foto_raport_1, foto_raport_2, foto_raport_3,
+                ...dataToSave
+             } = allValues;
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(dataToSave));
+        } catch (error) {
+            console.error("Failed to save draft:", error);
+        }
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [allValues]);
+
   // Track active section on scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -326,15 +376,18 @@ export default function PendaftaranPage() {
     console.table(score.detail);
     console.log("TOTAL SKOR:", score.total);
 
-    // Construct FormData
+    // Compress and Construct FormData
     const formData = new FormData();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const appendToFormData = (key: string, value: any) => {
-      if (value instanceof FileList) {
-        if (value.length > 0) formData.append(key, value[0]);
+    // Helper to process and append
+    const processAndAppend = async (key: string, value: any) => {
+      if (value instanceof FileList && value.length > 0) {
+        const file = value[0];
+        const compressed = await compressImage(file);
+        formData.append(key, compressed);
       } else if (value instanceof File) {
-        formData.append(key, value);
+        const compressed = await compressImage(value);
+        formData.append(key, compressed);
       } else if (Array.isArray(value)) {
         value.forEach((item, index) => {
           if (typeof item === 'object') {
@@ -351,7 +404,9 @@ export default function PendaftaranPage() {
       }
     };
 
-    Object.entries(data).forEach(([key, value]) => appendToFormData(key, value));
+    // Need to use Promise.all to handle await inside loop safely
+    const entries = Object.entries(data);
+    await Promise.all(entries.map(([key, value]) => processAndAppend(key, value)));
 
     try {
       setSubmitError("");

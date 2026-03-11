@@ -21,6 +21,10 @@ export default function SectionKeluarga() {
     const wFileSKTM = useWatch({ control, name: "file_sktm" });
     const wFileSKB = useWatch({ control, name: "file_skb" });
 
+    // Watch radio button choices
+    const hasSktm = useWatch({ control, name: "has_sktm" });
+    const hasSkb = useWatch({ control, name: "has_skb" });
+
     const isOrtuNonAktif = (kondisiAyah === "Tidak Bekerja" || kondisiAyah === "Wafat") &&
         (kondisiIbu === "Tidak Bekerja" || kondisiIbu === "Wafat");
 
@@ -57,20 +61,62 @@ export default function SectionKeluarga() {
                         preview={kkPreview}
                         fileData={wFileKK}
                     />
-                    <FileUploadField
-                        label="Surat Keterangan Tidak Mampu"
-                        name="file_sktm"
-                        placeholder="Foto Dokumen tidak boleh blur"
-                        preview={sktmPreview}
-                        fileData={wFileSKTM}
-                    />
-                    <FileUploadField
-                        label="Surat Kelakuan Baik dari Sekolah"
-                        name="file_skb"
-                        placeholder="Foto Dokumen tidak boleh blur"
-                        preview={skbPreview}
-                        fileData={wFileSKB}
-                    />
+
+                    <div className="space-y-3">
+                        <label className="label-text font-bold">Apakah memiliki SKTM?</label>
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" value="Ya" {...register("has_sktm")} className="w-4 h-4 text-blue-600" />
+                                <span className="text-sm">Ya</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" value="Menyusul" {...register("has_sktm")} className="w-4 h-4 text-blue-600" />
+                                <span className="text-sm">Menyusul</span>
+                            </label>
+                        </div>
+                        {errors.has_sktm && <p className="error-text">{errors.has_sktm.message as string}</p>}
+
+                        {hasSktm === "Ya" && (
+                            <div className="animate-in fade-in slide-in-from-top-2 pt-2">
+                                <FileUploadField
+                                    label="Unggah SKTM"
+                                    name="file_sktm"
+                                    placeholder="Foto Dokumen tidak boleh blur"
+                                    preview={sktmPreview}
+                                    fileData={wFileSKTM}
+                                />
+                                {errors.file_sktm && <p className="error-text mt-1">{errors.file_sktm.message as string}</p>}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="label-text font-bold">Apakah memiliki SKB (Surat Kelakuan Baik)?</label>
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" value="Ya" {...register("has_skb")} className="w-4 h-4 text-blue-600" />
+                                <span className="text-sm">Ya</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" value="Menyusul" {...register("has_skb")} className="w-4 h-4 text-blue-600" />
+                                <span className="text-sm">Menyusul</span>
+                            </label>
+                        </div>
+                        {errors.has_skb && <p className="error-text">{errors.has_skb.message as string}</p>}
+
+                        {hasSkb === "Ya" && (
+                            <div className="animate-in fade-in slide-in-from-top-2 pt-2">
+                                <FileUploadField
+                                    label="Unggah Surat Kelakuan Baik"
+                                    name="file_skb"
+                                    placeholder="Foto Dokumen tidak boleh blur"
+                                    preview={skbPreview}
+                                    fileData={wFileSKB}
+                                />
+                                {errors.file_skb && <p className="error-text mt-1">{errors.file_skb.message as string}</p>}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <hr className="border-gray-100" />
@@ -80,7 +126,7 @@ export default function SectionKeluarga() {
                     <div>
                         <label className="label-text">Nama Ayah</label>
                         <input {...register("nama_ayah")} className="input-field" placeholder="Nama Lengkap Ayah" />
-                        {errors.nama_ayah && <p className="error-text">{errors.nama_ayah.message}</p>}
+                        {errors.nama_ayah && <p className="error-text">{errors.nama_ayah.message as string}</p>}
                     </div>
                     <div>
                         <label className="label-text">Kondisi Ayah</label>
@@ -90,8 +136,17 @@ export default function SectionKeluarga() {
                             <option value="Tidak Bekerja">Tidak Bekerja</option>
                             <option value="Wafat">Wafat</option>
                         </select>
-                        {errors.kondisi_ayah && <p className="error-text">{errors.kondisi_ayah.message}</p>}
+                        {errors.kondisi_ayah && <p className="error-text">{errors.kondisi_ayah.message as string}</p>}
                     </div>
+                    {kondisiAyah === "Bekerja" && (
+                        <div className="md:col-span-2 animate-in fade-in slide-in-from-top-2">
+                            <label className="label-text">Keterangan Pekerjaan Ayah (opsional)</label>
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            <input {...register("pekerjaan_ayah" as any)} className="input-field" placeholder="PNS / Buruh / Pedagang / dll..." />
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            {(errors as any)?.pekerjaan_ayah && <p className="error-text">{(errors as any).pekerjaan_ayah.message as string}</p>}
+                        </div>
+                    )}
                 </div>
 
                 {/* --- DATA IBU (e, g) --- */}
@@ -99,7 +154,7 @@ export default function SectionKeluarga() {
                     <div>
                         <label className="label-text">Nama Ibu</label>
                         <input {...register("nama_ibu")} className="input-field" placeholder="Nama Lengkap Ibu" />
-                        {errors.nama_ibu && <p className="error-text">{errors.nama_ibu.message}</p>}
+                        {errors.nama_ibu && <p className="error-text">{errors.nama_ibu.message as string}</p>}
                     </div>
                     <div>
                         <label className="label-text">Kondisi Ibu</label>
@@ -109,8 +164,17 @@ export default function SectionKeluarga() {
                             <option value="Tidak Bekerja">Tidak Bekerja</option>
                             <option value="Wafat">Wafat</option>
                         </select>
-                        {errors.kondisi_ibu && <p className="error-text">{errors.kondisi_ibu.message}</p>}
+                        {errors.kondisi_ibu && <p className="error-text">{errors.kondisi_ibu.message as string}</p>}
                     </div>
+                    {kondisiIbu === "Bekerja" && (
+                        <div className="md:col-span-2 animate-in fade-in slide-in-from-top-2">
+                            <label className="label-text">Keterangan Pekerjaan Ibu (opsional)</label>
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            <input {...register("pekerjaan_ibu" as any)} className="input-field" placeholder="Ibu Rumah Tangga / Guru / Pedagang / dll..." />
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            {(errors as any)?.pekerjaan_ibu && <p className="error-text">{(errors as any).pekerjaan_ibu.message as string}</p>}
+                        </div>
+                    )}
                 </div>
 
                 {/* --- EKONOMI & LAINNYA (h, i, j) --- */}

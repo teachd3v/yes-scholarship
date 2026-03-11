@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const MAX_FILE_SIZE = 1_000_000; // 1MB (sesuai server limit)
+const MAX_FILE_SIZE = 20_000_000; // 20MB (client disesuaikan, akan dicompress sebelum upload)
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export const validateFile = (label: string) =>

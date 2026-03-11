@@ -162,12 +162,16 @@ export async function POST(req: NextRequest) {
       nama_ibu: rawData.nama_ibu,
       kondisi_ayah: rawData.kondisi_ayah,
       kondisi_ibu: rawData.kondisi_ibu,
+      pekerjaan_ayah: rawData.pekerjaan_ayah,
+      pekerjaan_ibu: rawData.pekerjaan_ibu,
       penghasilan_ortu: rawData.penghasilan_ortu,
       kontak_ortu: rawData.kontak_ortu,
       jumlah_saudara: Number(rawData.jumlah_saudara),
       // Changed to _type: 'image' to match new schema
       file_kk: fileUploads.file_kk ? { _type: 'image', asset: { _type: "reference", _ref: fileUploads.file_kk } } : undefined,
+      has_sktm: rawData.has_sktm,
       file_sktm: fileUploads.file_sktm ? { _type: 'image', asset: { _type: "reference", _ref: fileUploads.file_sktm } } : undefined,
+      has_skb: rawData.has_skb,
       file_skb: fileUploads.file_skb ? { _type: 'image', asset: { _type: "reference", _ref: fileUploads.file_skb } } : undefined,
     };
 

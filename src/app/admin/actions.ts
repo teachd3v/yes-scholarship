@@ -3,6 +3,7 @@
 import { writeClient } from "@/sanity/client";
 import { revalidatePath } from "next/cache";
 import type { ApplicationListItem, ApplicationDetail, PaginatedResult } from "@/lib/types";
+import { getAdminUser } from "./auth-actions";
 
 if (!writeClient) throw new Error("Sanity writeClient not configured")
 const client = writeClient;
@@ -33,11 +34,21 @@ const PAGE_SIZE = 20;
 
 export async function getApplications(page: number = 1): Promise<PaginatedResult<ApplicationListItem>> {
     try {
+        const adminUser = await getAdminUser();
+        if (!adminUser) throw new Error("Unauthorized");
+
         const start = (page - 1) * PAGE_SIZE;
         const end = start + PAGE_SIZE;
 
+        let baseCondition = `_type == "application"`;
+        if (adminUser.role === 'admin_wilayah' && adminUser.region) {
+             baseCondition += ` && biodata.provinsi_nama == "${adminUser.region}"`;
+        } else if (adminUser.role === 'superadmin') {
+             baseCondition += ` && scoring.lolos_screening == true`;
+        }
+
         const query = `{
-            "items": *[_type == "application"] | order(_createdAt desc) [$start...$end] {
+            "items": *[${baseCondition}] | order(_createdAt desc) [$start...$end] {
                 _id,
                 _createdAt,
                 status,
@@ -53,7 +64,7 @@ export async function getApplications(page: number = 1): Promise<PaginatedResult
                 "lolos_screening": scoring.lolos_screening,
                 "detail_skor": scoring.detail_skor
             },
-            "total": count(*[_type == "application"])
+            "total": count(*[${baseCondition}])
         }`;
         const data = await client.fetch(query, { start, end }, { cache: 'no-store' });
         return {

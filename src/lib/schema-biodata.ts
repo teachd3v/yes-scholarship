@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Helper untuk validasi file di browser
-const MAX_FILE_SIZE = 1000000; // 1MB
+const MAX_FILE_SIZE = 20000000; // 20MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export const biodataSchema = z.object({

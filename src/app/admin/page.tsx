@@ -1,6 +1,6 @@
 import DashboardClient from "./DashboardClient";
 import { getApplications } from "./actions";
-import { logoutAction } from "./auth-actions";
+import { logoutAction, getAdminUser } from "./auth-actions";
 
 export const dynamic = 'force-dynamic';
 // export const runtime = 'edge'; // Removed for Vercel
@@ -9,16 +9,24 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const params = await searchParams;
   const page = Number(params.page) || 1;
   const data = await getApplications(page);
+  const adminUser = await getAdminUser();
+
+  const isSuperAdmin = adminUser?.role === 'superadmin';
+  const dashboardTitle = isSuperAdmin 
+    ? "Admin Dashboard (Super Admin)" 
+    : `Admin Wilayah: ${adminUser?.region || 'Unknown'}`;
 
   return (
     <div className="min-h-screen bg-slate-50">
       <nav className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
         <div className="flex items-center gap-2">
             <div className="bg-blue-600 text-white font-bold p-2 text-xl rounded-lg">YES</div>
-            <h1 className="text-xl font-bold text-slate-800">Admin Dashboard</h1>
+            <h1 className="text-xl font-bold text-slate-800">{dashboardTitle}</h1>
         </div>
         <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-500">Admin</span>
+            <span className="text-sm text-slate-500">
+                {adminUser?.username || 'Admin'}
+            </span>
             <form action={logoutAction}>
                 <button type="submit" className="text-sm text-red-600 font-medium hover:underline">
                     Logout
@@ -38,6 +46,8 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
               currentPage={data.page}
               totalPages={data.totalPages}
               totalItems={data.total}
+              role={adminUser?.role}
+              region={adminUser?.region}
             />
         </div>
       </main>

@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Lock, Loader2 } from 'lucide-react'
 import { loginAction } from '../auth-actions'
 
 export default function LoginPage() {
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -18,6 +20,8 @@ export default function LoginPage() {
       const result = await loginAction(formData)
       if (result?.error) {
         setError(result.error)
+      } else if (result?.success) {
+        router.push('/admin')
       }
     })
   }

@@ -7,6 +7,7 @@ import { formatIncome } from "@/lib/types";
 
 // Client component for actions
 import DetailActions from "./DetailActions";
+import PrintButton from "./PrintButton";
 
 export const dynamic = 'force-dynamic';
 // export const runtime = 'edge'; // Removed for Vercel
@@ -36,10 +37,11 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                 </Link>
                 <div>
                     <h1 className="text-lg md:text-xl font-bold text-slate-800">{app.biodata.nama}</h1>
-                    <p className="text-xs text-slate-500">ID: {app._id}</p>
+                    {/* ID is intentionally hidden, to debug view: <p className="text-xs text-slate-500 hidden">ID: {app._id}</p> */}
                 </div>
             </div>
             <div className="flex items-center gap-3">
+                 <PrintButton />
                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
                     app.status === 'approved' ? 'bg-green-100 text-green-700' :
                     app.status === 'rejected' ? 'bg-red-100 text-red-700' :
@@ -169,7 +171,7 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                         { label: "Kartu Keluarga", url: app.keluarga.file_kk_url },
                         { label: "SKTM", url: app.keluarga.file_sktm_url },
                         { label: "SKB", url: app.keluarga.file_skb_url },
-                    ]}
+                    ].filter(f => !!f.url)}
                     gridCols={4}
                 />
 
@@ -179,7 +181,7 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                         { label: "Raport Semester 1", url: app.seleksi.foto_raport_1_url },
                         { label: "Raport Semester 2", url: app.seleksi.foto_raport_2_url },
                         { label: "Raport Semester 3", url: app.seleksi.foto_raport_3_url },
-                    ]} 
+                    ].filter(f => !!f.url)} 
                     gridCols={3}
                 />
             </div>

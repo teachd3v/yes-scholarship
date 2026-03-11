@@ -6,10 +6,12 @@ export const keluargaSchema = z.object({
     file_kk: validateFile("Kartu Keluarga"),
 
     // b. SKTM
-    file_sktm: validateFile("Surat Keterangan Tidak Mampu"),
+    has_sktm: z.enum(["Ya", "Menyusul"]),
+    file_sktm: validateFile("Surat Keterangan Tidak Mampu").optional(),
 
     // c. Surat Kelakuan Baik
-    file_skb: validateFile("Surat Kelakuan Baik"),
+    has_skb: z.enum(["Ya", "Menyusul"]),
+    file_skb: validateFile("Surat Kelakuan Baik").optional(),
 
     // d & e. Nama Orang Tua
     nama_ayah: z.string().min(1, "Nama Ayah wajib diisi"),
@@ -50,6 +52,24 @@ export const keluargaSchema = z.object({
                 message: "Pilih rentang penghasilan",
             });
         }
+    }
+
+    // Validate SKTM only if 'Ya' is selected
+    if (data.has_sktm === "Ya" && (!data.file_sktm || data.file_sktm.length === 0)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["file_sktm"],
+            message: "File SKTM wajib diunggah karena Anda memilih Ya",
+        });
+    }
+
+    // Validate SKB only if 'Ya' is selected
+    if (data.has_skb === "Ya" && (!data.file_skb || data.file_skb.length === 0)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["file_skb"],
+            message: "File Surat Kelakuan Baik wajib diunggah karena Anda memilih Ya",
+        });
     }
 });
 
