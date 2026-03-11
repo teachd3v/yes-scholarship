@@ -58,6 +58,7 @@ export default defineConfig({
                             ),
                         S.divider(),
                         // Regular blog posts
+                        S.documentTypeListItem('application').title('Pendaftar Beasiswa'),
                         S.documentTypeListItem('post').title('Blog Posts'),
                         S.documentTypeListItem('program').title('Programs'),
                         S.documentTypeListItem('testimonial').title('Testimonials'),
