@@ -13,6 +13,10 @@ const MAX_IMAGE_SIZE = 1 * 1024 * 1024; // 1MB for photos
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 // const ALLOWED_FILE_TYPES = [...ALLOWED_IMAGE_TYPES, "application/pdf"]; - REMOVED
 
+const PRIORITY_PROVINCES = [
+  "Jawa Barat", "DI Yogyakarta", "Jawa Timur", "Sulawesi Selatan", "Riau", "Sumatera Selatan", "Sumatera Utara", "Sumatera Barat"
+];
+
 function validateFile(file: File, fieldName: string): string | null {
   // All files are now treated as photos/images
   const maxSize = MAX_IMAGE_SIZE; 
@@ -209,10 +213,21 @@ export async function POST(req: NextRequest) {
         detail_skor: JSON.stringify(score.detail)
     };
 
-    // 4. Create Document
+    // 4. Final Status Logic
+    // Logic: Status is 'rejected' if:
+    // a) Screening failed (lolos_screening == false)
+    // b) Province is not in the priority list (as requested by user)
+    const isInPriorityProvince = PRIORITY_PROVINCES.includes(biodata.provinsi_nama);
+    
+    let finalStatus = "pending";
+    if (!screening.lolos || !isInPriorityProvince) {
+        finalStatus = "rejected";
+    }
+
+    // 5. Create Document
     const doc = {
       _type: "application",
-      status: screening.lolos ? "pending" : "rejected",
+      status: finalStatus,
       biodata,
       keluarga,
       seleksi,

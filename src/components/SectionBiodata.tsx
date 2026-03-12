@@ -5,7 +5,7 @@ import { useFormContext, useWatch } from "react-hook-form";
 import { MasterSchemaType } from "@/lib/schema-master";
 import { Upload, AlertCircle } from "lucide-react";
 
-const MAX_FOTO_SIZE = 1 * 1024 * 1024; // 1MB
+const MAX_FOTO_SIZE = 20 * 1024 * 1024; // 20MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 // Tipe Data API Emsifa
@@ -37,7 +37,7 @@ export default function SectionBiodata() {
             }
             if (file.size > MAX_FOTO_SIZE) {
                 const sizeMB = (file.size / 1024 / 1024).toFixed(1);
-                issues.push(`Ukuran file ${sizeMB}MB melebihi batas maksimal 1MB`);
+                issues.push(`Ukuran file ${sizeMB}MB melebihi batas maksimal 20MB`);
             }
             if (issues.length > 0) {
                 setFotoError(issues.join(". "));
@@ -212,7 +212,7 @@ export default function SectionBiodata() {
                                 <>
                                     <Upload className="w-8 h-8 text-gray-400 mb-2" />
                                     <span className="text-sm font-medium text-gray-600">Klik untuk unggah</span>
-                                    <span className="text-xs text-gray-400 mt-1">Close Up Wajah/Setengah badan, Format JPG/PNG/WebP (Max 1MB, Hanya 1 file)</span>
+                                    <span className="text-xs text-gray-400 mt-1">Close Up Wajah/Setengah badan, Format JPG/PNG/WebP (Max 20MB, Hanya 1 file)</span>
                                 </>
                             )}
                         </label>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react';
-import { updateApplicationStatus, deleteApplication } from './actions';
+import { updateApplicationStatus, deleteApplication, exportAllApplications } from './actions';
 import { useRouter } from 'next/navigation';
 import { CheckCircle, XCircle, Clock, Eye, Check, X, Loader2, Filter, ArrowUpDown, Search, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -22,6 +22,7 @@ interface DashboardProps {
 export default function DashboardClient({ applications, currentPage, totalPages, totalItems, role, region }: DashboardProps) {
     const router = useRouter();
     const [loadingId, setLoadingId] = useState<string | null>(null);
+    const [isExporting, setIsExporting] = useState(false);
 
     // Modal State
     const [modal, setModal] = useState<{
@@ -106,42 +107,101 @@ export default function DashboardClient({ applications, currentPage, totalPages,
     };
 
     // Export Handler
-    const handleExportExcel = () => {
-        // Build export data
-        const exportData = applications.map((app, index) => {
-            let detailSkorData: any = app.detail_skor;
-            if (typeof detailSkorData === 'string') {
-                try {
-                    detailSkorData = JSON.parse(detailSkorData);
-                } catch {
-                    detailSkorData = {};
-                }
+    const handleExportExcel = async (onlyLolos: boolean = false) => {
+        setIsExporting(true);
+        try {
+            const allData = await exportAllApplications(onlyLolos);
+            
+            if (!allData || allData.length === 0) {
+                alert("Tidak ada data untuk di-export.");
+                return;
             }
-            return {
-                'No': index + 1,
-                'Nama Lengkap': app.nama || '-',
-                'Email': app.email || '-',
-                'Whatsapp': app.whatsapp || '-',
-                'Provinsi': app.provinsi_nama || '-',
-                'Penghasilan Ortu': app.penghasilan_ortu ? formatIncome(app.penghasilan_ortu) : '-',
-                'Rata-rata Nilai': (detailSkorData as any)?.nilai_raport || 0,
-                'Total Skor': app.total_skor || 0,
-                'Status Lolos Screening': app.lolos_screening ? 'Lolos' : 'Tidak Lolos',
-                'Status Akhir': app.status === 'approved' ? 'Diterima' : app.status === 'rejected' ? 'Ditolak' : 'Pending',
-                'Tanggal Daftar': new Date(app._createdAt).toLocaleString('id-ID'),
-            };
-        });
 
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        XLSX.utils.book_append_sheet(wb, ws, "Data Pendaftar");
+            // Build export data mapping all fields
+            const exportData = allData.map((app, index) => {
+                let detailSkorData: Record<string, unknown> = {};
+                if (typeof app.scoring?.detail_skor === 'string') {
+                    try {
+                        detailSkorData = JSON.parse(app.scoring.detail_skor);
+                    } catch {
+                        detailSkorData = {};
+                    }
+                } else if (app.scoring?.detail_skor && typeof app.scoring.detail_skor === 'object') {
+                   detailSkorData = app.scoring.detail_skor as Record<string, unknown>;
+                }
 
-        // Format filename based on role/region
-        const filename = role === 'superadmin' 
-            ? 'Rekap_Pendaftar_Lolos_YES.xlsx'
-            : `Rekap_Pendaftar_YES_${region?.replace(/\s+/g, '_')}.xlsx`;
+                // Format lists
+                const orgs = app.seleksi?.list_organisasi?.map(o => `${o.jenis} (${o.jabatan})${o.ket_lainnya ? ` - ${o.ket_lainnya}` : ''}`).join(', ') || '-';
+                const prestasis = app.seleksi?.list_prestasi?.map(p => `${p.keterangan} (${p.juara} Tk. ${p.tingkat})`).join(', ') || '-';
 
-        XLSX.writeFile(wb, filename);
+                return {
+                    'No': index + 1,
+                    'Tanggal Daftar': new Date(app._createdAt).toLocaleString('id-ID'),
+                    'Status Sistem': app.status === 'approved' ? 'Diterima' : app.status === 'rejected' ? 'Ditolak' : 'Pending',
+                    'Lolos Screening': app.scoring?.lolos_screening ? 'Lolos' : 'Tidak Lolos',
+                    'Total Skor': app.scoring?.total_skor || 0,
+                    
+                    // BIODATA
+                    'Nama Lengkap': app.biodata?.nama || '-',
+                    'NIK': app.biodata?.nik || '-',
+                    'No KK': app.biodata?.no_kk || '-',
+                    'Email': app.biodata?.email || '-',
+                    'Whatsapp': app.biodata?.whatsapp || '-',
+                    'Jenis Kelamin': app.biodata?.jenis_kelamin || '-',
+                    'Agama': app.biodata?.agama || '-',
+                    'Tempat, Tgl Lahir': `${app.biodata?.tempat_lahir || '-'}, ${app.biodata?.tanggal_lahir || '-'}`,
+                    'Provinsi': app.biodata?.provinsi_nama || '-',
+                    'Kabupaten': app.biodata?.kabupaten_nama || '-',
+                    'Kecamatan': app.biodata?.kecamatan_nama || '-',
+                    'Kelurahan': app.biodata?.kelurahan_nama || '-',
+                    'Alamat Detail': app.biodata?.alamat_detail || '-',
+
+                    // KELUARGA
+                    'Nama Ayah': app.keluarga?.nama_ayah || '-',
+                    'Kondisi Ayah': app.keluarga?.kondisi_ayah || '-',
+                    'Pekerjaan Ayah': (app.keluarga as Record<string, unknown>)?.pekerjaan_ayah as string || '-',
+                    'Nama Ibu': app.keluarga?.nama_ibu || '-',
+                    'Kondisi Ibu': app.keluarga?.kondisi_ibu || '-',
+                    'Pekerjaan Ibu': (app.keluarga as Record<string, unknown>)?.pekerjaan_ibu as string || '-',
+                    'Penghasilan Ortu': app.keluarga?.penghasilan_ortu ? formatIncome(app.keluarga.penghasilan_ortu) : '-',
+                    'Kontak Ortu': app.keluarga?.kontak_ortu || '-',
+                    'Jml Saudara': app.keluarga?.jumlah_saudara || 0,
+                    'Punya SKTM': (app.keluarga as Record<string, unknown>)?.has_sktm as string || '-',
+                    'Punya SKB': (app.keluarga as Record<string, unknown>)?.has_skb as string || '-',
+
+                    // SELEKSI
+                    'Asal Sekolah': app.seleksi?.asal_sekolah || '-',
+                    'Jenjang Pendidikan': app.seleksi?.jenjang_pendidikan || '-',
+                    'Nilai Raport Sem 1': app.seleksi?.nilai_raport_1 || 0,
+                    'Nilai Raport Sem 2': app.seleksi?.nilai_raport_2 || 0,
+                    'Nilai Raport Sem 3': app.seleksi?.nilai_raport_3 || 0,
+                    'Rata-rata Nilai': Number(detailSkorData?.nilai_raport) || 0,
+                    'Status Beasiswa': app.seleksi?.status_beasiswa || '-',
+                    'Ket. Beasiswa': app.seleksi?.keterangan_beasiswa || '-',
+                    'Organisasi': orgs,
+                    'Prestasi': prestasis,
+                    'Hafalan': app.seleksi?.kategori_hafalan || '-',
+                    'Motivasi': app.seleksi?.motivasi || '-',
+                    'Sumber Info': app.seleksi?.sumber_info || '-',
+                };
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            XLSX.utils.book_append_sheet(wb, ws, "Data Pendaftar");
+
+            // Format filename based on role/region
+            const filename = role === 'superadmin' 
+                ? (onlyLolos ? 'Rekap_Pendaftar_Lolos_YES.xlsx' : 'Rekap_Semua_Pendaftar_YES.xlsx')
+                : `Rekap_Pendaftar_YES_${region?.replace(/\s+/g, '_')}.xlsx`;
+
+            XLSX.writeFile(wb, filename);
+        } catch (error) {
+            console.error("Export error:", error);
+            alert("Terjadi kesalahan saat mengekspor data.");
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     // Derived Data: Unique Provinces for Filter
@@ -223,14 +283,36 @@ export default function DashboardClient({ applications, currentPage, totalPages,
             </div>
 
             {/* Export Section for Super Admin / Admin */}
-            <div className="flex justify-end">
-                 <button 
-                    onClick={handleExportExcel}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
-                >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    Export Excel {role === 'superadmin' ? "(Data Lolos)" : ""}
-                 </button>
+            <div className="flex justify-end gap-3">
+                 {role === 'superadmin' ? (
+                    <>
+                        <button 
+                            onClick={() => handleExportExcel(false)}
+                            disabled={isExporting}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition disabled:opacity-50 text-sm font-medium"
+                        >
+                            {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+                            {isExporting ? "Mengekspor..." : "Export Semua Data"}
+                        </button>
+                        <button 
+                            onClick={() => handleExportExcel(true)}
+                            disabled={isExporting}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 text-sm font-medium"
+                        >
+                            {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                            {isExporting ? "Mengekspor..." : "Export Data Lolos"}
+                        </button>
+                    </>
+                 ) : (
+                    <button 
+                        onClick={() => handleExportExcel(false)}
+                        disabled={isExporting}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 text-sm font-medium"
+                    >
+                        {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+                        {isExporting ? "Mengekspor..." : "Export Excel"}
+                    </button>
+                 )}
             </div>
 
             {/* 2. Filters & Actions */}

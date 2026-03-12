@@ -42,10 +42,9 @@ export async function getApplications(page: number = 1): Promise<PaginatedResult
 
         let baseCondition = `_type == "application"`;
         if (adminUser.role === 'admin_wilayah' && adminUser.region) {
-             baseCondition += ` && biodata.provinsi_nama == "${adminUser.region}"`;
-        } else if (adminUser.role === 'superadmin') {
-             baseCondition += ` && scoring.lolos_screening == true`;
+             baseCondition += ` && biodata.provinsi_nama match "${adminUser.region}"`;
         }
+        // Super Admin sees all data by default, no lolos_screening filter here anymore.
 
         const query = `{
             "items": *[${baseCondition}] | order(_createdAt desc) [$start...$end] {
@@ -77,6 +76,48 @@ export async function getApplications(page: number = 1): Promise<PaginatedResult
     } catch (error) {
         console.error("Error fetching applications:", error);
         return { items: [], total: 0, page: 1, pageSize: PAGE_SIZE, totalPages: 0 };
+    }
+}
+
+export async function exportAllApplications(onlyLolos: boolean = false): Promise<ApplicationDetail[]> {
+    try {
+        const adminUser = await getAdminUser();
+        if (!adminUser) throw new Error("Unauthorized");
+
+        let baseCondition = `_type == "application"`;
+        if (adminUser.role === 'admin_wilayah' && adminUser.region) {
+             baseCondition += ` && biodata.provinsi_nama match "${adminUser.region}"`;
+        }
+        
+        if (onlyLolos) {
+            baseCondition += ` && scoring.lolos_screening == true`;
+        }
+
+        const query = `*[${baseCondition}] | order(_createdAt desc) {
+            ...,
+            biodata {
+                ...,
+                "foto_diri_url": foto_diri.asset->url
+            },
+            keluarga {
+                ...,
+                "file_kk_url": file_kk.asset->url,
+                "file_sktm_url": file_sktm.asset->url,
+                "file_skb_url": file_skb.asset->url
+            },
+            seleksi {
+                ...,
+                "foto_raport_1_url": foto_raport_1.asset->url,
+                "foto_raport_2_url": foto_raport_2.asset->url,
+                "foto_raport_3_url": foto_raport_3.asset->url
+            }
+        }`;
+        
+        const data = await client.fetch(query, {}, { cache: 'no-store' });
+        return data || [];
+    } catch (error) {
+        console.error("Error exporting applications:", error);
+        return [];
     }
 }
 

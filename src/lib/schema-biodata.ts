@@ -11,7 +11,7 @@ export const biodataSchema = z.object({
         .refine((files) => files?.length === 1, "Wajib upload 1 foto diri.")
         .refine(
             (files) => files?.[0]?.size <= MAX_FILE_SIZE,
-            "Ukuran file maksimal 1MB."
+            "Ukuran file maksimal 20MB."
         )
         .refine(
             (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),

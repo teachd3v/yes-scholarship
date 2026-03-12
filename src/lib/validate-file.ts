@@ -6,7 +6,7 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/web
 export const validateFile = (label: string) =>
     z.any()
         .refine((files) => files?.length === 1, `Wajib unggah ${label}.`)
-        .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `Ukuran maksimal 1MB.`)
+        .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `Ukuran maksimal 20MB.`)
         .refine(
             (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
             "Format wajib .jpg, .png, atau .webp"

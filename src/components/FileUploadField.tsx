@@ -5,7 +5,7 @@ import { MasterSchemaType } from "@/lib/schema-master";
 import { FileText, Upload, AlertCircle } from "lucide-react";
 import { useState, useCallback } from "react";
 
-const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 interface FileUploadFieldProps {
@@ -35,7 +35,7 @@ export default function FileUploadField({ label, name, placeholder, preview, fil
             }
             if (file.size > MAX_FILE_SIZE) {
                 const sizeMB = (file.size / 1024 / 1024).toFixed(1);
-                issues.push(`Ukuran file ${sizeMB}MB melebihi batas maksimal 1MB`);
+                issues.push(`Ukuran file ${sizeMB}MB melebihi batas maksimal 20MB`);
             }
 
             if (issues.length > 0) {
@@ -77,7 +77,7 @@ export default function FileUploadField({ label, name, placeholder, preview, fil
                             <div className="flex items-center gap-2">
                                 <Upload size={16} /> <span className="text-xs font-medium">{placeholder || "Klik untuk unggah"}</span>
                             </div>
-                            <span className="text-[10px] text-gray-400">Format JPG/PNG/WebP (Max 1MB, Hanya 1 file)</span>
+                            <span className="text-[10px] text-gray-400">Format JPG/PNG/WebP (Max 20MB, Hanya 1 file)</span>
                         </div>
                     )}
                 </div>
@@ -118,7 +118,7 @@ export default function FileUploadField({ label, name, placeholder, preview, fil
                     <div className="flex flex-col items-center pointer-events-none">
                         <Upload className="w-8 h-8 text-gray-400 mb-2" />
                         <span className="text-sm font-medium text-gray-600">{placeholder || "Klik untuk unggah"}</span>
-                        <span className="text-xs text-gray-400 mt-1">Format JPG/PNG/WebP (Max 1MB, Hanya 1 file)</span>
+                        <span className="text-xs text-gray-400 mt-1">Format JPG/PNG/WebP (Max 20MB, Hanya 1 file)</span>
                     </div>
                 )}
             </div>
