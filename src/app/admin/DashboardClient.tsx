@@ -139,6 +139,7 @@ export default function DashboardClient({ applications, currentPage, totalPages,
                     'Tanggal Daftar': new Date(app._createdAt).toLocaleString('id-ID'),
                     'Status Sistem': app.status === 'approved' ? 'Diterima' : app.status === 'rejected' ? 'Ditolak' : 'Pending',
                     'Lolos Screening': app.scoring?.lolos_screening ? 'Lolos' : 'Tidak Lolos',
+                    'Alasan Gagal Screening': app.scoring?.alasan_gagal?.join('; ') || '-',
                     'Total Skor': app.scoring?.total_skor || 0,
                     
                     // BIODATA
