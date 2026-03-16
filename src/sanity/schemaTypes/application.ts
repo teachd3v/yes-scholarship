@@ -145,6 +145,49 @@ export default defineType({
       title: 'Admin Notes',
       type: 'text',
     }),
+    defineField({
+      name: 'rekomendasi',
+      title: 'Rekomendasi Admin',
+      type: 'object',
+      fields: [
+        defineField({
+          name: 'tipe',
+          title: 'Tipe Rekomendasi',
+          type: 'string',
+          options: {
+            list: [
+              { title: 'Rekomendasikan Lolos (override gagal screening)', value: 'rekomendasikan_lolos' },
+              { title: 'Rekomendasikan Gagal (override lolos screening)', value: 'rekomendasikan_gagal' },
+            ],
+            layout: 'radio',
+          },
+        }),
+        defineField({
+          name: 'catatan',
+          title: 'Catatan / Alasan Rekomendasi',
+          type: 'text',
+        }),
+        defineField({
+          name: 'bukti_pendukung',
+          title: 'Bukti Pendukung',
+          type: 'array',
+          of: [
+            {
+              type: 'object',
+              fields: [
+                defineField({ name: 'keterangan', title: 'Keterangan', type: 'string' }),
+                defineField({ name: 'file', title: 'File Bukti', type: 'image', options: { hotspot: true } }),
+              ],
+              preview: {
+                select: { title: 'keterangan', media: 'file' },
+              },
+            },
+          ],
+        }),
+        defineField({ name: 'dibuat_oleh', title: 'Dibuat Oleh (Admin)', type: 'string' }),
+        defineField({ name: 'tanggal', title: 'Tanggal Rekomendasi', type: 'datetime' }),
+      ],
+    }),
   ],
   preview: {
     select: {

@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { updateApplicationStatus, deleteApplication, exportAllApplications } from './actions';
 import { useRouter } from 'next/navigation';
-import { CheckCircle, XCircle, Clock, Eye, Check, X, Loader2, Filter, ArrowUpDown, Search, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Eye, Check, X, Loader2, Filter, ArrowUpDown, Search, ChevronLeft, ChevronRight, Trash2, ClipboardCheck } from 'lucide-react';
 import Link from 'next/link';
 import type { ApplicationListItem } from '@/lib/types';
 import { formatIncome } from '@/lib/types';
@@ -184,6 +184,18 @@ export default function DashboardClient({ applications, currentPage, totalPages,
                     'Hafalan': app.seleksi?.kategori_hafalan || '-',
                     'Motivasi': app.seleksi?.motivasi || '-',
                     'Sumber Info': app.seleksi?.sumber_info || '-',
+
+                    // REKOMENDASI
+                    'Rekomendasi Admin': app.rekomendasi?.tipe === 'rekomendasikan_lolos'
+                        ? 'Rekomendasikan Lolos'
+                        : app.rekomendasi?.tipe === 'rekomendasikan_gagal'
+                        ? 'Rekomendasikan Gagal'
+                        : '-',
+                    'Catatan Rekomendasi': app.rekomendasi?.catatan || '-',
+                    'Rekomendasi Oleh': app.rekomendasi?.dibuat_oleh || '-',
+                    'Tanggal Rekomendasi': app.rekomendasi?.tanggal
+                        ? new Date(app.rekomendasi.tanggal).toLocaleString('id-ID')
+                        : '-',
                 };
             });
 
@@ -451,15 +463,27 @@ export default function DashboardClient({ applications, currentPage, totalPages,
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        {app.lolos_screening ? (
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                <CheckCircle size={12} /> Lolos
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                <XCircle size={12} /> Gagal
-                                            </span>
-                                        )}
+                                        <div className="flex flex-col items-center gap-1">
+                                            {app.lolos_screening ? (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    <CheckCircle size={12} /> Lolos
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                    <XCircle size={12} /> Gagal
+                                                </span>
+                                            )}
+                                            {app.has_rekomendasi && (
+                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                    app.rekomendasi_tipe === 'rekomendasikan_lolos'
+                                                        ? 'bg-green-600 text-white'
+                                                        : 'bg-orange-500 text-white'
+                                                }`}>
+                                                    <ClipboardCheck size={10} />
+                                                    {app.rekomendasi_tipe === 'rekomendasikan_lolos' ? 'Rek. Lolos' : 'Rek. Gagal'}
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                      <td className="px-6 py-4 text-center font-bold text-slate-700 text-lg">
                                         {app.total_skor}

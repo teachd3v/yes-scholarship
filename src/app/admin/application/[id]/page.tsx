@@ -8,6 +8,7 @@ import { formatIncome } from "@/lib/types";
 // Client component for actions
 import DetailActions from "./DetailActions";
 import PrintButton from "./PrintButton";
+import RekomendasiPanel from "./RekomendasiPanel";
 
 export const dynamic = 'force-dynamic';
 // export const runtime = 'edge'; // Removed for Vercel
@@ -190,16 +191,19 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
              <div className="space-y-6">
                 
                 {/* Action Panel */}
-                <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 sticky top-24">
-                    <h3 className="font-bold text-slate-800 mb-4">Validasi Admin</h3>
-                    <DetailActions id={app._id} currentStatus={app.status} />
-                    
-                    <div className="mt-6 pt-6 border-t border-slate-100">
-                        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Shortcuts</h4>
-                        <div className="text-sm space-y-2 text-slate-600">
-                            <p>✅ Approve: Menyetujui lamaran</p>
-                            <p>❌ Reject: Menolak lamaran</p>
-                        </div>
+                <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 sticky top-24 space-y-6">
+                    <div>
+                        <h3 className="font-bold text-slate-800 mb-4">Validasi Admin</h3>
+                        <DetailActions id={app._id} currentStatus={app.status} />
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-5">
+                        <h3 className="font-bold text-slate-800 mb-3">Rekomendasi Override</h3>
+                        <RekomendasiPanel
+                            id={app._id}
+                            lolos_screening={app.scoring?.lolos_screening ?? false}
+                            rekomendasi={app.rekomendasi}
+                        />
                     </div>
                 </div>
 

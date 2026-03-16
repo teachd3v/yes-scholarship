@@ -9,6 +9,7 @@ export default function SectionKeluarga() {
     const {
         register,
         control,
+        setValue,
         formState: { errors },
     } = useFormContext<MasterSchemaType>();
 
@@ -25,8 +26,12 @@ export default function SectionKeluarga() {
     const hasSktm = useWatch({ control, name: "has_sktm" });
     const hasSkb = useWatch({ control, name: "has_skb" });
 
+    // Sembunyikan penghasilan jika keduanya tidak bekerja atau wafat (cases 4 & 6)
     const isOrtuNonAktif = (kondisiAyah === "Tidak Bekerja" || kondisiAyah === "Wafat") &&
         (kondisiIbu === "Tidak Bekerja" || kondisiIbu === "Wafat");
+
+    // Ganti label ke "Kontak Wali" HANYA jika keduanya wafat (case 6)
+    const isKeduaWafat = kondisiAyah === "Wafat" && kondisiIbu === "Wafat";
 
     // Cleanup Object URLs untuk preview file
     const kkPreview = useMemo(() => {
@@ -42,6 +47,13 @@ export default function SectionKeluarga() {
     useEffect(() => { return () => { if (kkPreview) URL.revokeObjectURL(kkPreview); }; }, [kkPreview]);
     useEffect(() => { return () => { if (sktmPreview) URL.revokeObjectURL(sktmPreview); }; }, [sktmPreview]);
     useEffect(() => { return () => { if (skbPreview) URL.revokeObjectURL(skbPreview); }; }, [skbPreview]);
+
+    // Rule 8: auto-set penghasilan ke range_a saat field disembunyikan
+    useEffect(() => {
+        if (isOrtuNonAktif) {
+            setValue("penghasilan_ortu", "range_a");
+        }
+    }, [isOrtuNonAktif, setValue]);
 
     return (
         <div className="w-full max-w-4xl mx-auto bg-white shadow-xl rounded-2xl border border-gray-100 my-4 md:my-10 p-4 md:p-8 overflow-hidden">
@@ -198,7 +210,7 @@ export default function SectionKeluarga() {
 
                     {/* i. Kontak Ortu / Wali */}
                     <div>
-                        <label className="label-text">{isOrtuNonAktif ? "Kontak Wali" : "Kontak Orang tua"}</label>
+                        <label className="label-text">{isKeduaWafat ? "Kontak Wali" : "Kontak Orang Tua"}</label>
                         <div className="relative">
                             <input type="tel" {...register("kontak_ortu")} className="input-field" placeholder="08..." />
                         </div>

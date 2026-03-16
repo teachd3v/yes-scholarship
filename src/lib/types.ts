@@ -1,5 +1,19 @@
 // ==================== Application Types ====================
 
+export interface RekomendasiBukti {
+    _key: string;
+    keterangan?: string;
+    file_url?: string;
+}
+
+export interface Rekomendasi {
+    tipe: 'rekomendasikan_lolos' | 'rekomendasikan_gagal';
+    catatan: string;
+    bukti_pendukung?: RekomendasiBukti[];
+    dibuat_oleh?: string;
+    tanggal?: string;
+}
+
 export interface ApplicationListItem {
     _id: string;
     _createdAt: string;
@@ -15,6 +29,8 @@ export interface ApplicationListItem {
     total_skor: number;
     lolos_screening: boolean;
     detail_skor: string;
+    has_rekomendasi?: boolean;
+    rekomendasi_tipe?: 'rekomendasikan_lolos' | 'rekomendasikan_gagal' | null;
 }
 
 export interface ApplicationDetail {
@@ -77,6 +93,7 @@ export interface ApplicationDetail {
         alasan_gagal: string[];
         detail_skor: string;
     };
+    rekomendasi?: Rekomendasi | null;
 }
 
 export interface PaginatedResult<T> {

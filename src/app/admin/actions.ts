@@ -30,6 +30,77 @@ export async function deleteApplication(id: string) {
   }
 }
 
+export async function saveRekomendasi(formData: FormData) {
+  try {
+    const adminUser = await getAdminUser();
+    if (!adminUser) return { success: false, error: "Unauthorized" };
+
+    const id = formData.get('id') as string;
+    const tipe = formData.get('tipe') as string;
+    const catatan = formData.get('catatan') as string;
+
+    if (!id || !tipe || !catatan?.trim()) {
+      return { success: false, error: "ID, tipe, dan catatan wajib diisi" };
+    }
+
+    // Upload bukti files
+    const bukti: { _key: string; keterangan: string; file: { _type: 'image'; asset: { _type: 'reference'; _ref: string } } }[] = [];
+    let i = 0;
+    while (formData.has(`bukti_file_${i}`)) {
+      const file = formData.get(`bukti_file_${i}`) as File;
+      const keterangan = (formData.get(`bukti_ket_${i}`) as string) || '';
+      if (file && file.size > 0) {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const asset = await client.assets.upload('image', buffer, {
+          filename: file.name,
+          contentType: file.type,
+        });
+        bukti.push({
+          _key: `bukti_${Date.now()}_${i}`,
+          keterangan,
+          file: { _type: 'image', asset: { _type: 'reference', _ref: asset._id } },
+        });
+      }
+      i++;
+    }
+
+    const statusOverride = tipe === 'rekomendasikan_lolos' ? 'approved' : 'rejected';
+
+    await client.patch(id).set({
+      status: statusOverride,
+      rekomendasi: {
+        tipe,
+        catatan,
+        bukti_pendukung: bukti,
+        dibuat_oleh: adminUser.username,
+        tanggal: new Date().toISOString(),
+      },
+    }).commit();
+
+    revalidatePath('/admin');
+    revalidatePath(`/admin/application/${id}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error saving rekomendasi:", error);
+    return { success: false, error: "Gagal menyimpan rekomendasi" };
+  }
+}
+
+export async function deleteRekomendasi(id: string) {
+  try {
+    const adminUser = await getAdminUser();
+    if (!adminUser) return { success: false, error: "Unauthorized" };
+
+    await client.patch(id).set({ status: 'pending' }).unset(['rekomendasi']).commit();
+    revalidatePath('/admin');
+    revalidatePath(`/admin/application/${id}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting rekomendasi:", error);
+    return { success: false, error: "Gagal menghapus rekomendasi" };
+  }
+}
+
 const PAGE_SIZE = 20;
 
 export async function getApplications(page: number = 1): Promise<PaginatedResult<ApplicationListItem>> {
@@ -61,7 +132,9 @@ export async function getApplications(page: number = 1): Promise<PaginatedResult
                 "nilai_raport_3": seleksi.nilai_raport_3,
                 "total_skor": scoring.total_skor,
                 "lolos_screening": scoring.lolos_screening,
-                "detail_skor": scoring.detail_skor
+                "detail_skor": scoring.detail_skor,
+                "has_rekomendasi": defined(rekomendasi.tipe),
+                "rekomendasi_tipe": rekomendasi.tipe
             },
             "total": count(*[${baseCondition}])
         }`;
@@ -110,6 +183,12 @@ export async function exportAllApplications(onlyLolos: boolean = false): Promise
                 "foto_raport_1_url": foto_raport_1.asset->url,
                 "foto_raport_2_url": foto_raport_2.asset->url,
                 "foto_raport_3_url": foto_raport_3.asset->url
+            },
+            rekomendasi {
+                tipe,
+                catatan,
+                dibuat_oleh,
+                tanggal
             }
         }`;
         
@@ -140,6 +219,14 @@ export async function getApplicationById(id: string): Promise<ApplicationDetail 
                 "foto_raport_1_url": foto_raport_1.asset->url,
                 "foto_raport_2_url": foto_raport_2.asset->url,
                 "foto_raport_3_url": foto_raport_3.asset->url
+            },
+            rekomendasi {
+                ...,
+                "bukti_pendukung": bukti_pendukung[] {
+                    _key,
+                    keterangan,
+                    "file_url": file.asset->url
+                }
             }
         }`;
         const data = await client.fetch(query, { id }, { cache: 'no-store' });

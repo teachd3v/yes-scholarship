@@ -223,6 +223,9 @@ export default function PendaftaranPage() {
   const [submitError, setSubmitError] = useState("");
   const [validationErrors, setValidationErrors] = useState<ValidationErrorGroup[]>([]);
   const [activeSection, setActiveSection] = useState(0);
+  const [submitProgress, setSubmitProgress] = useState(0);
+  const [submitStep, setSubmitStep] = useState("");
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { isSubmitting } = methods.formState;
   const errorBannerRef = useRef<HTMLDivElement>(null);
 
@@ -359,6 +362,10 @@ export default function PendaftaranPage() {
     // Clear any previous validation errors since Zod passed
     setValidationErrors([]);
 
+    // -- Progress: Step 1 --
+    setSubmitProgress(5);
+    setSubmitStep("Memvalidasi data...");
+
     console.log("DATA PENDAFTARAN LENGKAP:", data);
 
     const screening = checkPreScreening(data);
@@ -375,6 +382,10 @@ export default function PendaftaranPage() {
     console.log("\n========== SCORING ==========");
     console.table(score.detail);
     console.log("TOTAL SKOR:", score.total);
+
+    // -- Progress: Step 2 --
+    setSubmitProgress(12);
+    setSubmitStep("Mengompresi gambar...");
 
     // Compress and Construct FormData
     const formData = new FormData();
@@ -408,6 +419,21 @@ export default function PendaftaranPage() {
     const entries = Object.entries(data);
     await Promise.all(entries.map(([key, value]) => processAndAppend(key, value)));
 
+    // -- Progress: Step 3 — slow crawl during upload --
+    setSubmitProgress(25);
+    setSubmitStep("Mengunggah berkas ke server...");
+
+    // Crawl from 25 → 78 slowly while waiting for the API
+    progressIntervalRef.current = setInterval(() => {
+      setSubmitProgress(prev => {
+        if (prev >= 78) {
+          clearInterval(progressIntervalRef.current!);
+          return 78;
+        }
+        return prev + 0.6;
+      });
+    }, 250);
+
     try {
       setSubmitError("");
       const response = await fetch('/api/application/submit', {
@@ -415,9 +441,15 @@ export default function PendaftaranPage() {
         body: formData,
       });
 
+      // -- Progress: Step 4 --
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      setSubmitProgress(90);
+      setSubmitStep("Memproses pendaftaran...");
+
       const result = await response.json();
 
       if (!response.ok) {
+        setSubmitProgress(0);
         if (result.code === "DUPLICATE_ENTRY") {
           setSubmitError(result.message);
           setTimeout(() => {
@@ -435,9 +467,15 @@ export default function PendaftaranPage() {
         throw new Error(result.message || "Gagal mengirim data");
       }
 
+      // -- Progress: Step 5 — done --
+      setSubmitProgress(100);
+      setSubmitStep("Selesai!");
+
       setSuccessEmail(data.email);
       setShowSuccess(true);
     } catch (error) {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      setSubmitProgress(0);
       console.error("Submission error:", error);
       const msg = error instanceof Error ? error.message : "Terjadi kesalahan saat mengirim pendaftaran.";
       setSubmitError(`${msg} Silakan coba lagi atau hubungi panitia jika masalah berlanjut.`);
@@ -522,18 +560,41 @@ export default function PendaftaranPage() {
             <div id="keluarga"><SectionKeluarga /></div>
             <div id="seleksi"><SectionSeleksi /></div>
 
-            <div className="max-w-4xl mx-auto px-1">
+            <div className="max-w-4xl mx-auto px-1 space-y-2">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-blue-600 text-white font-bold py-3 md:py-4 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 text-base md:text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative w-full overflow-hidden bg-blue-600 text-white font-bold py-3 md:py-4 rounded-xl hover:bg-blue-700 transition text-base md:text-lg shadow-lg disabled:cursor-not-allowed"
               >
-                {isSubmitting ? (
-                  <><Loader2 size={20} className="animate-spin" /> MENGIRIM...</>
-                ) : (
-                  <><Save size={20} /> KIRIM PENDAFTARAN LENGKAP</>
+                {/* Progress fill */}
+                {isSubmitting && (
+                  <div
+                    className="absolute inset-0 bg-blue-800 transition-all duration-500 ease-out"
+                    style={{ width: `${submitProgress}%` }}
+                  />
                 )}
+                {/* Content */}
+                <div className="relative flex items-center justify-center gap-2">
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin shrink-0" />
+                      <span className="truncate">{submitStep}</span>
+                      <span className="tabular-nums text-blue-200 font-mono text-sm">{submitProgress}%</span>
+                    </>
+                  ) : (
+                    <><Save size={20} /> KIRIM PENDAFTARAN LENGKAP</>
+                  )}
+                </div>
               </button>
+              {/* Progress bar below button */}
+              {isSubmitting && (
+                <div className="w-full h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${submitProgress}%` }}
+                  />
+                </div>
+              )}
             </div>
           </form>
         </FormProvider>
