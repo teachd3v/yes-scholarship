@@ -56,6 +56,15 @@ export default defineConfig({
                                     .schemaType('faqs')
                                     .documentId('faqs')
                             ),
+                        // Singleton for Tentang Kami
+                        S.listItem()
+                            .title('Tentang Kami')
+                            .id('about')
+                            .child(
+                                S.document()
+                                    .schemaType('about')
+                                    .documentId('about')
+                            ),
                         S.divider(),
                         // Regular blog posts
                         S.documentTypeListItem('application').title('Pendaftar Beasiswa'),

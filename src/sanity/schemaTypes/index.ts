@@ -10,6 +10,7 @@ import { programType } from './program'
 import distribution from './distribution'
 import ptn from './ptn'
 import application from './application'
+import { aboutType } from './about'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
     types: [
@@ -23,9 +24,10 @@ export const schema: { types: SchemaTypeDefinition[] } = {
         distribution,
 
         ptn,
-        application
+        application,
+        aboutType
     ],
 }
 
 // Singleton types that should not have "Create New" option in the main list if desired
-export const singletonTypes = new Set(['hero', 'stats', 'partners', 'faqs'])
+export const singletonTypes = new Set(['hero', 'stats', 'partners', 'faqs', 'about'])
