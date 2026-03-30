@@ -28,7 +28,7 @@ const aboutQuery = groq`*[_type == "about"][0] {
 }`;
 
 export default async function TentangKami() {
-    const data = await client.fetch(aboutQuery);
+    const data = client ? await client.fetch(aboutQuery) : null;
 
     // Fallbacks
     const headerTitle = data?.headerTitle || "Mengenal Lebih Dekat Youth Ekselensia Scholarship";
@@ -138,7 +138,7 @@ export default async function TentangKami() {
             <section className="max-w-6xl mx-auto px-6 mb-20">
                 <h2 className="text-3xl font-bold text-center mb-12 text-slate-900">{goalsTitle}</h2>
                 <div className="grid md:grid-cols-4 gap-6">
-                    {goalsList.map((item: any, idx: number) => (
+                    {goalsList.map((item: { title: string, desc: string, icon: string }, idx: number) => (
                         <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-center hover:shadow-md transition">
                             <div className="text-4xl mb-4">{item.icon}</div>
                             <h3 className="font-bold text-lg text-slate-900 mb-2">{item.title}</h3>
