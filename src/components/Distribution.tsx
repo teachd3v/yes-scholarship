@@ -3,11 +3,21 @@
 import React, { useState, useEffect } from 'react'
 import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps"
 
-// Indonesia TopoJSON URL (Provinces)
-const INDONESIA_TOPO_JSON = "https://code.highcharts.com/mapdata/countries/id/id-all.topo.json";
+// Local Indonesia TopoJSON (Downloaded from Highcharts)
+const INDONESIA_TOPO_JSON = "/indonesia.topo.json";
+
+interface DistributionData {
+    region: string;
+    count: number;
+    province?: string;
+    coordinates: {
+        lat: number;
+        lng: number;
+    };
+}
 
 interface DistributionProps {
-    distributions: any[];
+    distributions: DistributionData[];
 }
 
 export default function Distribution({ distributions }: DistributionProps) {
@@ -41,19 +51,21 @@ export default function Distribution({ distributions }: DistributionProps) {
             </div>
 
             {/* Desktop View: Interactive Map */}
-            <div className="hidden lg:block w-full h-[500px] bg-blue-50/50 rounded-[3rem] border border-blue-100 relative overflow-hidden shadow-inner mb-12">
+            <div className="hidden lg:block w-full h-[550px] bg-blue-50/50 rounded-[3rem] border border-blue-100 relative overflow-hidden shadow-inner mb-12">
                 {isClient && (
                     <ComposableMap
+                        width={800}
+                        height={450}
                         projection="geoMercator"
                         projectionConfig={{
                             center: [118, -2],
-                            scale: 1000
+                            scale: 850
                         }}
                         className="w-full h-full"
                     >
                         <Geographies geography={INDONESIA_TOPO_JSON}>
                             {({ geographies }: { geographies: any[] }) =>
-                                geographies.map((geo: any) => (
+                                geographies.map((geo) => (
                                     <Geography
                                         key={geo.rsmKey}
                                         geography={geo}
@@ -90,18 +102,32 @@ export default function Distribution({ distributions }: DistributionProps) {
                                     }}
                                 >
                                     <circle
-                                        r={8}
+                                        r={6}
                                         fill="#FBBF24"
                                         stroke="#FFF"
-                                        strokeWidth={2}
+                                        strokeWidth={1.5}
                                         className="cursor-pointer hover:scale-125 transition-transform duration-300"
                                     />
                                     <circle
-                                        r={20}
+                                        r={15}
                                         fill="#FBBF24"
-                                        opacity={0.3}
+                                        opacity={0.2}
                                         className="animate-ping pointer-events-none"
                                     />
+                                    <text
+                                        textAnchor="middle"
+                                        y={18}
+                                        style={{ 
+                                            fontFamily: "Inter, sans-serif", 
+                                            fill: "#475569", 
+                                            fontSize: "8px", 
+                                            fontWeight: "bold",
+                                            pointerEvents: "none",
+                                            textShadow: "0px 0px 2px rgba(255,255,255,0.9)"
+                                        }}
+                                    >
+                                        {item.count} {item.region}
+                                    </text>
                                 </Marker>
                             )
                         })}
@@ -110,37 +136,32 @@ export default function Distribution({ distributions }: DistributionProps) {
 
                 {/* Custom Tooltip / Popup */}
                 {tooltipContent && (
-                    <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md p-4 rounded-xl border border-white shadow-xl z-20 animate-fade-in max-w-xs">
-                        <div className="flex items-start gap-3">
-                            <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 className="text-lg font-bold text-slate-800 leading-tight">
-                                    {tooltipContent.split('|')[0]}
-                                </h4>
-                                {tooltipContent.split('|')[2] && (
-                                    <p className="text-xs text-slate-500 mb-2">{tooltipContent.split('|')[2]}</p>
-                                )}
-                                <div className="text-sm font-bold text-blue-600 flex items-center gap-1">
-                                    <span className="text-2xl">{tooltipContent.split('|')[1]}</span> Penerima
+                    <div className="absolute top-6 left-6 bg-white/95 backdrop-blur-md px-5 py-4 rounded-3xl border border-white shadow-2xl z-20 animate-fade-in max-w-[240px] pointer-events-none">
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">Detail Wilayah</span>
+                            <h4 className="text-xl font-black text-slate-900 leading-tight">
+                                {tooltipContent.split('|')[0]}
+                            </h4>
+                            {tooltipContent.split('|')[2] && (
+                                <p className="text-[11px] font-medium text-slate-400 mb-2">{tooltipContent.split('|')[2]}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-1 pt-3 border-t border-slate-100">
+                                <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">
+                                    <span className="text-lg">{tooltipContent.split('|')[1]}</span> Penerima
                                 </div>
                             </div>
                         </div>
                     </div>
                 )}
 
-                <div className="absolute bottom-6 right-6 bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-white/50 text-xs text-slate-500">
-                    <p>Arahkan kursor ke titik kuning untuk detail</p>
+                <div className="absolute bottom-6 right-6 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    Peta Persebaran YES
                 </div>
             </div>
 
             {/* Mobile/Tablet View: Bento Grid (original design) */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:hidden gap-4 md:gap-6">
-                {displayData.map((item: any, index: number) => (
+                {displayData.map((item, index) => (
                     <div
                         key={index}
                         className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 group hover:-translate-y-1 relative overflow-hidden"
