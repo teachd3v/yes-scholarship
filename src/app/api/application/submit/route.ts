@@ -3,10 +3,23 @@ import { writeClient } from "@/sanity/client";
 import { calculateScore, checkPreScreening } from "@/lib/scoring";
 import { sendConfirmationEmail } from "@/lib/mail";
 
-// export const runtime = 'edge'; // Removed for Vercel
-
 if (!writeClient) throw new Error("Sanity writeClient not configured");
 const client = writeClient;
+
+// Simple in-memory rate limiter: max 3 submissions per IP per hour
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
+    return true;
+  }
+  if (entry.count >= 3) return false;
+  entry.count++;
+  return true;
+}
 
 const MAX_IMAGE_SIZE = 1 * 1024 * 1024; // 1MB for photos
 // const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB for documents - NOT USED ANYMORE
@@ -51,6 +64,15 @@ function safeParseJSON(value: any) {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limit: max 3 percobaan per IP per jam
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { success: false, message: "Terlalu banyak percobaan. Silakan coba lagi dalam 1 jam.", code: "RATE_LIMITED" },
+      { status: 429 }
+    );
+  }
+
   try {
     const formData = await req.formData();
     const rawData: any = {};
@@ -173,9 +195,7 @@ export async function POST(req: NextRequest) {
       jumlah_saudara: Number(rawData.jumlah_saudara),
       // Changed to _type: 'image' to match new schema
       file_kk: fileUploads.file_kk ? { _type: 'image', asset: { _type: "reference", _ref: fileUploads.file_kk } } : undefined,
-      has_sktm: rawData.has_sktm,
       file_sktm: fileUploads.file_sktm ? { _type: 'image', asset: { _type: "reference", _ref: fileUploads.file_sktm } } : undefined,
-      has_skb: rawData.has_skb,
       file_skb: fileUploads.file_skb ? { _type: 'image', asset: { _type: "reference", _ref: fileUploads.file_skb } } : undefined,
     };
 
@@ -197,6 +217,7 @@ export async function POST(req: NextRequest) {
       list_prestasi: safeParseJSON(rawData.list_prestasi),
       kategori_hafalan: rawData.kategori_hafalan,
       sumber_info: rawData.sumber_info,
+      social_media: rawData.social_media,
     };
 
     // 3. Scoring Calculation

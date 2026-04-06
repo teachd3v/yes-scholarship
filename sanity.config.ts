@@ -65,13 +65,22 @@ export default defineConfig({
                                     .schemaType('about')
                                     .documentId('about')
                             ),
+                        // Singleton for Tim Organisasi
+                        S.listItem()
+                            .title('Meet Our Team')
+                            .id('team')
+                            .child(
+                                S.document()
+                                    .schemaType('team')
+                                    .documentId('team')
+                            ),
                         S.divider(),
                         // Regular blog posts
                         S.documentTypeListItem('application').title('Pendaftar Beasiswa'),
                         S.documentTypeListItem('post').title('Blog Posts'),
                         S.documentTypeListItem('program').title('Programs'),
                         S.documentTypeListItem('testimonial').title('Testimonials'),
-                        S.documentTypeListItem('distribution').title('Sebaran Penerima'),
+                        S.documentTypeListItem('distribution').title('Sebaran Awardee'),
                         S.documentTypeListItem('ptn').title('Sebaran Alumni PTN'),
                     ]),
         }),

@@ -54,6 +54,12 @@ export const seleksiSchema = z.object({
         message: "Pilih sumber informasi",
     }),
 
+    // o. Social Media
+    social_media: z
+        .string()
+        .min(1, "Link social media wajib diisi")
+        .url("Format harus berupa URL yang valid, contoh: https://instagram.com/username"),
+
 }).superRefine((data, ctx) => {
     // 1. Validasi Conditional Beasiswa
     if (data.status_beasiswa === "Ya_Lainnya" && !data.keterangan_beasiswa) {

@@ -10,7 +10,7 @@ export const client = projectId
         projectId,
         dataset,
         apiVersion,
-        useCdn: false,
+        useCdn: true, // serve from CDN, not directly from Sanity API
     })
     : null
 

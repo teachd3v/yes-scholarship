@@ -19,17 +19,19 @@ const FALLBACK_SLIDES = [
 ];
 
 const FALLBACK_STATS = [
-  { number: "150", label: "Penerima Manfaat" },
+  { number: "150", label: "Awardee" },
   { number: "25", label: "Kampus PTN" },
   { number: "4", label: "Angkatan" },
 ];
+
+export const revalidate = 3600; // cache 1 jam, rebuild saat konten berubah
 
 async function getHomeData() {
   const [hero, stats, testimonials, distributions, partners, posts, faqs] = await Promise.all([
     safeFetch(groq`*[_type == "hero"][0]{ hero_slider }`),
     safeFetch(groq`*[_type == "stats"][0]{ stats_list }`),
     safeFetch(groq`*[_type == "testimonial"]{ _id, name, role, quote, avatar }`),
-    safeFetch(groq`*[_type == "distribution"]{ region, count, province, coordinates }`),
+    safeFetch(groq`*[_type == "distribution" && isActive != false]{ region, province, angkatan, coordinates }`),
     safeFetch(groq`*[_type == "partners"][0]{ partners_list[]{ name, logo } }`),
     safeFetch(groq`*[_type == "post"] | order(pubDate desc) [0...3]{ title, description, image, tags, pubDate }`),
     safeFetch(groq`*[_type == "faqs"][0]{ faqs_list }`),

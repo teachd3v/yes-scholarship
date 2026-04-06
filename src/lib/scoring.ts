@@ -40,8 +40,8 @@ export function checkPreScreening(data: MasterSchemaType) {
 // ===================== SCORING (Normalized 0-100 per kategori) =====================
 //
 // Setiap kategori dinormalisasi ke skala 0-100, lalu diberi bobot:
-//   - Penghasilan Ortu : 20%  (indikator kebutuhan ekonomi)
-//   - Jumlah Saudara   : 10%  (tanggungan keluarga)
+//   - Penghasilan Ortu : 15%  (indikator kebutuhan ekonomi)
+//   - Jumlah Saudara   : 15%  (tanggungan keluarga — disamakan karena penghasilan berpengaruh pada jumlah tanggungan)
 //   - Rata-rata Raport  : 30%  (prestasi akademik)
 //   - Organisasi         : 15%  (leadership & keaktifan)
 //   - Prestasi           : 15%  (pencapaian non-akademik)
@@ -50,8 +50,8 @@ export function checkPreScreening(data: MasterSchemaType) {
 // Total maksimum = 100
 
 const BOBOT = {
-    penghasilan_ortu: 0.20,
-    jumlah_saudara: 0.10,
+    penghasilan_ortu: 0.15,
+    jumlah_saudara: 0.15,
     rata_rata_raport: 0.30,
     organisasi: 0.15,
     prestasi: 0.15,

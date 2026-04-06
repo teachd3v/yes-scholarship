@@ -56,6 +56,7 @@ const FIELD_LABELS: Record<string, [string, string]> = {
   kategori_hafalan: ["Kategori Hafalan", "seleksi"],
   motivasi: ["Motivasi", "seleksi"],
   sumber_info: ["Sumber Informasi", "seleksi"],
+  social_media: ["Link Social Media", "seleksi"],
 };
 
 const SECTION_LABELS: Record<string, string> = {
@@ -214,7 +215,7 @@ export default function PendaftaranPage() {
       nilai_raport_2: 0, nilai_raport_3: 0, status_beasiswa: undefined,
       keterangan_beasiswa: "", toggle_organisasi: false, list_organisasi: [],
       toggle_prestasi: false, list_prestasi: [], toggle_hafalan: false,
-      kategori_hafalan: "", motivasi: "", sumber_info: undefined,
+      kategori_hafalan: "", motivasi: "", sumber_info: undefined, social_media: "",
     }
   });
 
@@ -601,7 +602,7 @@ export default function PendaftaranPage() {
       </div>
 
       {showSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 md:p-8 text-center relative">
             <button
               type="button"
@@ -617,13 +618,26 @@ export default function PendaftaranPage() {
               </div>
             </div>
 
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">Data Berhasil Disimpan!</h3>
-            <p className="text-gray-500 mb-4">Pendaftaran Anda telah kami terima.</p>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">Pendaftaran Berhasil!</h3>
+            <p className="text-gray-500 mb-4">Data kamu telah kami terima dan tercatat di sistem kami.</p>
 
-            <div className="bg-blue-50 rounded-lg p-4 mb-6 flex items-center gap-3">
-              <Mail className="text-blue-500 shrink-0" size={20} />
+            <div className="bg-green-50 border border-green-100 rounded-lg p-4 mb-3 text-left">
+              <p className="text-xs font-bold text-green-700 uppercase tracking-wider mb-1">Bukti Pendaftaran</p>
+              <p className="text-sm text-gray-700">
+                Pendaftaran kamu sudah <span className="font-bold text-green-600">tersimpan permanen</span> di database kami meskipun email belum diterima.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 rounded-lg p-4 mb-6 flex items-start gap-3">
+              <Mail className="text-blue-500 shrink-0 mt-0.5" size={18} />
               <p className="text-sm text-gray-700 text-left">
-                Silakan cek kotak masuk email <span className="font-bold text-blue-600">{successEmail}</span> untuk informasi selanjutnya.
+                Email konfirmasi sedang dikirim ke <span className="font-bold text-blue-600">{successEmail}</span>. Jika tidak masuk dalam 10 menit, cek folder <span className="font-semibold">Spam/Promosi</span>.
+              </p>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-3 mb-6 text-left">
+              <p className="text-xs text-yellow-800">
+                Pantau pengumuman seleksi di Instagram resmi kami: <span className="font-bold">@youthekselensia.id</span>
               </p>
             </div>
 

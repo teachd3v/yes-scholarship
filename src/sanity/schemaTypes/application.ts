@@ -117,6 +117,7 @@ export default defineType({
         }),
         defineField({ name: 'kategori_hafalan', title: 'Hafalan', type: 'string' }),
         defineField({ name: 'sumber_info', title: 'Sumber Info', type: 'string' }),
+        defineField({ name: 'social_media', title: 'Link Social Media', type: 'url' }),
       ],
     }),
     defineField({

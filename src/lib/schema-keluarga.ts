@@ -5,13 +5,11 @@ export const keluargaSchema = z.object({
     // a. Kartu Keluarga
     file_kk: validateFile("Kartu Keluarga"),
 
-    // b. SKTM
-    has_sktm: z.enum(["Ya", "Menyusul"]),
-    file_sktm: validateFile("Surat Keterangan Tidak Mampu").optional(),
+    // b. SKTM — wajib dilampirkan, tidak ada opsi menyusul
+    file_sktm: validateFile("Surat Keterangan Tidak Mampu"),
 
-    // c. Surat Kelakuan Baik
-    has_skb: z.enum(["Ya", "Menyusul"]),
-    file_skb: validateFile("Surat Kelakuan Baik").optional(),
+    // c. Surat Kelakuan Baik — wajib dilampirkan, tidak ada opsi menyusul
+    file_skb: validateFile("Surat Kelakuan Baik"),
 
     // d & e. Nama Orang Tua
     nama_ayah: z.string().min(1, "Nama Ayah wajib diisi"),
@@ -54,23 +52,6 @@ export const keluargaSchema = z.object({
         }
     }
 
-    // Validate SKTM only if 'Ya' is selected
-    if (data.has_sktm === "Ya" && (!data.file_sktm || data.file_sktm.length === 0)) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["file_sktm"],
-            message: "File SKTM wajib diunggah karena Anda memilih Ya",
-        });
-    }
-
-    // Validate SKB only if 'Ya' is selected
-    if (data.has_skb === "Ya" && (!data.file_skb || data.file_skb.length === 0)) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["file_skb"],
-            message: "File Surat Kelakuan Baik wajib diunggah karena Anda memilih Ya",
-        });
-    }
 });
 
 export type KeluargaSchemaType = z.infer<typeof keluargaSchema>;

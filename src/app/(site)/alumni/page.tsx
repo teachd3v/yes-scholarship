@@ -18,6 +18,8 @@ interface PTN {
     totalAlumni?: number;
 }
 
+export const revalidate = 3600; // cache 1 jam
+
 export const metadata = {
     title: 'Sebaran Alumni | YES Scholarship',
     description: 'Daftar alumni penerima beasiswa YES yang tersebar di berbagai Perguruan Tinggi Negeri di Indonesia.',

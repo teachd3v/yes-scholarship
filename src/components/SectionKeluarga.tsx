@@ -22,9 +22,6 @@ export default function SectionKeluarga() {
     const wFileSKTM = useWatch({ control, name: "file_sktm" });
     const wFileSKB = useWatch({ control, name: "file_skb" });
 
-    // Watch radio button choices
-    const hasSktm = useWatch({ control, name: "has_sktm" });
-    const hasSkb = useWatch({ control, name: "has_skb" });
 
     // Sembunyikan penghasilan jika keduanya tidak bekerja atau wafat (cases 4 & 6)
     const isOrtuNonAktif = (kondisiAyah === "Tidak Bekerja" || kondisiAyah === "Wafat") &&
@@ -74,60 +71,28 @@ export default function SectionKeluarga() {
                         fileData={wFileKK}
                     />
 
-                    <div className="space-y-3">
-                        <label className="label-text font-bold">Apakah memiliki SKTM?</label>
-                        <div className="flex gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" value="Ya" {...register("has_sktm")} className="w-4 h-4 text-blue-600" />
-                                <span className="text-sm">Ya</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" value="Menyusul" {...register("has_sktm")} className="w-4 h-4 text-blue-600" />
-                                <span className="text-sm">Menyusul</span>
-                            </label>
-                        </div>
-                        {errors.has_sktm && <p className="error-text">{errors.has_sktm.message as string}</p>}
-
-                        {hasSktm === "Ya" && (
-                            <div className="animate-in fade-in slide-in-from-top-2 pt-2">
-                                <FileUploadField
-                                    label="Unggah SKTM"
-                                    name="file_sktm"
-                                    placeholder="Foto Dokumen tidak boleh blur"
-                                    preview={sktmPreview}
-                                    fileData={wFileSKTM}
-                                />
-                                {errors.file_sktm && <p className="error-text mt-1">{errors.file_sktm.message as string}</p>}
-                            </div>
-                        )}
+                    <div>
+                        <FileUploadField
+                            label="Unggah SKTM (Wajib)"
+                            name="file_sktm"
+                            placeholder="Foto Dokumen tidak boleh blur"
+                            preview={sktmPreview}
+                            fileData={wFileSKTM}
+                        />
+                        <p className="text-xs text-slate-400 mt-1">Surat Keterangan Tidak Mampu dari kelurahan/desa.</p>
+                        {errors.file_sktm && <p className="error-text mt-1">{errors.file_sktm.message as string}</p>}
                     </div>
 
-                    <div className="space-y-3">
-                        <label className="label-text font-bold">Apakah memiliki SKB (Surat Kelakuan Baik)?</label>
-                        <div className="flex gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" value="Ya" {...register("has_skb")} className="w-4 h-4 text-blue-600" />
-                                <span className="text-sm">Ya</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" value="Menyusul" {...register("has_skb")} className="w-4 h-4 text-blue-600" />
-                                <span className="text-sm">Menyusul</span>
-                            </label>
-                        </div>
-                        {errors.has_skb && <p className="error-text">{errors.has_skb.message as string}</p>}
-
-                        {hasSkb === "Ya" && (
-                            <div className="animate-in fade-in slide-in-from-top-2 pt-2">
-                                <FileUploadField
-                                    label="Unggah Surat Kelakuan Baik"
-                                    name="file_skb"
-                                    placeholder="Foto Dokumen tidak boleh blur"
-                                    preview={skbPreview}
-                                    fileData={wFileSKB}
-                                />
-                                {errors.file_skb && <p className="error-text mt-1">{errors.file_skb.message as string}</p>}
-                            </div>
-                        )}
+                    <div>
+                        <FileUploadField
+                            label="Unggah SKB (Wajib)"
+                            name="file_skb"
+                            placeholder="Foto Dokumen tidak boleh blur"
+                            preview={skbPreview}
+                            fileData={wFileSKB}
+                        />
+                        <p className="text-xs text-slate-400 mt-1">Surat Kelakuan Baik dari sekolah.</p>
+                        {errors.file_skb && <p className="error-text mt-1">{errors.file_skb.message as string}</p>}
                     </div>
                 </div>
 

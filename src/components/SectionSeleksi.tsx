@@ -326,6 +326,18 @@ export default function SectionSeleksi() {
                         </select>
                         {errors.sumber_info && <p className="error-text">{errors.sumber_info.message}</p>}
                     </div>
+
+                    <div>
+                        <label className="label-text">Link Social Media Aktif</label>
+                        <input
+                            {...register("social_media")}
+                            className="input-field"
+                            placeholder="https://instagram.com/username"
+                            type="url"
+                        />
+                        <p className="text-xs text-slate-400 mt-1">Instagram, TikTok, atau platform lainnya. Digunakan panitia untuk validasi pendaftar.</p>
+                        {errors.social_media && <p className="error-text">{errors.social_media.message}</p>}
+                    </div>
                 </section>
             </div>
         </div>
