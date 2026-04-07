@@ -7,6 +7,8 @@ import Testimonials from '@/components/Testimonials';
 import Partners from '@/components/Partners';
 import LatestBlog from '@/components/LatestBlog';
 
+import { STATIC_STATS, STATIC_PARTNERS } from '@/lib/static-data';
+
 // Default/fallback data when Sanity is not configured
 const FALLBACK_SLIDES = [
   {
@@ -18,35 +20,27 @@ const FALLBACK_SLIDES = [
   },
 ];
 
-const FALLBACK_STATS = [
-  { number: "150", label: "Awardee" },
-  { number: "25", label: "Kampus PTN" },
-  { number: "4", label: "Angkatan" },
-];
-
 export const revalidate = 3600; // cache 1 jam, rebuild saat konten berubah
 
 async function getHomeData() {
-  const [hero, stats, testimonials, distributions, partners, posts, faqs] = await Promise.all([
+  const [hero, testimonials, distributions, posts, faqs] = await Promise.all([
     safeFetch(groq`*[_type == "hero"][0]{ hero_slider }`),
-    safeFetch(groq`*[_type == "stats"][0]{ stats_list }`),
     safeFetch(groq`*[_type == "testimonial"]{ _id, name, role, quote, avatar }`),
     safeFetch(groq`*[_type == "distribution" && isActive != false]{ region, province, angkatan, coordinates }`),
-    safeFetch(groq`*[_type == "partners"][0]{ partners_list[]{ name, logo } }`),
     safeFetch(groq`*[_type == "post"] | order(pubDate desc) [0...3]{ title, description, image, tags, pubDate }`),
     safeFetch(groq`*[_type == "faqs"][0]{ faqs_list }`),
   ]);
 
-  return { hero, stats, testimonials, distributions, partners, posts, faqs };
+  return { hero, testimonials, distributions, posts, faqs };
 }
 
 export default async function HomePage() {
-  const { hero, stats, testimonials, distributions, partners, posts, faqs } = await getHomeData();
+  const { hero, testimonials, distributions, posts, faqs } = await getHomeData();
 
   // Use Sanity data or fallbacks
   const heroData = (hero as any)?.hero_slider || FALLBACK_SLIDES;
-  const statsData = (stats as any)?.stats_list || FALLBACK_STATS;
-  const partnersData = (partners as any)?.partners_list || [];
+  const statsData = STATIC_STATS;
+  const partnersData = STATIC_PARTNERS;
   const faqsData = (faqs as any)?.faqs_list || [];
 
   return (
@@ -59,7 +53,7 @@ export default async function HomePage() {
         <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl border border-slate-100 p-6 md:p-10 grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8 text-center">
           {statsData.map((stat: any, i: number) => (
             <div key={i}>
-              <div className="text-2xl md:text-4xl font-extrabold text-blue-900">{stat.number}+</div>
+              <div className="text-2xl md:text-4xl font-extrabold text-blue-900">{stat.number}</div>
               <p className="text-xs md:text-sm text-slate-500 mt-1">{stat.label}</p>
             </div>
           ))}

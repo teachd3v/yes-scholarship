@@ -1,89 +1,34 @@
 import React from 'react';
-import { client } from '@/sanity/client';
-import { urlFor } from '@/sanity/image';
-import { groq } from 'next-sanity';
 import { PortableText } from '@portabletext/react';
+
+import { STATIC_ABOUT, STATIC_TEAM } from '@/lib/static-data';
 
 export const revalidate = 86400; // cache 24 jam, konten jarang berubah
 
-const teamQuery = groq`*[_type == "team"][0] {
-  management_pusat[] { nama, jabatan, foto },
-  management_wilayah[] { nama, jabatan, wilayah, foto }
-}`;
-
-const aboutQuery = groq`*[_type == "about"][0] {
-  headerSubtitle,
-  headerTitle,
-  historyImage,
-  historyTitle,
-  historyContent,
-  visionTitle,
-  visionText,
-  missionTitle,
-  missions,
-  goalsTitle,
-  goalsList,
-  criteriaSubtitle,
-  criteriaTitle,
-  criteriaDesc,
-  criteriaItems,
-  durationSubtitle,
-  durationTitle,
-  durationValue,
-  durationUnit,
-  durationDesc
-}`;
-
 export default async function TentangKami() {
-    const [data, teamData] = await Promise.all([
-        client ? client.fetch(aboutQuery) : null,
-        client ? client.fetch(teamQuery) : null,
-    ]);
+    const data = STATIC_ABOUT;
+    const teamData = STATIC_TEAM;
 
-    // Fallbacks
-    const headerTitle = data?.headerTitle || "Mengenal Lebih Dekat Youth Ekselensia Scholarship";
-    const headerSubtitle = data?.headerSubtitle || "Profil Program";
-    
-    const historyTitle = data?.historyTitle || "Sejarah & Latar Belakang";
-    const historyImageSrc = data?.historyImage ? urlFor(data.historyImage).url() : "/images/tentang-kami.jpg";
-    
-    const visionTitle = data?.visionTitle || "Visi";
-    const visionText = data?.visionText || "Menjadi inkubator pemimpin masa depan yang berdaya, berkarakter, dan berdampak luas, yang lahir dari ketangguhan keluarga rentan untuk mewujudkan keadilan sosial.";
-    
-    const missionTitle = data?.missionTitle || "Misi";
-    const missions = data?.missions?.length ? data.missions : [
-        "Membuka Akses Pendidikan Tinggi.",
-        "Membangun Fondasi Spiritual dan Karakter.",
-        "Menanamkan Kepemimpinan Sosial.",
-        "Mengembangkan Kapasitas Holistik."
-    ];
-
-    const goalsTitle = data?.goalsTitle || "Tujuan Program";
-    const goalsList = data?.goalsList?.length ? data.goalsList : [
-        { title: "Sukses PTN", desc: "Mempersiapkan pelajar masuk Perguruan Tinggi Negeri (PTN)", icon: "🎓" },
-        { title: "Akhlak Mulia", desc: "Membentuk pelajar yang berakhlak mulia", icon: "✨" },
-        { title: "Cinta Al-Qur'an", desc: "Membina bacaan dan hafalan Al-Qur’an", icon: "📖" },
-        { title: "Jiwa Pemimpin", desc: "Mengembangkan jiwa kepemimpinan pelajar", icon: "🚀" },
-    ];
-
-    const criteriaSubtitle = data?.criteriaSubtitle || "Kriteria Penerima";
-    const criteriaTitle = data?.criteriaTitle || "Sasaran Program";
-    const criteriaDesc = data?.criteriaDesc || "Sasaran program Youth Ekselensia Scholarship (YES) adalah siswa yatim tingkat SMA/MA/SMK yang berasal dari keluarga dhuafa atau yatim.";
-    const criteriaItems = data?.criteriaItems?.length ? data.criteriaItems : [
-        "Muslim/Muslimah",
-        "Anak yatim dhuafa/ yatim muallaf/ anak keluarga dhuafa",
-        "Bisa membaca Al-Qur’an, atau memiliki komitmen belajar AlQur’an",
-        "Pelajar kelas XI semester 2 SMA/MA/SMK non boarding school (Rata-rata rapor min 60)",
-        "Menggunakan pakaian sesuai syariat dan tidak merokok",
-        "Tidak sedang menerima beasiswa dari program non pemerintah",
-        "Memiliki komitmen untuk maju dengan mengikuti pembinaan"
-    ];
-
-    const durationSubtitle = data?.durationSubtitle || "Timeline";
-    const durationTitle = data?.durationTitle || "Durasi Program";
-    const durationValue = data?.durationValue || 1;
-    const durationUnit = data?.durationUnit || "Tahun";
-    const durationDesc = data?.durationDesc || "(12 Bulan)\nProgram akan dimulai sejak awardee menginjak kelas 12 SMA.";
+    // Hardcoded fallbacks/data
+    const headerTitle = data.headerTitle;
+    const headerSubtitle = data.headerSubtitle;
+    const historyTitle = data.historyTitle;
+    const historyImageSrc = data.historyImageSrc;
+    const visionTitle = data.visionTitle;
+    const visionText = data.visionText;
+    const missionTitle = data.missionTitle;
+    const missions = data.missions;
+    const goalsTitle = data.goalsTitle;
+    const goalsList = data.goalsList;
+    const criteriaSubtitle = data.criteriaSubtitle;
+    const criteriaTitle = data.criteriaTitle;
+    const criteriaDesc = data.criteriaDesc;
+    const criteriaItems = data.criteriaItems;
+    const durationSubtitle = data.durationSubtitle;
+    const durationTitle = data.durationTitle;
+    const durationValue = data.durationValue;
+    const durationUnit = data.durationUnit;
+    const durationDesc = data.durationDesc;
 
     return (
         <main className="bg-[#F8F9FB] min-h-screen">
@@ -243,7 +188,7 @@ export default async function TentangKami() {
                                         <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden bg-blue-100 border-4 border-white shadow-lg mb-3 group-hover:shadow-xl group-hover:-translate-y-1 transition duration-300">
                                             {member.foto ? (
                                                 <img
-                                                    src={urlFor(member.foto).width(112).height(112).url()}
+                                                    src={member.foto}
                                                     alt={member.nama}
                                                     className="w-full h-full object-cover"
                                                 />
@@ -273,7 +218,7 @@ export default async function TentangKami() {
                                         <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden bg-yellow-50 border-4 border-white shadow mb-3">
                                             {member.foto ? (
                                                 <img
-                                                    src={urlFor(member.foto).width(80).height(80).url()}
+                                                    src={member.foto}
                                                     alt={member.nama}
                                                     className="w-full h-full object-cover"
                                                 />

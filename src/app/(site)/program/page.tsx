@@ -1,23 +1,10 @@
 import Link from 'next/link';
-import { safeFetch } from '@/sanity/client';
-import { urlFor } from '@/sanity/image';
-import { groq } from 'next-sanity';
+import { STATIC_PROGRAMS } from '@/lib/static-data';
 
-async function getPrograms() {
-    return safeFetch(groq`*[_type == "program"]{
-        _id,
-        title,
-        desc,
-        icon,
-        image,
-        features
-    }`);
-}
-
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export default async function ProgramPage() {
-    const programs = await getPrograms();
+    const programs = STATIC_PROGRAMS;
 
     return (
         <main className="bg-[#F8F9FB] min-h-screen pb-20">
@@ -34,7 +21,7 @@ export default async function ProgramPage() {
                             <div className="h-48 bg-slate-200 w-full relative">
                                 {prog.image ? (
                                     <img
-                                        src={urlFor(prog.image).width(400).height(200).url()}
+                                        src={prog.image}
                                         alt={prog.title}
                                         className="w-full h-full object-cover"
                                     />
