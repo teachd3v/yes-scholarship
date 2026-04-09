@@ -1,9 +1,0 @@
-:HL["/_next/static/chunks/b51543271a4e14e9.css","style"]
-:HL["/_next/static/media/fba5a26ea33df6a3-s.p.1bbdebe6.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-:HL["/images/programs-1.jpg","image"]
-:HL["/images/programs-2.jpg","image"]
-:HL["/images/programs-3.jpg","image"]
-:HL["/images/programs-4.jpg","image"]
-:HL["/images/programs-5.jpg","image"]
-:HL["/images/tentang-kami.jpg","image"]
-0:{"buildId":"yOapvNItLd6zrZCw_cnLe","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"(site)","paramType":null,"paramKey":"(site)","hasRuntimePrefetch":false,"slots":{"children":{"name":"program","paramType":null,"paramKey":"program","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":false}},"isRootLayout":false}},"isRootLayout":true},"staleTime":300}
