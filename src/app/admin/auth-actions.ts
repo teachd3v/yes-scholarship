@@ -71,6 +71,13 @@ export async function logoutAction() {
   redirect('/admin/login')
 }
 
+export async function verifyAdminPassword(password: string): Promise<boolean> {
+  const adminUser = await getAdminUser();
+  if (!adminUser) return false;
+  const user = USERS.find(u => u.username === adminUser.username && u.password === password);
+  return !!user;
+}
+
 export async function getAdminUser(): Promise<AdminUser | null> {
     const cookieStore = await cookies();
     const token = cookieStore.get('admin_token')?.value;

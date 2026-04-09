@@ -3,13 +3,16 @@
 import SectionBiodata from "@/components/SectionBiodata";
 import SectionKeluarga from "@/components/SectionKeluarga";
 import SectionSeleksi from "@/components/SectionSeleksi";
+import SummaryModal from "@/components/SummaryModal";
+import RegistrationGate from "@/components/RegistrationGate";
 import { useForm, FormProvider, useWatch, Control, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { masterSchema, MasterSchemaType } from "@/lib/schema-master";
 import { checkPreScreening, calculateScore } from "@/lib/scoring";
-import { Save, Loader2, User, Users, GraduationCap, CheckCircle, Mail, X, Check, AlertTriangle, ChevronRight } from "lucide-react";
+import { Save, Loader2, User, Users, GraduationCap, CheckCircle, Mail, X, Check, AlertTriangle, ChevronRight, Image } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { compressImage } from "@/lib/image-compression";
+import Link from "next/link";
 
 // Mapping field key → [Label, sectionId]
 const FIELD_LABELS: Record<string, [string, string]> = {
@@ -42,7 +45,7 @@ const FIELD_LABELS: Record<string, [string, string]> = {
   jumlah_saudara: ["Jumlah Saudara", "keluarga"],
   // Seleksi
   asal_sekolah: ["Asal Sekolah", "seleksi"],
-  jenjang_pendidikan: ["Jenjang Pendidikan", "seleksi"],
+  jenjang_pendidikan: ["Jenis Pendidikan", "seleksi"],
   foto_raport_1: ["Foto Raport Semester 1", "seleksi"],
   foto_raport_2: ["Foto Raport Semester 2", "seleksi"],
   foto_raport_3: ["Foto Raport Semester 3", "seleksi"],
@@ -220,12 +223,17 @@ export default function PendaftaranPage() {
   });
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showTwibbon, setShowTwibbon] = useState(false);
   const [successEmail, setSuccessEmail] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [validationErrors, setValidationErrors] = useState<ValidationErrorGroup[]>([]);
   const [activeSection, setActiveSection] = useState(0);
   const [submitProgress, setSubmitProgress] = useState(0);
   const [submitStep, setSubmitStep] = useState("");
+  const [isActualSubmitting, setIsActualSubmitting] = useState(false);
+  // Summary modal state
+  const [showSummary, setShowSummary] = useState(false);
+  const [pendingData, setPendingData] = useState<MasterSchemaType | null>(null);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { isSubmitting } = methods.formState;
   const errorBannerRef = useRef<HTMLDivElement>(null);
@@ -359,39 +367,34 @@ export default function PendaftaranPage() {
     }, 100);
   }, []);
 
-  const onSubmit = async (data: MasterSchemaType) => {
-    // Clear any previous validation errors since Zod passed
+  const DRAFT_CLEAR_KEY = "yes-scholarship-draft";
+
+  // onSubmit: hanya simpan data dan tampilkan summary modal
+  const onSubmit = useCallback(async (data: MasterSchemaType) => {
     setValidationErrors([]);
+    setPendingData(data);
+    setShowSummary(true);
+  }, []);
+
+  // doActualSubmit: dipanggil saat user konfirmasi di summary modal
+  const doActualSubmit = useCallback(async (data: MasterSchemaType) => {
+    setIsActualSubmitting(true);
 
     // -- Progress: Step 1 --
     setSubmitProgress(5);
     setSubmitStep("Memvalidasi data...");
 
-    console.log("DATA PENDAFTARAN LENGKAP:", data);
-
     const screening = checkPreScreening(data);
-    console.log("\n========== PRE-SCREENING ==========");
-    if (screening.lolos) {
-      console.log("STATUS: LOLOS PRE-SCREENING");
-    } else {
-      console.log("STATUS: TIDAK LOLOS PRE-SCREENING");
-      console.log("Alasan:");
-      screening.alasan.forEach((a, i) => console.log(`  ${i + 1}. ${a}`));
-    }
-
     const score = calculateScore(data);
-    console.log("\n========== SCORING ==========");
-    console.table(score.detail);
+    console.log("PRE-SCREENING:", screening.lolos ? "LOLOS" : "TIDAK LOLOS");
     console.log("TOTAL SKOR:", score.total);
 
     // -- Progress: Step 2 --
     setSubmitProgress(12);
     setSubmitStep("Mengompresi gambar...");
 
-    // Compress and Construct FormData
     const formData = new FormData();
 
-    // Helper to process and append
     const processAndAppend = async (key: string, value: any) => {
       if (value instanceof FileList && value.length > 0) {
         const file = value[0];
@@ -407,7 +410,7 @@ export default function PendaftaranPage() {
               formData.append(`${key}[${index}][${k}]`, String(v));
             });
           } else {
-             formData.append(`${key}[]`, String(item));
+            formData.append(`${key}[]`, String(item));
           }
         });
         if (value.length === 0) formData.append(key, "[]");
@@ -416,33 +419,24 @@ export default function PendaftaranPage() {
       }
     };
 
-    // Need to use Promise.all to handle await inside loop safely
     const entries = Object.entries(data);
     await Promise.all(entries.map(([key, value]) => processAndAppend(key, value)));
 
-    // -- Progress: Step 3 — slow crawl during upload --
+    // -- Progress: Step 3 --
     setSubmitProgress(25);
     setSubmitStep("Mengunggah berkas ke server...");
 
-    // Crawl from 25 → 78 slowly while waiting for the API
     progressIntervalRef.current = setInterval(() => {
       setSubmitProgress(prev => {
-        if (prev >= 78) {
-          clearInterval(progressIntervalRef.current!);
-          return 78;
-        }
+        if (prev >= 78) { clearInterval(progressIntervalRef.current!); return 78; }
         return prev + 0.6;
       });
     }, 250);
 
     try {
       setSubmitError("");
-      const response = await fetch('/api/application/submit', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch('/api/application/submit', { method: 'POST', body: formData });
 
-      // -- Progress: Step 4 --
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       setSubmitProgress(90);
       setSubmitStep("Memproses pendaftaran...");
@@ -451,42 +445,46 @@ export default function PendaftaranPage() {
 
       if (!response.ok) {
         setSubmitProgress(0);
-        if (result.code === "DUPLICATE_ENTRY") {
+        setShowSummary(false);
+        if (result.code === "DUPLICATE_ENTRY" || result.code === "FILE_ERROR") {
           setSubmitError(result.message);
-          setTimeout(() => {
-            errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-          }, 100);
-          return;
+        } else {
+          throw new Error(result.message || "Gagal mengirim data");
         }
-        if (result.code === "FILE_ERROR") {
-          setSubmitError(result.message);
-          setTimeout(() => {
-            errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-          }, 100);
-          return;
-        }
-        throw new Error(result.message || "Gagal mengirim data");
+        setTimeout(() => {
+          errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 100);
+        return;
       }
 
-      // -- Progress: Step 5 — done --
       setSubmitProgress(100);
       setSubmitStep("Selesai!");
 
+      // Reset form dan clear draft
+      methods.reset();
+      localStorage.removeItem(DRAFT_CLEAR_KEY);
+
       setSuccessEmail(data.email);
+      setShowSummary(false);
+      setPendingData(null);
       setShowSuccess(true);
     } catch (error) {
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       setSubmitProgress(0);
+      setShowSummary(false);
       console.error("Submission error:", error);
       const msg = error instanceof Error ? error.message : "Terjadi kesalahan saat mengirim pendaftaran.";
       setSubmitError(`${msg} Silakan coba lagi atau hubungi panitia jika masalah berlanjut.`);
       setTimeout(() => {
         errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 100);
+    } finally {
+      setIsActualSubmitting(false);
     }
-  };
+  }, [methods]);
 
   return (
+    <RegistrationGate>
     <main className="min-h-screen bg-slate-50">
       {/* Sticky Stepper */}
       <StickyStepperContent
@@ -561,52 +559,56 @@ export default function PendaftaranPage() {
             <div id="keluarga"><SectionKeluarga /></div>
             <div id="seleksi"><SectionSeleksi /></div>
 
-            <div className="max-w-4xl mx-auto px-1 space-y-2">
+            <div className="max-w-4xl mx-auto px-1">
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="relative w-full overflow-hidden bg-blue-600 text-white font-bold py-3 md:py-4 rounded-xl hover:bg-blue-700 transition text-base md:text-lg shadow-lg disabled:cursor-not-allowed"
+                disabled={isSubmitting || isActualSubmitting}
+                className="w-full bg-blue-600 text-white font-bold py-3 md:py-4 rounded-xl hover:bg-blue-700 transition text-base md:text-lg shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {/* Progress fill */}
-                {isSubmitting && (
-                  <div
-                    className="absolute inset-0 bg-blue-800 transition-all duration-500 ease-out"
-                    style={{ width: `${submitProgress}%` }}
-                  />
+                {isSubmitting ? (
+                  <><Loader2 size={18} className="animate-spin" /> Memvalidasi...</>
+                ) : (
+                  <><Save size={20} /> KIRIM PENDAFTARAN LENGKAP</>
                 )}
-                {/* Content */}
-                <div className="relative flex items-center justify-center gap-2">
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin shrink-0" />
-                      <span className="truncate">{submitStep}</span>
-                      <span className="tabular-nums text-blue-200 font-mono text-sm">{submitProgress}%</span>
-                    </>
-                  ) : (
-                    <><Save size={20} /> KIRIM PENDAFTARAN LENGKAP</>
-                  )}
-                </div>
               </button>
-              {/* Progress bar below button */}
-              {isSubmitting && (
-                <div className="w-full h-1.5 bg-blue-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${submitProgress}%` }}
-                  />
-                </div>
-              )}
             </div>
           </form>
         </FormProvider>
       </div>
 
+      {/* Summary Modal */}
+      <SummaryModal
+        isOpen={showSummary}
+        data={pendingData}
+        onClose={() => { if (!isActualSubmitting) { setShowSummary(false); setPendingData(null); } }}
+        onConfirm={() => { if (pendingData) doActualSubmit(pendingData); }}
+        isLoading={isActualSubmitting}
+      />
+
+      {/* Progress overlay saat actual submit */}
+      {isActualSubmitting && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-8 text-center shadow-2xl max-w-sm w-full mx-4">
+            <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={40} />
+            <p className="font-bold text-slate-800 mb-1">{submitStep}</p>
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-3">
+              <div
+                className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                style={{ width: `${submitProgress}%` }}
+              />
+            </div>
+            <p className="text-xs text-slate-400 mt-2 tabular-nums">{Math.round(submitProgress)}%</p>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 md:p-8 text-center relative">
             <button
               type="button"
-              onClick={() => setShowSuccess(false)}
+              onClick={() => { setShowSuccess(false); setShowTwibbon(true); }}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
             >
               <X size={20} />
@@ -643,7 +645,7 @@ export default function PendaftaranPage() {
 
             <button
               type="button"
-              onClick={() => setShowSuccess(false)}
+              onClick={() => { setShowSuccess(false); setShowTwibbon(true); }}
               className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition"
             >
               Tutup
@@ -651,6 +653,49 @@ export default function PendaftaranPage() {
           </div>
         </div>
       )}
+
+      {/* Twibbon Invitation Modal */}
+      {showTwibbon && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full mx-4 p-6 text-center relative">
+            <button
+              type="button"
+              onClick={() => setShowTwibbon(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex justify-center mb-4">
+              <div className="bg-blue-100 rounded-full p-4">
+                <Image className="w-10 h-10 text-blue-500" />
+              </div>
+            </div>
+
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Buat Twibbon YES 2026!</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              Sebarkan semangat beasiswamu! Buat twibbon keren dan bagikan ke media sosial kamu.
+            </p>
+
+            <div className="space-y-3">
+              <Link
+                href="/twibbon"
+                className="block w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition"
+              >
+                Buat Twibbon Sekarang
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowTwibbon(false)}
+                className="w-full text-sm text-slate-400 hover:text-slate-600 transition"
+              >
+                Lewati
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
+    </RegistrationGate>
   );
 }

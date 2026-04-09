@@ -94,7 +94,7 @@ export default function SectionSeleksi() {
                             {errors.asal_sekolah && <p className="error-text">{errors.asal_sekolah.message}</p>}
                         </div>
                         <div>
-                            <label className="label-text">Jenjang Pendidikan</label>
+                            <label className="label-text">Jenis Pendidikan</label>
                             <select {...register("jenjang_pendidikan")} className="input-field">
                                 <option value="">Pilih...</option>
                                 <option value="SMA">SMA</option>

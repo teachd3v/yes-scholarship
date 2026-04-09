@@ -77,7 +77,7 @@ export default function DashboardClient({ applications, currentPage, totalPages,
     const [filterScore, setFilterScore] = useState<string>('All');
     const [filterStatus, setFilterStatus] = useState<string>('All');
     const [filterScreening, setFilterScreening] = useState<string>('All');
-    const [sortBy, setSortBy] = useState<string>('score_desc');
+    const [sortBy, setSortBy] = useState<string>('date_desc');
     const [searchQuery, setSearchQuery] = useState("");
 
     const handleStatusUpdate = (id: string, newStatus: 'approved' | 'rejected') => {

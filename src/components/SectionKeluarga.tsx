@@ -73,25 +73,27 @@ export default function SectionKeluarga() {
 
                     <div>
                         <FileUploadField
-                            label="Unggah SKTM (Wajib)"
+                            label="Unggah SKTM/KIP/PKH/KIS"
                             name="file_sktm"
-                            placeholder="Foto Dokumen tidak boleh blur"
+                            placeholder="Surat Keterangan Tidak Mampu, Kartu Program Indonesia Pintar (PIP), Kartu Program Keluarga Harapan (PKH), Kartu Indonesia Sehat (KIS)"
                             preview={sktmPreview}
                             fileData={wFileSKTM}
+                            badge="wajib"
                         />
-                        <p className="text-xs text-slate-400 mt-1">Surat Keterangan Tidak Mampu dari kelurahan/desa.</p>
+                        <p className="text-xs text-slate-400 mt-1">Opsional — unggah salah satu dokumen pendukung ekonomi jika ada.</p>
                         {errors.file_sktm && <p className="error-text mt-1">{errors.file_sktm.message as string}</p>}
                     </div>
 
                     <div>
                         <FileUploadField
-                            label="Unggah SKB (Wajib)"
+                            label="Unggah SKB"
                             name="file_skb"
                             placeholder="Foto Dokumen tidak boleh blur"
                             preview={skbPreview}
                             fileData={wFileSKB}
+                            badge="wajib"
                         />
-                        <p className="text-xs text-slate-400 mt-1">Surat Kelakuan Baik dari sekolah.</p>
+                        <p className="text-xs text-slate-400 mt-1">Opsional — Surat Kelakuan Baik dari sekolah.</p>
                         {errors.file_skb && <p className="error-text mt-1">{errors.file_skb.message as string}</p>}
                     </div>
                 </div>

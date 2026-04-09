@@ -1,15 +1,15 @@
 import { z } from "zod";
-import { validateFile } from "./validate-file";
+import { validateFile, validateFileOptional } from "./validate-file";
 
 export const keluargaSchema = z.object({
     // a. Kartu Keluarga
     file_kk: validateFile("Kartu Keluarga"),
 
-    // b. SKTM — wajib dilampirkan, tidak ada opsi menyusul
-    file_sktm: validateFile("Surat Keterangan Tidak Mampu"),
+    // b. SKTM — opsional (bisa diganti KIP/PKH/KIS)
+    file_sktm: validateFileOptional(),
 
-    // c. Surat Kelakuan Baik — wajib dilampirkan, tidak ada opsi menyusul
-    file_skb: validateFile("Surat Kelakuan Baik"),
+    // c. Surat Kelakuan Baik — opsional
+    file_skb: validateFileOptional(),
 
     // d & e. Nama Orang Tua
     nama_ayah: z.string().min(1, "Nama Ayah wajib diisi"),

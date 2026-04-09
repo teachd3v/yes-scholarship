@@ -15,9 +15,11 @@ interface FileUploadFieldProps {
     preview: string | null;
     fileData?: FileList | File[];
     compact?: boolean;
+    /** 'required' (default): tampil *, 'optional': tampil (opsional), 'wajib': tampil (wajib) */
+    badge?: 'required' | 'optional' | 'wajib';
 }
 
-export default function FileUploadField({ label, name, placeholder, preview, fileData, compact = false }: FileUploadFieldProps) {
+export default function FileUploadField({ label, name, placeholder, preview, fileData, compact = false, badge = 'required' }: FileUploadFieldProps) {
     const { register, formState: { errors }, setValue, trigger } = useFormContext<MasterSchemaType>();
     const [instantError, setInstantError] = useState<string | null>(null);
 
@@ -58,7 +60,7 @@ export default function FileUploadField({ label, name, placeholder, preview, fil
     if (compact) {
         return (
             <div>
-                <label className="label-text">{label} <span className="text-red-500">*</span></label>
+                <label className="label-text">{label} {badge === 'optional' ? <span className="text-slate-400 font-normal text-xs">(opsional)</span> : badge === 'wajib' ? <span className="text-amber-600 font-normal text-xs">(wajib)</span> : <span className="text-red-500">*</span>}</label>
                 <div className={`border border-dashed rounded p-3 bg-gray-50 text-center cursor-pointer relative hover:bg-gray-100 ${errorMsg ? "border-red-400 bg-red-50" : "border-gray-300"}`}>
                     <input type="file" accept="image/*" {...restRegister} onChange={handleChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                     {file ? (
@@ -93,7 +95,7 @@ export default function FileUploadField({ label, name, placeholder, preview, fil
 
     return (
         <div className="mb-4">
-            <label className="label-text">{label} <span className="text-red-500">*</span></label>
+            <label className="label-text">{label} {badge === 'optional' ? <span className="text-slate-400 font-normal text-xs">(opsional)</span> : badge === 'wajib' ? <span className="text-amber-600 font-normal text-xs">(wajib)</span> : <span className="text-red-500">*</span>}</label>
             <div className={`border-2 border-dashed rounded-lg p-6 hover:bg-gray-50 transition cursor-pointer text-center relative ${errorMsg ? "border-red-400 bg-red-50" : "border-gray-300"}`}>
                 <input
                     type="file"

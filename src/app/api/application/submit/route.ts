@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeClient } from "@/sanity/client";
 import { calculateScore, checkPreScreening } from "@/lib/scoring";
-import { sendConfirmationEmail } from "@/lib/mail";
+import { sendConfirmationEmail, type EmailDocData } from "@/lib/mail";
 
 if (!writeClient) throw new Error("Sanity writeClient not configured");
 const client = writeClient;
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
       nik: rawData.nik,
       no_kk: rawData.no_kk,
       email: rawData.email,
-      whatsapp: rawData.whatsapp,
+      whatsapp: rawData.whatsapp?.startsWith('62') ? rawData.whatsapp : `62${rawData.whatsapp}`,
       jenis_kelamin: rawData.jenis_kelamin,
       agama: rawData.agama,
       tempat_lahir: rawData.tempat_lahir,
@@ -255,9 +255,49 @@ export async function POST(req: NextRequest) {
     };
 
     await client.create(doc);
-    
+
+    // Build email doc data with asset IDs for photo URLs
+    const emailData: EmailDocData = {
+      biodata: {
+        nama: rawData.nama, nik: rawData.nik, no_kk: rawData.no_kk,
+        email: rawData.email, whatsapp: rawData.whatsapp,
+        jenis_kelamin: rawData.jenis_kelamin, agama: rawData.agama,
+        tempat_lahir: rawData.tempat_lahir, tanggal_lahir: rawData.tanggal_lahir,
+        provinsi_nama: rawData.provinsi_nama, kabupaten_nama: rawData.kabupaten_nama,
+        kecamatan_nama: rawData.kecamatan_nama, kelurahan_nama: rawData.kelurahan_nama,
+        alamat_detail: rawData.alamat_detail,
+        foto_diri_assetId: fileUploads.foto_diri,
+      },
+      keluarga: {
+        nama_ayah: rawData.nama_ayah, kondisi_ayah: rawData.kondisi_ayah,
+        pekerjaan_ayah: rawData.pekerjaan_ayah,
+        nama_ibu: rawData.nama_ibu, kondisi_ibu: rawData.kondisi_ibu,
+        pekerjaan_ibu: rawData.pekerjaan_ibu,
+        penghasilan_ortu: rawData.penghasilan_ortu,
+        kontak_ortu: rawData.kontak_ortu, jumlah_saudara: Number(rawData.jumlah_saudara),
+        file_kk_assetId: fileUploads.file_kk,
+        file_sktm_assetId: fileUploads.file_sktm,
+        file_skb_assetId: fileUploads.file_skb,
+      },
+      seleksi: {
+        asal_sekolah: rawData.asal_sekolah, jenjang_pendidikan: rawData.jenjang_pendidikan,
+        nilai_raport_1: Number(rawData.nilai_raport_1),
+        nilai_raport_2: Number(rawData.nilai_raport_2),
+        nilai_raport_3: Number(rawData.nilai_raport_3),
+        foto_raport_1_assetId: fileUploads.foto_raport_1,
+        foto_raport_2_assetId: fileUploads.foto_raport_2,
+        foto_raport_3_assetId: fileUploads.foto_raport_3,
+        status_beasiswa: rawData.status_beasiswa, keterangan_beasiswa: rawData.keterangan_beasiswa,
+        kategori_hafalan: rawData.kategori_hafalan,
+        motivasi: rawData.motivasi, sumber_info: rawData.sumber_info,
+        social_media: rawData.social_media,
+        list_organisasi: safeParseJSON(rawData.list_organisasi),
+        list_prestasi: safeParseJSON(rawData.list_prestasi),
+      },
+    };
+
     // Send Confirmation Email (don't await to avoid blocking response)
-    sendConfirmationEmail(doc.biodata.email, doc.biodata.nama);
+    sendConfirmationEmail(doc.biodata.email, doc.biodata.nama, emailData);
 
     return NextResponse.json({ success: true, message: "Application submitted successfully" });
 

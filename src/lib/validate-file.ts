@@ -11,3 +11,15 @@ export const validateFile = (label: string) =>
             (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
             "Format wajib .jpg, .png, atau .webp"
         );
+
+export const validateFileOptional = () =>
+    z.any()
+        .optional()
+        .refine(
+            (files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE,
+            "Ukuran maksimal 20MB."
+        )
+        .refine(
+            (files) => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
+            "Format wajib .jpg, .png, atau .webp"
+        );

@@ -55,6 +55,8 @@ export default function SectionBiodata() {
     const [districts, setDistricts] = useState<Region[]>([]);
     const [villages, setVillages] = useState<Region[]>([]);
     const [loadingWilayah, setLoadingWilayah] = useState<string | null>(null);
+    // Store detected city from IP for auto-matching kabupaten
+    const [ipDetectedCity, setIpDetectedCity] = useState<string | null>(null);
 
     // useWatch agar compatible dengan React Compiler
     const fotoDiri = useWatch({ control, name: "foto_diri" });
@@ -75,7 +77,42 @@ export default function SectionBiodata() {
 
     const BASE_URL = "https://www.emsifa.com/api-wilayah-indonesia/api";
 
-    // 1. Fetch Provinsi saat mount
+    // Mapping nama region dari IP API ke nama provinsi emsifa (lowercase)
+    const IP_REGION_MAP: Record<string, string> = {
+        "aceh": "aceh",
+        "north sumatra": "sumatera utara", "sumatera utara": "sumatera utara",
+        "west sumatra": "sumatera barat", "sumatera barat": "sumatera barat",
+        "riau": "riau", "riau islands": "kepulauan riau", "kepulauan riau": "kepulauan riau",
+        "jambi": "jambi",
+        "south sumatra": "sumatera selatan", "sumatera selatan": "sumatera selatan",
+        "bangka belitung islands": "kepulauan bangka belitung", "bangka belitung": "kepulauan bangka belitung",
+        "bengkulu": "bengkulu", "lampung": "lampung",
+        "dki jakarta": "dki jakarta", "jakarta": "dki jakarta",
+        "west java": "jawa barat", "jawa barat": "jawa barat",
+        "central java": "jawa tengah", "jawa tengah": "jawa tengah",
+        "di yogyakarta": "di yogyakarta", "yogyakarta": "di yogyakarta", "daerah istimewa yogyakarta": "di yogyakarta",
+        "east java": "jawa timur", "jawa timur": "jawa timur",
+        "banten": "banten", "bali": "bali",
+        "west nusa tenggara": "nusa tenggara barat", "nusa tenggara barat": "nusa tenggara barat",
+        "east nusa tenggara": "nusa tenggara timur", "nusa tenggara timur": "nusa tenggara timur",
+        "west kalimantan": "kalimantan barat", "kalimantan barat": "kalimantan barat",
+        "central kalimantan": "kalimantan tengah", "kalimantan tengah": "kalimantan tengah",
+        "south kalimantan": "kalimantan selatan", "kalimantan selatan": "kalimantan selatan",
+        "east kalimantan": "kalimantan timur", "kalimantan timur": "kalimantan timur",
+        "north kalimantan": "kalimantan utara", "kalimantan utara": "kalimantan utara",
+        "north sulawesi": "sulawesi utara", "sulawesi utara": "sulawesi utara",
+        "central sulawesi": "sulawesi tengah", "sulawesi tengah": "sulawesi tengah",
+        "south sulawesi": "sulawesi selatan", "sulawesi selatan": "sulawesi selatan",
+        "southeast sulawesi": "sulawesi tenggara", "sulawesi tenggara": "sulawesi tenggara",
+        "gorontalo": "gorontalo",
+        "west sulawesi": "sulawesi barat", "sulawesi barat": "sulawesi barat",
+        "maluku": "maluku", "north maluku": "maluku utara", "maluku utara": "maluku utara",
+        "west papua": "papua barat", "papua barat": "papua barat",
+        "papua": "papua", "papua selatan": "papua selatan", "papua tengah": "papua tengah",
+        "papua pegunungan": "papua pegunungan",
+    };
+
+    // 1. Fetch Provinsi saat mount + auto-detect lokasi dari IP
     useEffect(() => {
         setLoadingWilayah("provinsi");
         fetch(`${BASE_URL}/provinces.json`)
@@ -83,9 +120,32 @@ export default function SectionBiodata() {
                 if (!res.ok) throw new Error("Gagal memuat provinsi");
                 return res.json();
             })
-            .then((data) => setProvinces(data))
+            .then((data: Region[]) => {
+                setProvinces(data);
+                // Auto-detect provinsi dari IP (hanya jika provinsi belum diisi)
+                fetch("https://ipapi.co/json/")
+                    .then((r) => r.ok ? r.json() : null)
+                    .then((geo) => {
+                        if (!geo?.region) return;
+                        const regionLower = geo.region.toLowerCase();
+                        const mapped = IP_REGION_MAP[regionLower] ?? regionLower;
+                        const found = data.find((p: Region) =>
+                            p.name.toLowerCase() === mapped ||
+                            p.name.toLowerCase().includes(mapped) ||
+                            mapped.includes(p.name.toLowerCase())
+                        );
+                        if (found) {
+                            setValue("provinsi", found.id, { shouldValidate: false });
+                            setValue("provinsi_nama", found.name, { shouldValidate: false });
+                            // Store detected city for kabupaten matching
+                            if (geo.city) setIpDetectedCity(geo.city.toLowerCase());
+                        }
+                    })
+                    .catch(() => {});
+            })
             .catch((err) => console.error(err.message))
             .finally(() => setLoadingWilayah(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // 2. Fetch Kabupaten saat Provinsi berubah
@@ -121,6 +181,21 @@ export default function SectionBiodata() {
             if (found) setValue("kabupaten_nama", found.name);
         }
     }, [selectedKabupaten, regencies, setValue]);
+
+    // 2c. Auto-match kabupaten dari IP city setelah regencies dimuat
+    useEffect(() => {
+        if (!ipDetectedCity || regencies.length === 0 || selectedKabupaten) return;
+        const city = ipDetectedCity;
+        // Cari match: prioritaskan KOTA, lalu KABUPATEN
+        const normalize = (s: string) => s.toLowerCase().replace(/^(kota|kabupaten)\s+/, '');
+        const kotaMatch = regencies.find(r => r.name.toLowerCase().startsWith('kota') && normalize(r.name) === city);
+        const anyMatch = regencies.find(r => normalize(r.name) === city || r.name.toLowerCase().includes(city) || city.includes(normalize(r.name)));
+        const matched = kotaMatch || anyMatch;
+        if (matched) {
+            setValue("kabupaten", matched.id, { shouldValidate: false });
+            setValue("kabupaten_nama", matched.name, { shouldValidate: false });
+        }
+    }, [regencies, ipDetectedCity, selectedKabupaten, setValue]);
 
     // 3. Fetch Kecamatan saat Kabupaten berubah
     useEffect(() => {
@@ -236,14 +311,14 @@ export default function SectionBiodata() {
                     {/* c. NO KTP */}
                     <div>
                         <label className="label-text">No KTP</label>
-                        <input {...register("nik")} maxLength={16} className="input-field" placeholder="16 Digit" />
+                        <input {...register("nik")} maxLength={16} className="input-field" placeholder="16 Digit" inputMode="numeric" onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '') }} />
                         {errors.nik && <p className="error-text">{errors.nik.message}</p>}
                     </div>
 
                     {/* d. NO KK */}
                     <div>
                         <label className="label-text">No KK</label>
-                        <input {...register("no_kk")} maxLength={16} className="input-field" placeholder="16 Digit" />
+                        <input {...register("no_kk")} maxLength={16} className="input-field" placeholder="16 Digit" inputMode="numeric" onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '') }} />
                         {errors.no_kk && <p className="error-text">{errors.no_kk.message}</p>}
                     </div>
 
@@ -298,7 +373,23 @@ export default function SectionBiodata() {
                 {/* j. WHATSAPP */}
                 <div>
                     <label className="label-text">No Whatsapp</label>
-                    <input type="tel" {...register("whatsapp")} className="input-field" placeholder="08...." />
+                    <div className={`flex items-stretch border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 ${errors.whatsapp ? "border-red-400" : "border-gray-300"}`}>
+                        <span className="flex items-center px-3 bg-gray-50 border-r border-gray-300 text-gray-600 font-medium text-sm shrink-0 select-none">+62</span>
+                        <input
+                            type="tel"
+                            {...register("whatsapp")}
+                            maxLength={13}
+                            inputMode="numeric"
+                            className="flex-1 px-3 py-2.5 text-sm outline-none bg-white placeholder-gray-400"
+                            placeholder="8xxxxxxxxxx"
+                            onInput={(e) => {
+                                let v = e.currentTarget.value.replace(/\D/g, '');
+                                if (v.startsWith('0')) v = v.substring(1);
+                                if (v.startsWith('62')) v = v.substring(2);
+                                e.currentTarget.value = v;
+                            }}
+                        />
+                    </div>
                     {errors.whatsapp && <p className="error-text">{errors.whatsapp.message}</p>}
                 </div>
 

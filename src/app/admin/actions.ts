@@ -3,10 +3,70 @@
 import { writeClient } from "@/sanity/client";
 import { revalidatePath } from "next/cache";
 import type { ApplicationListItem, ApplicationDetail, PaginatedResult } from "@/lib/types";
-import { getAdminUser } from "./auth-actions";
+import { getAdminUser, verifyAdminPassword } from "./auth-actions";
 
 if (!writeClient) throw new Error("Sanity writeClient not configured")
 const client = writeClient;
+
+export async function updateApplicationData(
+  id: string,
+  password: string,
+  patch: {
+    // biodata
+    nama?: string; nik?: string; no_kk?: string; email?: string; whatsapp?: string;
+    jenis_kelamin?: string; agama?: string; tempat_lahir?: string; tanggal_lahir?: string;
+    alamat_detail?: string;
+    provinsi?: string; provinsi_nama?: string;
+    kabupaten?: string; kabupaten_nama?: string;
+    kecamatan?: string; kecamatan_nama?: string;
+    kelurahan?: string; kelurahan_nama?: string;
+    // keluarga
+    nama_ayah?: string; nama_ibu?: string; kondisi_ayah?: string; kondisi_ibu?: string;
+    penghasilan_ortu?: string; kontak_ortu?: string; jumlah_saudara?: number;
+    // seleksi
+    asal_sekolah?: string; jenjang_pendidikan?: string;
+    nilai_raport_1?: number; nilai_raport_2?: number; nilai_raport_3?: number;
+    status_beasiswa?: string; keterangan_beasiswa?: string; motivasi?: string;
+    sumber_info?: string; social_media?: string; kategori_hafalan?: string;
+  }
+) {
+  try {
+    const adminUser = await getAdminUser();
+    if (!adminUser) return { success: false, error: "Tidak terautentikasi" };
+
+    const isAuthorized = adminUser.role === 'superadmin' || adminUser.role === 'admin_wilayah';
+    if (!isAuthorized) return { success: false, error: "Tidak punya akses edit" };
+
+    const valid = await verifyAdminPassword(password);
+    if (!valid) return { success: false, error: "Password salah" };
+
+    const sanityPatch: Record<string, unknown> = {};
+
+    const bioFields = ['nama','nik','no_kk','email','whatsapp','jenis_kelamin','agama','tempat_lahir','tanggal_lahir','alamat_detail','provinsi','provinsi_nama','kabupaten','kabupaten_nama','kecamatan','kecamatan_nama','kelurahan','kelurahan_nama'] as const;
+    for (const f of bioFields) {
+      if (patch[f] !== undefined && patch[f] !== '') sanityPatch[`biodata.${f}`] = patch[f];
+    }
+
+    const keluargaFields = ['nama_ayah','nama_ibu','kondisi_ayah','kondisi_ibu','penghasilan_ortu','kontak_ortu','jumlah_saudara'] as const;
+    for (const f of keluargaFields) {
+      if (patch[f] !== undefined && patch[f] !== '') sanityPatch[`keluarga.${f}`] = patch[f];
+    }
+
+    const seleksiFields = ['asal_sekolah','jenjang_pendidikan','nilai_raport_1','nilai_raport_2','nilai_raport_3','status_beasiswa','keterangan_beasiswa','motivasi','sumber_info','social_media','kategori_hafalan'] as const;
+    for (const f of seleksiFields) {
+      if (patch[f] !== undefined && patch[f] !== '') sanityPatch[`seleksi.${f}`] = patch[f];
+    }
+
+    if (Object.keys(sanityPatch).length === 0) return { success: false, error: "Tidak ada data yang diubah" };
+
+    await client.patch(id).set(sanityPatch).commit();
+    revalidatePath(`/admin/application/${id}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating application data:", error);
+    return { success: false, error: "Gagal menyimpan perubahan" };
+  }
+}
 
 export async function updateApplicationStatus(id: string, status: 'approved' | 'rejected' | 'pending') {
   try {

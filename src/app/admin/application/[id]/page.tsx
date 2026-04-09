@@ -9,13 +9,15 @@ import { formatIncome } from "@/lib/types";
 import DetailActions from "./DetailActions";
 import PrintButton from "./PrintButton";
 import RekomendasiPanel from "./RekomendasiPanel";
+import EditDataModal from "./EditDataModal";
+import { getAdminUser } from "../../auth-actions";
 
 export const dynamic = 'force-dynamic';
 // export const runtime = 'edge'; // Removed for Vercel
 
 export default async function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const app = await getApplicationById(id);
+  const [app, adminUser] = await Promise.all([getApplicationById(id), getAdminUser()]);
 
   if (!app) {
     notFound();
@@ -197,6 +199,13 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                         <h3 className="font-bold text-slate-800 mb-4">Validasi Admin</h3>
                         <DetailActions id={app._id} currentStatus={app.status} />
                     </div>
+
+                    {(adminUser?.role === 'superadmin' || adminUser?.role === 'admin_wilayah') && (
+                        <div className="border-t border-slate-100 pt-5">
+                            <h3 className="font-bold text-slate-800 mb-3">Edit Data</h3>
+                            <EditDataModal app={app} />
+                        </div>
+                    )}
 
                     <div className="border-t border-slate-100 pt-5">
                         <h3 className="font-bold text-slate-800 mb-3">Rekomendasi Override</h3>
