@@ -162,6 +162,7 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                     <Field label="Status Beasiswa" value={app.seleksi.status_beasiswa} />
                     {app.seleksi.keterangan_beasiswa && <Field label="Ket. Beasiswa" value={app.seleksi.keterangan_beasiswa} />}
                     <Field label="Hafalan" value={app.seleksi.kategori_hafalan || '-'} />
+                    <Field label="Social Media" value={app.seleksi.social_media || '-'} isLink={true} fullWidth />
                     <Field label="Motivasi" value={app.seleksi.motivasi} fullWidth />
                 </SectionCard>
 
@@ -228,11 +229,19 @@ function SectionCard({ title, icon, children }: { title: string, icon: React.Rea
     )
 }
 
-function Field({ label, value, fullWidth = false }: { label: string, value: string | number | null, fullWidth?: boolean }) {
+function Field({ label, value, fullWidth = false, isLink = false }: { label: string, value: string | number | null, fullWidth?: boolean, isLink?: boolean }) {
     return (
         <div className={fullWidth ? "col-span-1 md:col-span-2" : ""}>
             <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{label}</div>
-            <div className="font-medium text-slate-800 break-words">{value || "-"}</div>
+            <div className="font-medium text-slate-800 break-words">
+                {isLink && value && value !== '-' ? (
+                    <a href={String(value)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {value}
+                    </a>
+                ) : (
+                    value || "-"
+                )}
+            </div>
         </div>
     )
 }

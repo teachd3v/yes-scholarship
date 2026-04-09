@@ -80,6 +80,7 @@ export interface ApplicationDetail {
         keterangan_beasiswa?: string;
         motivasi: string;
         sumber_info: string;
+        social_media?: string;
         kategori_hafalan?: string;
         list_organisasi?: { jenis: string; jabatan: string; ket_lainnya?: string }[];
         list_prestasi?: { tingkat: string; juara: string; keterangan: string }[];

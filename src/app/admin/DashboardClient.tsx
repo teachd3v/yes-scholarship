@@ -184,6 +184,7 @@ export default function DashboardClient({ applications, currentPage, totalPages,
                     'Hafalan': app.seleksi?.kategori_hafalan || '-',
                     'Motivasi': app.seleksi?.motivasi || '-',
                     'Sumber Info': app.seleksi?.sumber_info || '-',
+                    'Link Social Media': app.seleksi?.social_media || '-',
 
                     // REKOMENDASI
                     'Rekomendasi Admin': app.rekomendasi?.tipe === 'rekomendasikan_lolos'

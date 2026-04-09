@@ -8,7 +8,7 @@ const PROVINSI_VALID = [
     "SUMATERA SELATAN",    // Palembang
     "SUMATERA BARAT",      // Padang
     "JAWA BARAT",          // Bogor, Depok
-    "DAERAH ISTIMEWA YOGYAKARTA", // Yogyakarta
+    "DI YOGYAKARTA",       // Yogyakarta (disingkat sesuai form)
     "JAWA TIMUR",          // Surabaya
     "SULAWESI SELATAN",    // Sinjai
     "RIAU",                // Pekanbaru

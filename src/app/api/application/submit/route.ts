@@ -237,11 +237,9 @@ export async function POST(req: NextRequest) {
     // 4. Final Status Logic
     // Logic: Status is 'rejected' if:
     // a) Screening failed (lolos_screening == false)
-    // b) Province is not in the priority list (as requested by user)
-    const isInPriorityProvince = PRIORITY_PROVINCES.includes(biodata.provinsi_nama);
     
     let finalStatus = "pending";
-    if (!screening.lolos || !isInPriorityProvince) {
+    if (!screening.lolos) {
         finalStatus = "rejected";
     }
 
