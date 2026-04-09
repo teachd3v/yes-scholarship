@@ -5,8 +5,8 @@ import { Clock, Instagram, CalendarDays, CheckCircle2, Lock } from "lucide-react
 import Link from "next/link";
 
 // WIB = UTC+7 → 15:00 WIB = 08:00 UTC
-const OPEN_DATE  = new Date(Date.now()); // skrg langsung buka
-// const OPEN_DATE  = new Date("2026-04-10T08:00:00.000Z"); // 10 Apr 2026, 15:00 WIB
+// const OPEN_DATE  = new Date(Date.now()); // skrg langsung buka
+const OPEN_DATE  = new Date("2026-04-10T08:00:00.000Z"); // 10 Apr 2026, 15:00 WIB
 const CLOSE_DATE = new Date("2026-04-25T08:00:00.000Z"); // 25 Apr 2026, 15:00 WIB
 
 function formatWIB(date: Date) {
