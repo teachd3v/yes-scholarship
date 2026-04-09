@@ -1,0 +1,20 @@
+{
+  "node": {
+    "4003511742bee5421f4e70cbaf0b94af48b6d79cd8": {
+      "workers": {
+        "app/admin/login/page": {
+          "moduleId": "[project]/.next-internal/server/app/admin/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/admin/auth-actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "loginAction",
+          "filename": "src/app/admin/auth-actions.ts"
+        }
+      },
+      "layer": {
+        "app/admin/login/page": "action-browser"
+      },
+      "exportedName": "loginAction",
+      "filename": "src/app/admin/auth-actions.ts"
+    }
+  },
+  "edge": {}
+}

@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/twibbon/layout,_N_T_/twibbon/page,_N_T_/twibbon"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/twibbon/__PAGE__",
+    "/twibbon",
+    "/_index",
+    "/_head"
+  ]
+}
