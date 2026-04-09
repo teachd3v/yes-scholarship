@@ -1,7 +1,7 @@
 
 export const STATIC_STATS = [
-  { number: "75", label: "Awardee Aktif" },
-  { number: "9", label: "Sebaran Wilayah" },
+  { number: "85", label: "Awardee Aktif" },
+  { number: "8", label: "Sebaran Wilayah" },
   { number: "200+", label: "Alumni Program" },
 ];
 
@@ -16,15 +16,15 @@ export const STATIC_PROGRAMS = [
     desc: "Pelatihan kepemimpinan untuk mencetak pemimpin masa depan yang tangguh.",
     icon: "🚀",
     image: "/images/programs-1.jpg",
-    features: ["Ekselensia Leadership Camp","YES Day Out","Young Leadership Festival"],
+    features: ["Ekselensia Leadership Camp", "YES Day Out", "Young Leadership Festival"],
   },
   {
     _id: "2",
     title: "Fund Support",
     desc: "Pemberian bantuan materi sebagai bekal pembinaan selama masa program.",
     icon: "💰",
-    image: "/images/header-2.jpg",
-    features: ["Uang Saku 300K/bulan","Support Persiapan UTBK PTN","Support Prestasi"],
+    image: "/images/programs-2.jpg",
+    features: ["Uang Saku 300K/bulan", "Support Persiapan UTBK PTN", "Support Prestasi"],
   },
   {
     _id: "3",
@@ -32,7 +32,7 @@ export const STATIC_PROGRAMS = [
     desc: "Belajar berbasis tema berkala wujudkan pemahaman holistik bermakna.",
     icon: "📚",
     image: "/images/programs-3.jpg",
-    features: ["Home Visit / 3 bulan","Outing Class / 2 bulan","Journal Ekselensia / day by day"],
+    features: ["Home Visit / 3 bulan", "Outing Class / 2 bulan", "Journal Ekselensia / day by day"],
   },
   {
     _id: "4",
@@ -40,15 +40,15 @@ export const STATIC_PROGRAMS = [
     desc: "Bimbingan intensif persiapan UTBK-SNBT dan ujian mandiri PTN dengan mentor ahli",
     icon: "🎓",
     image: "/images/programs-4.jpg",
-    features: ["Tryout Berkala","Konsultasi Jurusan","Bedah Soal UTBK"],
+    features: ["Tryout Berkala", "Konsultasi Jurusan", "Bedah Soal UTBK"],
   },
   {
     _id: "5",
     title: "Quranic Mentorship",
     desc: "Pembinaan tahsin dan tahfidz untuk membentuk karakter Qurani yang kokoh.",
     icon: "☪️",
-    image: "/images/tentang-kami.jpg",
-    features: ["Setoran Hafalan","Kajian Rutin","Dauroh Quran"],
+    image: "/images/programs-5.jpg",
+    features: ["Setoran Hafalan", "Kajian Rutin", "Dauroh Quran"],
   },
   {
     _id: "6",
@@ -56,7 +56,7 @@ export const STATIC_PROGRAMS = [
     desc: "Kelas pengembangan minat dan bakat untuk bekal skill di dunia pasca kampus.",
     icon: "🎙️",
     image: "/images/tentang-kami.jpg",
-    features: ["Photography","Graphic Design","Public Speaking","Writing"],
+    features: ["Photography", "Graphic Design", "Public Speaking", "Writing"],
   },
 ];
 
@@ -67,15 +67,15 @@ export const STATIC_ABOUT = {
   historyImageSrc: "/images/tentang-kami.jpg",
   historyContent: [
     {
-        _type: 'block',
-        children: [
-            {
-                _type: 'span',
-                text: "Youth Ekselensia Scholarship (YES) lahir dari kepedulian terhadap potensi siswa berprestasi dari kalangan dhuafa yang seringkali terhambat biaya untuk melanjutkan pendidikan tinggi. Diinisiasi oleh GREAT Edunesia dan Dompet Dhuafa, program ini tidak hanya fokus pada akademik, tetapi juga pembentukan karakter kepemimpinan yang tangguh (#ExcellentLeader) untuk menyongsong Indonesia Emas 2045."
-            }
-        ],
-        markDefs: [],
-        style: 'normal'
+      _type: 'block',
+      children: [
+        {
+          _type: 'span',
+          text: "Youth Ekselensia Scholarship (YES) lahir dari kepedulian terhadap potensi siswa berprestasi dari kalangan dhuafa yang seringkali terhambat biaya untuk melanjutkan pendidikan tinggi. Diinisiasi oleh GREAT Edunesia dan Dompet Dhuafa, program ini tidak hanya fokus pada akademik, tetapi juga pembentukan karakter kepemimpinan yang tangguh (#ExcellentLeader) untuk menyongsong Indonesia Emas 2045."
+        }
+      ],
+      markDefs: [],
+      style: 'normal'
     }
   ],
   visionTitle: "Visi",
@@ -115,18 +115,18 @@ export const STATIC_ABOUT = {
 
 export const STATIC_TEAM = {
   management_pusat: [
-    { nama: "Bayu Candra Winata", jabatan: "Ketua Departemen Beastudi Indonesia", foto: null },
-    { nama: "Sri Mulyani", jabatan: "Pengelola Program YES", foto: null },
-    { nama: "Yulianti", jabatan: "Pengelola Program YES", foto: null },
+    { nama: "Bayu Candra Winata", jabatan: "Ketua Departemen Beastudi Indonesia", foto: "/images/bayu.png" },
+    { nama: "Yulianti", jabatan: "Ketua Program YES", foto: "/images/yulianti.png" },
+    { nama: "Sri Mulyani", jabatan: "Staff Program YES", foto: "/images/sri.png" },
   ],
   management_wilayah: [
-    { nama: "Charles Desiva", jabatan: "Mentor Wilayah", wilayah: "Jawa Barat", foto: null },
-    { nama: "Kiki Dwi Setiabudi", jabatan: "Mentor Wilayah", wilayah: "DI Yogyakarta", foto: null },
-    { nama: "Yunida Mustarini", jabatan: "Mentor Wilayah", wilayah: "Jawa Timur", foto: "/images/Yunida - JATIM.jpg" },
-    { nama: "—", jabatan: "Mentor Wilayah", wilayah: "Sulawesi Selatan", foto: null },
-    { nama: "—", jabatan: "Mentor Wilayah", wilayah: "Sumatera Utara", foto: null },
-    { nama: "—", jabatan: "Mentor Wilayah", wilayah: "Sumatera Barat", foto: null },
-    { nama: "Indri Yani", jabatan: "Mentor Wilayah", wilayah: "Riau", foto: "/images/Indri - RIAU.jpg" },
-    { nama: "Tarisa", jabatan: "Mentor Wilayah", wilayah: "Sumatera Selatan", foto: "/images/Tarisa - SUMSEL.jpg" },
+    { nama: "Charles Dasiva", jabatan: "Mentor Wilayah", wilayah: "Jawa Barat", foto: "/images/charles.png" },
+    { nama: "Kiki Dwi Setiabudi", jabatan: "Mentor Wilayah", wilayah: "DI Yogyakarta", foto: "/images/kiki.png" },
+    { nama: "Yunida Mustarini", jabatan: "Mentor Wilayah", wilayah: "Jawa Timur", foto: "/images/yunida.png" },
+    { nama: "Ishak", jabatan: "Mentor Wilayah", wilayah: "Sulawesi Selatan", foto: "/images/ishak.png" },
+    { nama: "Intan Mayasari", jabatan: "Mentor Wilayah", wilayah: "Sumatera Utara", foto: "/images/intan.png" },
+    { nama: "Rosalina", jabatan: "Mentor Wilayah", wilayah: "Sumatera Barat", foto: "/images/rosalina.png" },
+    { nama: "Indri Yani", jabatan: "Mentor Wilayah", wilayah: "Riau", foto: "/images/indri.png" },
+    { nama: "Tarisa", jabatan: "Mentor Wilayah", wilayah: "Sumatera Selatan", foto: "/images/tarisa.png" },
   ],
 };
