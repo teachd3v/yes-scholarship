@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"
 import { Plus_Jakarta_Sans } from "next/font/google";
+import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -48,6 +49,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
+        <FloatingWhatsApp />
         <Analytics />
         <SpeedInsights />
       </body>

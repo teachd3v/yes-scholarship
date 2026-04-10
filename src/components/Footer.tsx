@@ -77,7 +77,7 @@ export default function Footer() {
                                 </p>
                             </div>
                             <Link
-                                href="https://wa.me/6285899523809"
+                                href="https://wa.me/6285691660076"
                                 target="_blank"
                                 className="flex items-center gap-4 group w-fit"
                             >
@@ -86,7 +86,7 @@ export default function Footer() {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-xs text-slate-500 uppercase font-bold tracking-widest leading-tight">WhatsApp</span>
-                                    <span className="text-slate-300 font-medium group-hover:text-blue-400 transition-colors">+62 858-9952-3809</span>
+                                    <span className="text-slate-300 font-medium group-hover:text-blue-400 transition-colors">+62 856-9166-0076</span>
                                 </div>
                             </Link>
                         </div>

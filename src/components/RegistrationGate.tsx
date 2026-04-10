@@ -73,13 +73,13 @@ function CountdownScreen() {
                 </p>
 
                 {/* Countdown */}
-                <div className="flex justify-center gap-3 md:gap-5 mb-10">
+                <div className="grid grid-cols-2 gap-y-6 gap-x-4 max-w-[240px] mx-auto md:flex md:max-w-none md:justify-center md:gap-5 mb-10 justify-items-center">
                     <CountdownBox value={String(days)} label="Hari" />
-                    <div className="text-white/60 text-4xl font-bold self-start mt-6">:</div>
+                    <div className="text-white/60 text-4xl font-bold self-start mt-6 hidden md:block">:</div>
                     <CountdownBox value={pad(hours)} label="Jam" />
-                    <div className="text-white/60 text-4xl font-bold self-start mt-6">:</div>
+                    <div className="text-white/60 text-4xl font-bold self-start mt-6 hidden md:block">:</div>
                     <CountdownBox value={pad(minutes)} label="Menit" />
-                    <div className="text-white/60 text-4xl font-bold self-start mt-6">:</div>
+                    <div className="text-white/60 text-4xl font-bold self-start mt-6 hidden md:block">:</div>
                     <CountdownBox value={pad(seconds)} label="Detik" />
                 </div>
 
