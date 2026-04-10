@@ -4,12 +4,13 @@ import SectionBiodata from "@/components/SectionBiodata";
 import SectionKeluarga from "@/components/SectionKeluarga";
 import SectionSeleksi from "@/components/SectionSeleksi";
 import SummaryModal from "@/components/SummaryModal";
+import GuidelinesModal from "@/components/GuidelinesModal";
 import RegistrationGate from "@/components/RegistrationGate";
 import { useForm, FormProvider, useWatch, Control, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { masterSchema, MasterSchemaType } from "@/lib/schema-master";
 import { checkPreScreening, calculateScore } from "@/lib/scoring";
-import { Save, Loader2, User, Users, GraduationCap, CheckCircle, Mail, X, Check, AlertTriangle, ChevronRight, Image } from "lucide-react";
+import { Save, Loader2, User, Users, GraduationCap, CheckCircle, Mail, X, Check, AlertTriangle, ChevronRight, Image, BookOpen } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { compressImage } from "@/lib/image-compression";
 import Link from "next/link";
@@ -231,6 +232,7 @@ export default function PendaftaranPage() {
   const [submitProgress, setSubmitProgress] = useState(0);
   const [submitStep, setSubmitStep] = useState("");
   const [isActualSubmitting, setIsActualSubmitting] = useState(false);
+  const [showGuidelines, setShowGuidelines] = useState(true);
   // Summary modal state
   const [showSummary, setShowSummary] = useState(false);
   const [pendingData, setPendingData] = useState<MasterSchemaType | null>(null);
@@ -496,7 +498,15 @@ export default function PendaftaranPage() {
       <div className="max-w-4xl mx-auto space-y-6 md:space-y-10 px-3 py-6 md:px-4 md:py-10">
         <header className="text-center mb-2">
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Formulir Seleksi YES 2026</h1>
-          <p className="text-slate-500 mt-2 text-sm md:text-base">Mohon isi data secara berurutan dan teliti.</p>
+          <p className="text-slate-500 mt-2 text-sm md:text-base mb-4">Mohon isi data secara berurutan dan teliti.</p>
+          <button
+            type="button"
+            onClick={() => setShowGuidelines(true)}
+            className="inline-flex mt-1 flex-row items-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold py-2 px-5 rounded-xl transition text-sm md:text-base border border-blue-100 shadow-sm"
+          >
+            <BookOpen size={18} />
+            Panduan Mengisi & Syarat Dokumen
+          </button>
         </header>
 
         {/* Validation Errors (Zod) */}
@@ -583,6 +593,11 @@ export default function PendaftaranPage() {
         onClose={() => { if (!isActualSubmitting) { setShowSummary(false); setPendingData(null); } }}
         onConfirm={() => { if (pendingData) doActualSubmit(pendingData); }}
         isLoading={isActualSubmitting}
+      />
+
+      <GuidelinesModal
+        isOpen={showGuidelines}
+        onClose={() => setShowGuidelines(false)}
       />
 
       {/* Progress overlay saat actual submit */}
