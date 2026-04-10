@@ -64,7 +64,7 @@ export default function TwibbonGenerator() {
       if (!state) {
         throw new Error("Could not find transform state");
       }
-      
+
       // Calculate scaling factor from Preview UI to High-Res Target 
       const factor = TARGET_WIDTH / previewW;
 
@@ -73,7 +73,7 @@ export default function TwibbonGenerator() {
 
       // Save state before changing transforms
       ctx.save();
-      
+
       // Scale canvas context to match preview coordinate scale
       ctx.scale(factor, factor);
 
@@ -104,7 +104,7 @@ export default function TwibbonGenerator() {
 
       // Export
       const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-      
+
       // Trigger download
       const link = document.createElement("a");
       link.download = "twibbon-export.jpg";
@@ -123,7 +123,7 @@ export default function TwibbonGenerator() {
     <div className="w-full max-w-4xl mx-auto flex flex-col md:flex-row gap-8 bg-white rounded-2xl shadow-xl p-6 md:p-8">
       {/* LEFT: Preview Area */}
       <div className="w-full md:w-1/2 flex flex-col items-center">
-        <div 
+        <div
           ref={containerRef}
           className="relative w-full overflow-hidden bg-gray-100 rounded-lg shadow-inner ring-1 ring-gray-200"
           style={{ aspectRatio: "3/4" }}
@@ -163,10 +163,10 @@ export default function TwibbonGenerator() {
           {/* We always render the frame so user sees it empty or over their photo */}
           <div className="absolute inset-0 z-10 pointer-events-none">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
+            <img
               ref={frameImgRef}
-              src={frameImage} 
-              alt="Twibbon Frame" 
+              src={frameImage}
+              alt="Twibbon Frame"
               className="w-full h-full object-cover"
               onError={(e) => {
                 // If frame fails to load, hide it to avoid broken image icon 
@@ -178,7 +178,7 @@ export default function TwibbonGenerator() {
             />
           </div>
         </div>
-        
+
         {userImage && (
           <p className="text-sm text-gray-500 mt-4 bg-gray-50 px-4 py-2 rounded-full ring-1 ring-gray-200">
             💡 <i>Gunakan dua jari atau mouse scroll untuk zoom, dan geser foto agar pas di dalam frame.</i>
@@ -224,7 +224,6 @@ export default function TwibbonGenerator() {
         <div className="mt-auto pt-6 border-t border-gray-100">
           <h3 className="text-sm font-semibold text-gray-900 mb-2">Panduan:</h3>
           <ul className="text-sm text-gray-600 space-y-2 list-disc list-inside">
-            <li>Pastikan frame twibbon sudah berada di: <code>public/images/twibbon-frame.png</code></li>
             <li>Klik tombol upload untuk memilih foto dari galeri/komputer.</li>
             <li>Sesuaikan posisi foto di dalam area frame.</li>
             <li>Klik download untuk menyimpan hasil.</li>
