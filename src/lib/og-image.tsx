@@ -3,6 +3,11 @@ import { ImageResponse } from 'next/og';
 export const ogSize = { width: 1200, height: 630 };
 export const ogContentType = 'image/png';
 
+// Brand colors
+// Primary: #1e3a8a (blue-900)
+// Accent:  #facc15 (yellow-400)
+// Dark:    #0f172a (slate-900)
+
 export function generateOgImage({
   title,
   subtitle,
@@ -18,67 +23,92 @@ export function generateOgImage({
         width: '100%',
         height: '100%',
         display: 'flex',
-        background: '#ffffff',
+        background: '#0f172a',
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Orange accent top bar */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 8, background: '#ff6b00', display: 'flex' }} />
+      {/* Yellow accent top bar */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 6, background: '#facc15', display: 'flex' }} />
 
-      {/* Left decorative bar */}
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 12, background: '#ff6b00', display: 'flex' }} />
+      {/* Blue glow circle top-right */}
+      <div style={{
+        position: 'absolute', right: -120, top: -120,
+        width: 500, height: 500, borderRadius: '50%',
+        background: 'rgba(30,58,138,0.6)', display: 'flex',
+      }} />
 
-      {/* Background circle decorations */}
+      {/* Subtle blue glow bottom-left */}
       <div style={{
-        position: 'absolute', right: -80, top: -80,
-        width: 420, height: 420, borderRadius: '50%',
-        background: 'rgba(255,107,0,0.07)', display: 'flex',
+        position: 'absolute', left: -60, bottom: -80,
+        width: 340, height: 340, borderRadius: '50%',
+        background: 'rgba(30,58,138,0.35)', display: 'flex',
       }} />
+
+      {/* Yellow dot grid decoration (right side) */}
       <div style={{
-        position: 'absolute', right: 60, bottom: -100,
-        width: 300, height: 300, borderRadius: '50%',
-        background: 'rgba(255,107,0,0.05)', display: 'flex',
-      }} />
+        position: 'absolute', right: 72, top: '50%',
+        display: 'flex', flexDirection: 'column', gap: 14,
+        transform: 'translateY(-50%)',
+      }}>
+        {[0, 1, 2, 3, 4].map((row) => (
+          <div key={row} style={{ display: 'flex', gap: 14 }}>
+            {[0, 1, 2].map((col) => (
+              <div key={col} style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: 'rgba(250,204,21,0.25)',
+                display: 'flex',
+              }} />
+            ))}
+          </div>
+        ))}
+      </div>
 
       {/* Content */}
       <div style={{
         display: 'flex', flexDirection: 'column',
         justifyContent: 'space-between',
-        padding: '60px 80px', width: '100%',
+        padding: '56px 80px', width: '100%',
       }}>
         {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{
-            background: '#ff6b00', color: 'white',
-            fontWeight: 900, fontSize: 28,
-            padding: '8px 18px', borderRadius: 10,
-            display: 'flex',
+            background: '#facc15', color: '#0f172a',
+            fontWeight: 900, fontSize: 26,
+            padding: '7px 18px', borderRadius: 8,
+            display: 'flex', letterSpacing: '-0.5px',
           }}>YES</div>
-          <span style={{ fontSize: 22, color: '#374151', fontWeight: 600, display: 'flex' }}>
+          <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)', fontWeight: 600, display: 'flex' }}>
             Youth Ekselensia Scholarship
           </span>
         </div>
 
         {/* Main text */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ fontSize: 68, fontWeight: 900, color: '#111827', lineHeight: 1.1, display: 'flex', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            fontSize: title.length > 40 ? 56 : 68,
+            fontWeight: 900, color: '#ffffff',
+            lineHeight: 1.1, display: 'flex', flexWrap: 'wrap',
+          }}>
             {title}
           </div>
-          <div style={{ fontSize: 26, color: '#6b7280', display: 'flex' }}>
+          {/* Yellow underline accent */}
+          <div style={{ width: 80, height: 4, background: '#facc15', borderRadius: 4, display: 'flex' }} />
+          <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.6)', marginTop: 4, display: 'flex' }}>
             {subtitle}
           </div>
         </div>
 
         {/* Footer */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 20, color: '#9ca3af', display: 'flex' }}>youthekselensia.id</span>
+          <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.4)', display: 'flex' }}>
+            youthekselensia.id
+          </span>
           {badge && (
             <div style={{
-              background: '#fff7ed', color: '#ff6b00',
-              fontSize: 18, fontWeight: 700,
-              padding: '10px 24px', borderRadius: 50,
-              border: '2px solid #ffedd5',
+              background: '#facc15', color: '#0f172a',
+              fontSize: 17, fontWeight: 800,
+              padding: '10px 22px', borderRadius: 50,
               display: 'flex',
             }}>{badge}</div>
           )}
