@@ -1,6 +1,21 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { safeFetch } from '@/sanity/client';
 import { groq } from 'next-sanity';
+
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.youthekselensia.id";
+
+export const metadata: Metadata = {
+  title: "Beranda | Youth Ekselensia Scholarship",
+  description: "Mewujudkan mimpi anak bangsa melalui pendidikan yang berkualitas dan berkelanjutan.",
+  openGraph: {
+    title: "Youth Ekselensia Scholarship",
+    description: "Mewujudkan mimpi anak bangsa melalui pendidikan yang berkualitas dan berkelanjutan.",
+    url: baseUrl,
+    type: "website",
+  },
+  twitter: { card: "summary_large_image" },
+};
 import HeroSlider from '@/components/HeroSlider';
 import Distribution from '@/components/Distribution';
 import Testimonials from '@/components/Testimonials';

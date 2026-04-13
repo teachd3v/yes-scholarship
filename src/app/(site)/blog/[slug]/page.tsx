@@ -17,6 +17,8 @@ export async function generateStaticParams(): Promise<{ slug: string }[]> {
     }
 }
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.youthekselensia.id";
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const { slug } = await params;
     if (slug === '_placeholder') {
@@ -31,25 +33,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         };
     }
 
-    const ogImage = post.image ? urlFor(post.image).width(1200).height(630).url() : "/images/logo-yes.png";
+    const ogImage = post.image
+        ? urlFor(post.image).width(1200).height(630).url()
+        : `${baseUrl}/og/blog.jpg`;
 
     return {
-        title: post.title,
+        title: `${post.title} | YES Scholarship`,
         description: post.description || "Baca artikel terbaru dari Youth Ekselensia Scholarship via blog kami.",
         openGraph: {
             title: post.title,
             description: post.description || "Baca artikel terbaru dari Youth Ekselensia Scholarship.",
-            url: `https://www.youthekselensia.id/blog/${slug}`,
-            images: [
-                {
-                    url: ogImage,
-                    width: 1200,
-                    height: 630,
-                    alt: post.title,
-                },
-            ],
+            url: `${baseUrl}/blog/${slug}`,
+            images: [{ url: ogImage, width: 1200, height: 630, alt: post.title }],
             type: "article",
         },
+        twitter: { card: "summary_large_image" },
     };
 }
 

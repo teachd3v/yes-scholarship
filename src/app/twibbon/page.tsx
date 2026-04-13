@@ -1,9 +1,18 @@
 import React from "react";
 import TwibbonGenerator from "@/components/TwibbonGenerator";
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.youthekselensia.id";
+
 export const metadata = {
-  title: "Twibbon Generator | Muda Berkarya Nusantara",
-  description: "Buat lalu bagikan! Twibbon resmi Muda Berkarya Nusantara.",
+  title: "Twibbon Campaign | YES Scholarship",
+  description: "Buat dan bagikan twibbon resmi Seleksi YES Angkatan 5. Tunjukkan semangatmu!",
+  openGraph: {
+    title: "Twibbon Campaign | YES Scholarship",
+    description: "Buat dan bagikan twibbon resmi Seleksi YES Angkatan 5. Tunjukkan semangatmu!",
+    url: `${baseUrl}/twibbon`,
+    type: "website",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function TwibbonPage() {

@@ -1,8 +1,23 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { safeFetch } from '@/sanity/client';
 import { urlFor } from '@/sanity/image';
 
 export const revalidate = 3600; // cache 1 jam
+
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.youthekselensia.id";
+
+export const metadata: Metadata = {
+  title: "Blog | Youth Ekselensia Scholarship",
+  description: "Baca artikel, kisah inspiratif, dan tips seputar beasiswa dari tim YES Scholarship.",
+  openGraph: {
+    title: "Blog | YES Scholarship",
+    description: "Baca artikel, kisah inspiratif, dan tips seputar beasiswa dari tim YES Scholarship.",
+    url: `${baseUrl}/blog`,
+    type: "website",
+  },
+  twitter: { card: "summary_large_image" },
+};
 
 const MOCK_BLOG_POSTS = [
     {

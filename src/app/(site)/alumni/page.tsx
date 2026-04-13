@@ -20,9 +20,18 @@ interface PTN {
 
 export const revalidate = 3600; // cache 1 jam
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.youthekselensia.id";
+
 export const metadata = {
     title: 'Sebaran Alumni | YES Scholarship',
     description: 'Daftar alumni penerima beasiswa YES yang tersebar di berbagai Perguruan Tinggi Negeri di Indonesia.',
+    openGraph: {
+        title: 'Sebaran Alumni | YES Scholarship',
+        description: 'Daftar alumni penerima beasiswa YES yang tersebar di berbagai Perguruan Tinggi Negeri di Indonesia.',
+        url: `${baseUrl}/alumni`,
+        type: "website",
+    },
+    twitter: { card: "summary_large_image" },
 };
 
 async function getPtns() {

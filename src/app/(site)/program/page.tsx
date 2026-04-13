@@ -1,7 +1,22 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { STATIC_PROGRAMS } from '@/lib/static-data';
 
 export const revalidate = 3600;
+
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.youthekselensia.id";
+
+export const metadata: Metadata = {
+  title: "Program Beasiswa | Youth Ekselensia Scholarship",
+  description: "Kenali program-program beasiswa YES yang dirancang untuk mewujudkan mimpi generasi muda Indonesia.",
+  openGraph: {
+    title: "Program Beasiswa | YES Scholarship",
+    description: "Kenali program-program beasiswa YES yang dirancang untuk mewujudkan mimpi generasi muda Indonesia.",
+    url: `${baseUrl}/program`,
+    type: "website",
+  },
+  twitter: { card: "summary_large_image" },
+};
 
 export default async function ProgramPage() {
     const programs = STATIC_PROGRAMS;

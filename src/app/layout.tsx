@@ -11,6 +11,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.youthekselensia.id";
+
 export const metadata: Metadata = {
   title: "Youth Ekselensia Scholarship",
   description: "Mewujudkan mimpi anak bangsa melalui pendidikan yang berkualitas dan berkelanjutan.",
@@ -22,18 +24,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Youth Ekselensia Scholarship",
     description: "Mewujudkan mimpi anak bangsa melalui pendidikan yang berkualitas dan berkelanjutan.",
-    url: "https://www.youthekselensia.id",
+    url: baseUrl,
     siteName: "Youth Ekselensia Scholarship",
-    images: [
-      {
-        url: "/images/logo-yes.png",
-        width: 800,
-        height: 600,
-        alt: "Youth Ekselensia Scholarship",
-      },
-    ],
     locale: "id_ID",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
   },
 };
 

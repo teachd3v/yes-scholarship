@@ -1,7 +1,22 @@
+import type { Metadata } from 'next';
 import React from 'react';
 import { PortableText } from '@portabletext/react';
 
 import { STATIC_ABOUT, STATIC_TEAM } from '@/lib/static-data';
+
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.youthekselensia.id";
+
+export const metadata: Metadata = {
+  title: "Tentang Kami | Youth Ekselensia Scholarship",
+  description: "Mengenal lebih jauh Youth Ekselensia Scholarship — visi, misi, dan tim di balik gerakan beasiswa untuk generasi muda Indonesia.",
+  openGraph: {
+    title: "Tentang Kami | YES Scholarship",
+    description: "Mengenal lebih jauh Youth Ekselensia Scholarship — visi, misi, dan tim di balik gerakan beasiswa untuk generasi muda Indonesia.",
+    url: `${baseUrl}/tentang-kami`,
+    type: "website",
+  },
+  twitter: { card: "summary_large_image" },
+};
 
 export const revalidate = 86400; // cache 24 jam, konten jarang berubah
 
