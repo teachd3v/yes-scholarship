@@ -2,17 +2,19 @@ import { MasterSchemaType } from "./schema-master";
 
 // ===================== PRE-SCREENING =====================
 
-// 9 Provinsi yang diizinkan (dari kota: Medan, Palembang, Padang, Bogor, Depok, Yogyakarta, Surabaya, Sinjai, Pekanbaru)
-const PROVINSI_VALID = [
-    "SUMATERA UTARA",      // Medan
-    "SUMATERA SELATAN",    // Palembang
-    "SUMATERA BARAT",      // Padang
-    "JAWA BARAT",          // Bogor, Depok
-    "DI YOGYAKARTA",       // Yogyakarta (disingkat sesuai form)
-    "JAWA TIMUR",          // Surabaya
-    "SULAWESI SELATAN",    // Sinjai
-    "RIAU",                // Pekanbaru
-];
+// Wilayah yang diizinkan (Provinsi -> Daftar Kabupaten/Kota)
+// Jika daftar kabupaten kosong, berarti seluruh kabupaten di provinsi tersebut diizinkan.
+const WILAYAH_VALID: Record<string, string[]> = {
+    "SUMATERA UTARA": ["KABUPATEN LANGKAT"],
+    "SUMATERA BARAT": ["KOTA PADANG"],
+    "SUMATERA SELATAN": ["KOTA PALEMBANG"],
+    "RIAU": ["KABUPATEN DUMAI"],
+    "JAWA BARAT": ["KABUPATEN BOGOR", "KOTA BOGOR", "KOTA DEPOK"],
+    "DI YOGYAKARTA": [], // Semua kabupaten/kota di DIY diizinkan
+    "JAWA TIMUR": ["KOTA SURABAYA"],
+    "SULAWESI SELATAN": ["KABUPATEN SINJAI"],
+    "ACEH": ["KABUPATEN PIDIE JAYA", "KABUPATEN ACEH UTARA"],
+};
 
 export function checkPreScreening(data: MasterSchemaType) {
     const alasan: string[] = [];
@@ -27,15 +29,27 @@ export function checkPreScreening(data: MasterSchemaType) {
         alasan.push(`Status beasiswa harus "Tidak Menerima" atau "Hanya PIP" (terisi: ${data.status_beasiswa})`);
     }
 
-    // 3. Domisili harus dari provinsi yang diizinkan (exact match)
+    // 3. Domisili (Provinsi & Kabupaten)
     const namaProv = (data.provinsi_nama ?? "").toUpperCase().trim();
-    const cocok = PROVINSI_VALID.some((p) => p === namaProv);
-    if (!cocok) {
-        alasan.push(`Domisili harus dari provinsi: ${PROVINSI_VALID.join(", ")} (terisi: ${data.provinsi_nama || "-"})`);
+    const namaKab = (data.kabupaten_nama ?? "").toUpperCase().trim();
+
+    const allowedRegencies = WILAYAH_VALID[namaProv];
+
+    if (!allowedRegencies) {
+        // Provinsi tidak ada dalam daftar
+        alasan.push(`Domisili provinsi ${namaProv || "-"} tidak masuk dalam skema seleksi`);
+    } else if (allowedRegencies.length > 0) {
+        // Provinsi ada, tapi dibatasi ke kabupaten tertentu
+        const cocokKab = allowedRegencies.some((k) => k === namaKab);
+        if (!cocokKab) {
+            alasan.push(`Wilayah ${namaKab || "-"} (${namaProv}) tidak masuk dalam skema seleksi. Yang diizinkan: ${allowedRegencies.join(", ")}`);
+        }
     }
+    // Jika allowedRegencies.length === 0, berarti semua kabupaten di provinsi tersebut lolos
 
     return { lolos: alasan.length === 0, alasan };
 }
+
 
 // ===================== SCORING (Normalized 0-100 per kategori) =====================
 //

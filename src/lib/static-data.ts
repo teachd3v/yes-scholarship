@@ -1,7 +1,7 @@
 
 export const STATIC_STATS = [
   { number: "85", label: "Awardee Aktif" },
-  { number: "8", label: "Sebaran Wilayah" },
+  { number: "9", label: "Sebaran Wilayah" },
   { number: "200+", label: "Alumni Program" },
 ];
 
@@ -128,5 +128,6 @@ export const STATIC_TEAM = {
     { nama: "Rosalina", jabatan: "Mentor Wilayah", wilayah: "Sumatera Barat", foto: "/images/rosalina.png" },
     { nama: "Indri Yani", jabatan: "Mentor Wilayah", wilayah: "Riau", foto: "/images/indri.png" },
     { nama: "Tarisa", jabatan: "Mentor Wilayah", wilayah: "Sumatera Selatan", foto: "/images/tarisa.png" },
+    { nama: "TBA", jabatan: "Mentor Wilayah", wilayah: "Aceh", foto: "/images/placeholder.png" },
   ],
 };
