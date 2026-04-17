@@ -39,13 +39,13 @@ export const mentorSchema = z.object({
 
     // f. Alamat Domisili
     provinsi: z.string().min(1, "Provinsi wajib diisi"),
-    provinsi_nama: z.string().optional(),
+    provinsi_nama: z.string().default(""),
     kabupaten: z.string().min(1, "Kabupaten wajib diisi"),
-    kabupaten_nama: z.string().optional(),
+    kabupaten_nama: z.string().default(""),
     kecamatan: z.string().min(1, "Kecamatan wajib diisi"),
-    kecamatan_nama: z.string().optional(),
+    kecamatan_nama: z.string().default(""),
     kelurahan: z.string().min(1, "Kelurahan wajib diisi"),
-    kelurahan_nama: z.string().optional(),
+    kelurahan_nama: z.string().default(""),
     alamat_detail: z.string().min(10, "Alamat detail wajib diisi lengkap (Min. 10 karakter)"),
 
     // g. Status Pernikahan
@@ -86,12 +86,12 @@ export const mentorSchema = z.object({
         .refine((files) => ACCEPTED_DOC_TYPES.includes(files?.[0]?.type), "Format wajib .pdf, .doc, .docx atau gambar"),
 
     // n. Pakta Integritas / Kriteria Khusus
-    berakhlak_islam_tidak_merokok: z.boolean().default(false),
-    bersedia_rangkaian_program: z.boolean().default(false),
-    mampu_mengajar_ptn: z.boolean().default(false),
-    komunikatif_remaja: z.boolean().default(false),
-    hafalan_1_juz: z.boolean().default(false),
-    siap_komitmen: z.boolean().default(false),
+    berakhlak_islam_tidak_merokok: z.boolean(),
+    bersedia_rangkaian_program: z.boolean(),
+    mampu_mengajar_ptn: z.boolean(),
+    komunikatif_remaja: z.boolean(),
+    hafalan_1_juz: z.boolean(),
+    siap_komitmen: z.boolean(),
 });
 
 export type MentorSchemaType = z.infer<typeof mentorSchema>;
