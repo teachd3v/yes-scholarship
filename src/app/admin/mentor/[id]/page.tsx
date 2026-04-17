@@ -2,7 +2,7 @@ import { getMentorById } from "../../actions";
 import FileGallery from "../../application/[id]/FileGallery";
 import Link from "next/link";
 import { ArrowLeft, User, GraduationCap, MapPin, Info, Globe, XCircle } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import MentorDetailActions from "./MentorDetailActions";
 import { getAdminUser } from "../../auth-actions";
 
@@ -11,6 +11,11 @@ export const dynamic = 'force-dynamic';
 export default async function MentorDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [mentor, adminUser] = await Promise.all([getMentorById(id), getAdminUser()]);
+
+  // Superadmin-only guard (defense-in-depth di luar middleware)
+  if (!adminUser || adminUser.role !== 'superadmin') {
+    redirect('/admin/forbidden');
+  }
 
   if (!mentor) {
     notFound();

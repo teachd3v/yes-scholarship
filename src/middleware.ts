@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   if (path.startsWith('/admin')) {
-    if (path === '/admin/login') {
+    if (path === '/admin/login' || path === '/admin/forbidden') {
         return NextResponse.next()
     }
 
@@ -14,12 +14,18 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
 
+    let user: { role?: string } | null = null;
     try {
         const decoded = atob(authToken);
-        const user = JSON.parse(decoded);
+        user = JSON.parse(decoded);
         if (!user || !user.role) throw new Error("Invalid Token");
     } catch {
         return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+
+    // Protect /admin/mentor/* — superadmin only
+    if (path.startsWith('/admin/mentor') && user?.role !== 'superadmin') {
+      return NextResponse.redirect(new URL('/admin/forbidden', request.url))
     }
   }
 

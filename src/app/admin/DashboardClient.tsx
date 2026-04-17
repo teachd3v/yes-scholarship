@@ -291,16 +291,19 @@ export default function DashboardClient({
                     Penerima Manfaat
                     {activeTab === 'applicants' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full" />}
                 </button>
-                <button 
-                    onClick={() => switchTab('mentors')}
-                    className={`pb-4 text-sm font-bold transition-colors relative flex items-center gap-2 ${
-                        activeTab === 'mentors' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
-                    }`}
-                >
-                    <UserPlus size={18} />
-                    Mentor YES
-                    {activeTab === 'mentors' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full" />}
-                </button>
+                {/* Tab Mentor YES — hanya untuk superadmin */}
+                {role === 'superadmin' && (
+                    <button 
+                        onClick={() => switchTab('mentors')}
+                        className={`pb-4 text-sm font-bold transition-colors relative flex items-center gap-2 ${
+                            activeTab === 'mentors' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+                        }`}
+                    >
+                        <UserPlus size={18} />
+                        Mentor YES
+                        {activeTab === 'mentors' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full" />}
+                    </button>
+                )}
                 <div className="flex-1" />
                 <button
                     onClick={handleExportExcel}
