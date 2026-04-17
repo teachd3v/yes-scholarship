@@ -271,6 +271,8 @@ export default function DashboardClient({
                 approved: mentors.filter(m => m.status === 'approved').length,
                 pending: mentors.filter(m => m.status === 'pending').length,
                 rejected: mentors.filter(m => m.status === 'rejected').length,
+                lolos: 0,
+                gagal: 0,
             };
         }
     }, [activeTab, initialApplicants, initialMentors, applications, mentors]);
