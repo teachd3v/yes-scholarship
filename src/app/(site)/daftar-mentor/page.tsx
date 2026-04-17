@@ -14,7 +14,8 @@ import MentorSummaryModal from "@/components/MentorSummaryModal";
 
 export default function DaftarMentorPage() {
     const methods = useForm<MentorSchemaType>({
-        resolver: zodResolver(mentorSchema),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        resolver: zodResolver(mentorSchema) as any,
         defaultValues: {
             nama_lengkap: "",
             jenis_kelamin: undefined,
