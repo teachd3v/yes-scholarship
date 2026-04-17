@@ -34,6 +34,12 @@ export default function DaftarMentorPage() {
             lancar_quran: undefined,
             sumber_info: undefined,
             motivasi: "",
+            berakhlak_islam_tidak_merokok: false,
+            bersedia_rangkaian_program: false,
+            mampu_mengajar_ptn: false,
+            komunikatif_remaja: false,
+            hafalan_1_juz: false,
+            siap_komitmen: false,
         }
     });
 
