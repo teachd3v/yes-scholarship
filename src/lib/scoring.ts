@@ -8,7 +8,7 @@ const WILAYAH_VALID: Record<string, string[]> = {
     "SUMATERA UTARA": ["KABUPATEN LANGKAT"],
     "SUMATERA BARAT": ["KOTA PADANG"],
     "SUMATERA SELATAN": ["KOTA PALEMBANG"],
-    "RIAU": ["KABUPATEN DUMAI"],
+    "RIAU": ["KABUPATEN DUMAI", "KOTA PEKANBARU"],
     "JAWA BARAT": ["KABUPATEN BOGOR", "KOTA BOGOR", "KOTA DEPOK"],
     "DI YOGYAKARTA": [], // Semua kabupaten/kota di DIY diizinkan
     "JAWA TIMUR": ["KOTA SURABAYA"],
