@@ -8,9 +8,9 @@
  */
 export async function compressImage(
   file: File,
-  maxWidth = 1920,
-  maxHeight = 1080,
-  quality = 0.7
+  maxWidth = 1280,
+  maxHeight = 720,
+  quality = 0.6
 ): Promise<File> {
   // If the file is not an image that can be compressed via canvas or is too small, return as is.
   if (!file.type.match(/image\/(jpeg|png|webp)/i)) {

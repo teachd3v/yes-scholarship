@@ -428,6 +428,22 @@ export default function PendaftaranPage() {
     setSubmitProgress(25);
     setSubmitStep("Mengunggah berkas ke server...");
 
+    // Cek total ukuran payload sebelum kirim (batas aman 3.5MB)
+    let totalSize = 0;
+    formData.forEach((value) => {
+      if (value instanceof File) totalSize += value.size;
+    });
+    if (totalSize > 3.5 * 1024 * 1024) {
+      setSubmitProgress(0);
+      setShowSummary(false);
+      setSubmitError(`Total ukuran file terlalu besar (${(totalSize / 1024 / 1024).toFixed(1)}MB). Pastikan foto dokumen tidak melebihi 1MB per file, lalu coba lagi.`);
+      setIsActualSubmitting(false);
+      setTimeout(() => {
+        errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+      return;
+    }
+
     progressIntervalRef.current = setInterval(() => {
       setSubmitProgress(prev => {
         if (prev >= 78) { clearInterval(progressIntervalRef.current!); return 78; }
@@ -442,6 +458,10 @@ export default function PendaftaranPage() {
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       setSubmitProgress(90);
       setSubmitStep("Memproses pendaftaran...");
+
+      if (response.status === 413) {
+        throw new Error("Ukuran file terlalu besar untuk dikirim. Coba perkecil ukuran foto dokumen lalu kirim ulang.");
+      }
 
       const result = await response.json();
 
