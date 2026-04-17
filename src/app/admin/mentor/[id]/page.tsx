@@ -120,7 +120,7 @@ export default async function MentorDetailPage({ params }: { params: Promise<{ i
 
                 {/* Informasi Tambahan */}
                 <SectionCard title="Informasi Tambahan" icon={<Info size={20} />}>
-                    <Field label="Lancar Membaca Al-Qur'an?" value={mentor.tambahan.lancar_baca_quran} />
+                    <Field label="Lancar Membaca Al-Qur'an?" value={mentor.tambahan.lancar_quran} />
                     <Field label="Sumber Informasi" value={mentor.tambahan.sumber_info} fullWidth />
                     <Field label="Motivasi" value={mentor.tambahan.motivasi} fullWidth />
                     <Field label="Link Sosial Media" value={mentor.tambahan.social_media} fullWidth isLink />

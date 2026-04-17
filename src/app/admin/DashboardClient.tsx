@@ -165,7 +165,7 @@ export default function DashboardClient({
                     'Jenjang Pendidikan': m.pendidikan.jenjang,
                     'Jurusan': m.pendidikan.jurusan,
                     'Status': m.status,
-                    'Lancar Al-Quran': m.tambahan.lancar_baca_quran,
+                    'Lancar Al-Quran': m.tambahan.lancar_quran,
                     'Alasan Gagal': [m.scoring?.alasan_gagal?.join(', '), m.rejectedReason].filter(Boolean).join(' | ') || '-'
                 })));
                 const workbook = XLSX.utils.book_new();
