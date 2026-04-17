@@ -4,13 +4,18 @@ import { useEffect } from "react";
 interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (val?: string) => void;
   title: string;
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
   type?: "danger" | "success" | "info" | "warning";
   isLoading?: boolean;
+  showInput?: boolean;
+  inputType?: "text" | "password" | "textarea";
+  inputPlaceholder?: string;
+  inputValue?: string;
+  onInputChange?: (val: string) => void;
 }
 
 export default function ConfirmationModal({
@@ -23,6 +28,11 @@ export default function ConfirmationModal({
   cancelLabel = "Batal",
   type = "info",
   isLoading = false,
+  showInput = false,
+  inputType = "text",
+  inputPlaceholder,
+  inputValue,
+  onInputChange,
 }: ConfirmationModalProps) {
   
   // Close on Escape key
@@ -88,6 +98,29 @@ export default function ConfirmationModal({
             {message}
           </p>
 
+          {showInput && onInputChange && (
+            <div className="w-full mb-6 text-left">
+              {inputType === "textarea" ? (
+                <textarea
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm min-h-[100px]"
+                  placeholder={inputPlaceholder || "Masukkan alasan..."}
+                  value={inputValue}
+                  onChange={(e) => onInputChange(e.target.value)}
+                  autoFocus
+                />
+              ) : (
+                <input
+                  type={inputType || "text"}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm"
+                  placeholder={inputPlaceholder || "Masukkan kata kunci..."}
+                  value={inputValue}
+                  onChange={(e) => onInputChange(e.target.value)}
+                  autoFocus
+                />
+              )}
+            </div>
+          )}
+
           <div className="flex w-full gap-3">
             <button
               onClick={onClose}
@@ -98,7 +131,7 @@ export default function ConfirmationModal({
             </button>
             
             <button
-              onClick={onConfirm}
+              onClick={() => onConfirm(inputValue)}
               disabled={isLoading}
               className={`flex-1 px-4 py-2.5 text-white rounded-xl font-bold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed ${getButtonColor()}`}
             >

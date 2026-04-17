@@ -8,7 +8,7 @@ const WILAYAH_VALID: Record<string, string[]> = {
     "SUMATERA UTARA": ["KABUPATEN LANGKAT"],
     "SUMATERA BARAT": ["KOTA PADANG"],
     "SUMATERA SELATAN": ["KOTA PALEMBANG"],
-    "RIAU": ["KABUPATEN DUMAI", "KOTA PEKANBARU"],
+    "RIAU": ["KOTA DUMAI", "KOTA PEKANBARU"],
     "JAWA BARAT": ["KABUPATEN BOGOR", "KOTA BOGOR", "KOTA DEPOK"],
     "DI YOGYAKARTA": [], // Semua kabupaten/kota di DIY diizinkan
     "JAWA TIMUR": ["KOTA SURABAYA"],
@@ -30,19 +30,19 @@ export function checkPreScreening(data: MasterSchemaType) {
     }
 
     // 3. Domisili (Provinsi & Kabupaten)
+    const normalize = (s: string) => s.toUpperCase().replace(/[\s\.]/g, "");
+    
     const namaProv = (data.provinsi_nama ?? "").toUpperCase().trim();
-    const namaKab = (data.kabupaten_nama ?? "").toUpperCase().trim();
-
+    const namaKabClean = normalize(data.kabupaten_nama ?? "");
+    
     const allowedRegencies = WILAYAH_VALID[namaProv];
 
     if (!allowedRegencies) {
-        // Provinsi tidak ada dalam daftar
         alasan.push(`Domisili provinsi ${namaProv || "-"} tidak masuk dalam skema seleksi`);
     } else if (allowedRegencies.length > 0) {
-        // Provinsi ada, tapi dibatasi ke kabupaten tertentu
-        const cocokKab = allowedRegencies.some((k) => k === namaKab);
+        const cocokKab = allowedRegencies.some((k) => normalize(k) === namaKabClean);
         if (!cocokKab) {
-            alasan.push(`Wilayah ${namaKab || "-"} (${namaProv}) tidak masuk dalam skema seleksi. Yang diizinkan: ${allowedRegencies.join(", ")}`);
+            alasan.push(`Wilayah ${data.kabupaten_nama || "-"} (${namaProv}) tidak masuk dalam skema seleksi. Yang diizinkan: ${allowedRegencies.join(", ")}`);
         }
     }
     // Jika allowedRegencies.length === 0, berarti semua kabupaten di provinsi tersebut lolos

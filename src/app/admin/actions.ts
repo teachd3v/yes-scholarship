@@ -2,7 +2,7 @@
 
 import { writeClient } from "@/sanity/client";
 import { revalidatePath } from "next/cache";
-import type { ApplicationListItem, ApplicationDetail, PaginatedResult } from "@/lib/types";
+import type { ApplicationListItem, ApplicationDetail, PaginatedResult, MentorListItem, MentorDetail } from "@/lib/types";
 import { getAdminUser, verifyAdminPassword } from "./auth-actions";
 
 if (!writeClient) throw new Error("Sanity writeClient not configured")
@@ -68,10 +68,15 @@ export async function updateApplicationData(
   }
 }
 
-export async function updateApplicationStatus(id: string, status: 'approved' | 'rejected' | 'pending') {
+export async function updateApplicationStatus(id: string, status: 'approved' | 'rejected' | 'pending', reason?: string) {
   try {
-    await client.patch(id).set({ status }).commit();
+    const patch: any = { status };
+    if (status === 'rejected' && reason) {
+        patch.rejectedReason = reason;
+    }
+    await client.patch(id).set(patch).commit();
     revalidatePath('/admin');
+    revalidatePath(`/admin/application/${id}`);
     return { success: true };
   } catch (error) {
     console.error("Error updating status:", error);
@@ -79,8 +84,12 @@ export async function updateApplicationStatus(id: string, status: 'approved' | '
   }
 }
 
-export async function deleteApplication(id: string) {
+export async function deleteApplication(id: string, password?: string) {
   try {
+    if (!password) return { success: false, error: "Password wajib diisi" };
+    const valid = await verifyAdminPassword(password);
+    if (!valid) return { success: false, error: "Password salah" };
+
     await client.delete(id);
     revalidatePath('/admin');
     return { success: true };
@@ -296,3 +305,129 @@ export async function getApplicationById(id: string): Promise<ApplicationDetail 
         return null;
     }
 }
+
+// ==================== Mentor Actions ====================
+
+export async function getMentors(page: number = 1): Promise<PaginatedResult<MentorListItem>> {
+    try {
+        const adminUser = await getAdminUser();
+        if (!adminUser) throw new Error("Unauthorized");
+
+        const start = (page - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+
+        let baseCondition = `_type == "mentor"`;
+        // Mentor selection is national, usually not filtered by region like scholarship applicants,
+        // but we can add filter if needed later.
+
+        const query = `{
+            "items": *[${baseCondition}] | order(_createdAt desc) [$start...$end] {
+                _id,
+                _createdAt,
+                status,
+                "nama": biodata.nama_lengkap,
+                "email": biodata.email,
+                "whatsapp": biodata.whatsapp,
+                "provinsi_nama": domisili.provinsi_nama,
+                "jenjang": pendidikan.jenjang
+            },
+            "total": count(*[${baseCondition}])
+        }`;
+        const data = await client.fetch(query, { start, end }, { cache: 'no-store' });
+        return {
+            items: data.items || [],
+            total: data.total || 0,
+            page,
+            pageSize: PAGE_SIZE,
+            totalPages: Math.ceil((data.total || 0) / PAGE_SIZE),
+        };
+    } catch (error) {
+        console.error("Error fetching mentors:", error);
+        return { items: [], total: 0, page: 1, pageSize: PAGE_SIZE, totalPages: 0 };
+    }
+}
+
+export async function updateMentorStatus(id: string, status: 'approved' | 'rejected' | 'pending', reason?: string) {
+  try {
+    const patch: any = { status };
+    if (status === 'rejected' && reason) {
+        patch.rejectedReason = reason;
+    }
+    await client.patch(id).set(patch).commit();
+    revalidatePath('/admin');
+    revalidatePath(`/admin/mentor/${id}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating mentor status:", error);
+    return { success: false, error: "Gagal mengupdate status mentor" };
+  }
+}
+
+export async function deleteMentor(id: string, password?: string) {
+  try {
+    if (!password) return { success: false, error: "Password wajib diisi" };
+    const valid = await verifyAdminPassword(password);
+    if (!valid) return { success: false, error: "Password salah" };
+
+    await client.delete(id);
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting mentor:", error);
+    return { success: false, error: "Gagal menghapus data mentor" };
+  }
+}
+
+export async function getMentorById(id: string): Promise<MentorDetail | null> {
+    try {
+        const query = `*[_type == "mentor" && _id == $id][0] {
+            ...,
+            biodata {
+                ...,
+                "foto_profil_url": foto_profil.asset->url
+            },
+            domisili {
+                ...
+            },
+            pendidikan {
+                ...
+            },
+            tambahan {
+                ...,
+                "cv_resume_url": cv_resume.asset->url
+            }
+        }`;
+        const data = await client.fetch(query, { id }, { cache: 'no-store' });
+        return data;
+    } catch (error) {
+        console.error("Error fetching mentor detail:", error);
+        return null;
+    }
+}
+
+export async function exportAllMentors(): Promise<MentorDetail[]> {
+    try {
+        const adminUser = await getAdminUser();
+        if (!adminUser) throw new Error("Unauthorized");
+
+        const query = `*[_type == "mentor"] | order(_createdAt desc) {
+            ...,
+            biodata {
+                ...,
+                "foto_profil_url": foto_profil.asset->url
+            },
+            tambahan {
+                ...,
+                "cv_resume_url": cv_resume.asset->url
+            }
+        }`;
+        
+        const data = await client.fetch(query, {}, { cache: 'no-store' });
+        return data || [];
+    } catch (error) {
+        console.error("Error exporting mentors:", error);
+        return [];
+    }
+}
+
+

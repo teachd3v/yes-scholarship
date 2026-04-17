@@ -14,8 +14,9 @@ export default function DetailActions({ id, currentStatus }: { id: string, curre
         title: string;
         message: string;
         type: 'danger' | 'success' | 'info' | 'warning';
-        onConfirm: () => void;
+        onConfirm: (val?: string) => void;
         confirmLabel?: string;
+        showInput?: boolean;
     }>({
         isOpen: false,
         title: '',
@@ -24,33 +25,37 @@ export default function DetailActions({ id, currentStatus }: { id: string, curre
         onConfirm: () => {},
     });
 
-    const closeModal = () => setModal(prev => ({ ...prev, isOpen: false }));
+    const [reason, setReason] = useState("");
+
+    const closeModal = () => {
+        setModal(prev => ({ ...prev, isOpen: false }));
+        setReason("");
+    };
 
     const handleUpdate = (status: 'approved' | 'rejected') => {
         const isApprove = status === 'approved';
+        setReason("");
         setModal({
             isOpen: true,
             title: isApprove ? "Setujui Lamaran" : "Tolak Lamaran",
             message: isApprove 
                 ? "Apakah Anda yakin ingin menyetujui lamaran ini?" 
-                : "Apakah Anda yakin ingin menolak lamaran ini?",
+                : "Silakan berikan alasan penolakan untuk lamaran ini:",
             type: isApprove ? "success" : "danger",
             confirmLabel: isApprove ? "Ya, Setujui" : "Ya, Tolak",
-            onConfirm: async () => {
+            showInput: !isApprove,
+            onConfirm: async (val?: string) => {
+                if (!isApprove && !val?.trim()) {
+                    alert("Alasan penolakan wajib diisi!");
+                    return;
+                }
                 setLoading(true);
                 try {
-                    await updateApplicationStatus(id, status);
+                    await updateApplicationStatus(id, status, isApprove ? undefined : val);
                     router.refresh();
                     closeModal();
                 } catch {
-                    setModal({
-                        isOpen: true,
-                        title: "Gagal Mengupdate",
-                        message: "Terjadi kesalahan saat mengupdate status.",
-                        type: "danger",
-                        confirmLabel: "Tutup",
-                        onConfirm: () => closeModal(),
-                    });
+                    alert("Gagal mengupdate status.");
                 } finally {
                     setLoading(false);
                 }
@@ -66,10 +71,12 @@ export default function DetailActions({ id, currentStatus }: { id: string, curre
         <div className="space-y-3">
             <button
                 onClick={() => handleUpdate('approved')}
-                disabled={currentStatus === 'approved'}
+                disabled={currentStatus === 'approved' || currentStatus === 'rejected'}
                 className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-bold transition ${
                     currentStatus === 'approved' 
                     ? 'bg-green-100 text-green-700 cursor-default' 
+                    : currentStatus === 'rejected'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed grayscale'
                     : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-200'
                 }`}
             >
@@ -105,6 +112,11 @@ export default function DetailActions({ id, currentStatus }: { id: string, curre
                 type={modal.type}
                 confirmLabel={modal.confirmLabel}
                 isLoading={loading}
+                showInput={modal.showInput}
+                inputType="textarea"
+                inputPlaceholder="Alasan penolakan data..."
+                inputValue={reason}
+                onInputChange={(val) => setReason(val)}
             />
         </div>
     );

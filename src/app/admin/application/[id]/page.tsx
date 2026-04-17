@@ -58,46 +58,59 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
 
       <main className="max-w-5xl mx-auto px-4 py-8 md:px-8 space-y-8">
         
-        {/* Scoring Summary Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <CheckCircle className="text-blue-600" size={20} /> Hasil Screening & Scoring
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
-                    <div className="text-sm text-slate-500 mb-1">Total Skor</div>
-                    <div className="text-4xl font-black text-slate-800">{app.scoring?.total_skor || 0}</div>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
-                    <div className="text-sm text-slate-500 mb-1">Pre-Screening</div>
-                    <div className={`text-xl font-bold ${app.scoring?.lolos_screening ? 'text-green-600' : 'text-red-600'}`}>
-                        {app.scoring?.lolos_screening ? 'LOLOS' : 'TIDAK LOLOS'}
+        {/* Scoring Summary Card & Rejection Reasons - Moved to Top */}
+        <div className="space-y-4">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <CheckCircle className="text-blue-600" size={20} /> Hasil Screening & Scoring
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                        <div className="text-sm text-slate-500 mb-1">Total Skor</div>
+                        <div className="text-4xl font-black text-slate-800">{app.scoring?.total_skor || 0}</div>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-center">
+                        <div className="text-sm text-slate-500 mb-1">Pre-Screening</div>
+                        <div className={`text-xl font-bold ${app.scoring?.lolos_screening ? 'text-green-600' : 'text-red-600'}`}>
+                            {app.scoring?.lolos_screening ? 'LOLOS' : 'TIDAK LOLOS'}
+                        </div>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                        <div className="text-sm text-slate-500 mb-1">Detail Skor</div>
+                        <div className="text-xs text-slate-600 space-y-1">
+                            {(() => {
+                                try {
+                                    const details = JSON.parse(app.scoring?.detail_skor || '{}');
+                                    return Object.entries(details).map(([k, v]) => (
+                                        <div key={k} className="flex justify-between border-b border-slate-200 pb-0.5 last:border-0">
+                                            <span className="capitalize">{k.replace(/_/g, ' ')}</span>
+                                            <span className="font-mono font-bold">{String(v)}</span>
+                                        </div>
+                                    ));
+                                } catch (e) { return <span>Error parsing details</span> }
+                            })()}
+                        </div>
                     </div>
                 </div>
-                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                    <div className="text-sm text-slate-500 mb-1">Detail Skor</div>
-                     {/* Try to parse JSON detail_skor */}
-                     <div className="text-xs text-slate-600 space-y-1">
-                        {(() => {
-                            try {
-                                const details = JSON.parse(app.scoring?.detail_skor || '{}');
-                                return Object.entries(details).map(([k, v]) => (
-                                    <div key={k} className="flex justify-between border-b border-slate-200 pb-0.5 last:border-0">
-                                        <span className="capitalize">{k.replace(/_/g, ' ')}</span>
-                                        <span className="font-mono font-bold">{String(v)}</span>
-                                    </div>
-                                ));
-                            } catch (e) { return <span>Error parsing details</span> }
-                        })()}
-                     </div>
-                </div>
+                {app.scoring?.alasan_gagal && app.scoring.alasan_gagal.length > 0 && (
+                    <div className="mt-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
+                        <strong>Alasan Gagal Screening:</strong>
+                        <ul className="list-disc list-inside mt-1 ml-1">
+                            {app.scoring.alasan_gagal.map((a: string, i: number) => <li key={i}>{a}</li>)}
+                        </ul>
+                    </div>
+                )}
             </div>
-            {app.scoring?.alasan_gagal && app.scoring.alasan_gagal.length > 0 && (
-                <div className="mt-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
-                    <strong>Alasan Gagal:</strong>
-                    <ul className="list-disc list-inside mt-1 ml-1">
-                        {app.scoring.alasan_gagal.map((a: string, i: number) => <li key={i}>{a}</li>)}
-                    </ul>
+
+            {app.status === 'rejected' && app.rejectedReason && (
+                <div className="bg-red-50 border border-red-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="px-6 py-3 border-b border-red-200 bg-red-100/50 flex items-center gap-2">
+                        <XCircle size={18} className="text-red-600" />
+                        <h3 className="font-bold text-red-800 text-sm">Alasan Penolakan (Admin)</h3>
+                    </div>
+                    <div className="p-5">
+                        <p className="text-sm text-red-700 italic">"{app.rejectedReason}"</p>
+                    </div>
                 </div>
             )}
         </div>

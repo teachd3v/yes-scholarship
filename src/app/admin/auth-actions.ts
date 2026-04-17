@@ -18,6 +18,7 @@ const ADMIN_MAPPING = [
   { username: 'admin_sumsel', region: 'Sumatera Selatan' },
   { username: 'admin_sumut', region: 'Sumatera Utara' },
   { username: 'admin_sumbar', region: 'Sumatera Barat' },
+  { username: 'admin_aceh', region: 'Aceh' },
 ];
 
 const USERS = [
@@ -50,7 +51,7 @@ export async function loginAction(formData: FormData) {
     role: user.role,
     region: 'region' in user ? user.region : undefined
   };
-  
+
   const token = Buffer.from(JSON.stringify(payload)).toString('base64');
 
   const cookieStore = await cookies()
@@ -79,14 +80,14 @@ export async function verifyAdminPassword(password: string): Promise<boolean> {
 }
 
 export async function getAdminUser(): Promise<AdminUser | null> {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('admin_token')?.value;
-    if (!token) return null;
+  const cookieStore = await cookies();
+  const token = cookieStore.get('admin_token')?.value;
+  if (!token) return null;
 
-    try {
-        const decoded = Buffer.from(token, 'base64').toString('utf-8');
-        return JSON.parse(decoded) as AdminUser;
-    } catch (e) {
-        return null;
-    }
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf-8');
+    return JSON.parse(decoded) as AdminUser;
+  } catch (e) {
+    return null;
+  }
 }

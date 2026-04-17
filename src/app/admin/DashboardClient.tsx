@@ -1,98 +1,129 @@
 'use client'
 
 import { useState, useMemo } from 'react';
-import { updateApplicationStatus, deleteApplication, exportAllApplications } from './actions';
-import { useRouter } from 'next/navigation';
-import { CheckCircle, XCircle, Clock, Eye, Check, X, Loader2, Filter, ArrowUpDown, Search, ChevronLeft, ChevronRight, Trash2, ClipboardCheck } from 'lucide-react';
+import { 
+    updateApplicationStatus, 
+    deleteApplication, 
+    exportAllApplications,
+    updateMentorStatus,
+    deleteMentor,
+    exportAllMentors
+} from './actions';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { 
+    CheckCircle, XCircle, Clock, Eye, Check, X, Loader2, Filter, 
+    ArrowUpDown, Search, ChevronLeft, ChevronRight, Trash2, 
+    ClipboardCheck, Users, UserPlus, Download 
+} from 'lucide-react';
 import Link from 'next/link';
-import type { ApplicationListItem } from '@/lib/types';
+import type { ApplicationListItem, MentorListItem, PaginatedResult } from '@/lib/types';
 import { formatIncome } from '@/lib/types';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import * as XLSX from 'xlsx';
 
 interface DashboardProps {
-    applications: ApplicationListItem[];
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
+    initialApplicants: PaginatedResult<ApplicationListItem>;
+    initialMentors: PaginatedResult<MentorListItem>;
     role?: 'superadmin' | 'admin_wilayah';
     region?: string;
+    defaultTab?: string;
 }
 
-export default function DashboardClient({ applications, currentPage, totalPages, totalItems, role, region }: DashboardProps) {
+export default function DashboardClient({ 
+    initialApplicants, 
+    initialMentors, 
+    role, 
+    region,
+    defaultTab = 'applicants'
+}: DashboardProps) {
     const router = useRouter();
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [activeTab, setActiveTab] = useState(defaultTab);
 
     // Modal State
     const [modal, setModal] = useState<{
         isOpen: boolean;
         title: string;
         message: string;
-        type: 'danger' | 'success' | 'info' | 'warning';
-        onConfirm: () => void;
         confirmLabel?: string;
+        type?: "danger" | "success" | "info" | "warning";
+        onConfirm: (val?: string) => void;
+        showInput?: boolean;
+        inputType?: "text" | "password" | "textarea";
+        inputPlaceholder?: string;
     }>({
         isOpen: false,
-        title: '',
-        message: '',
-        type: 'info',
-        onConfirm: () => {},
+        title: "",
+        message: "",
+        onConfirm: () => { },
     });
 
-    const closeModal = () => setModal(prev => ({ ...prev, isOpen: false }));
+    const [modalInput, setModalInput] = useState("");
 
-    const handleDelete = (id: string) => {
+    const closeModal = () => {
+        setModal(prev => ({ ...prev, isOpen: false }));
+        setModalInput("");
+    };
+
+    const handleDelete = (id: string, type: 'applicant' | 'mentor') => {
+        setModalInput("");
         setModal({
             isOpen: true,
-            title: "Hapus Pendaftaran",
-            message: "Apakah Anda yakin ingin menghapus data ini? Data yang dihapus tidak dapat dikembalikan.",
+            title: type === 'applicant' ? "Hapus Pendaftar" : "Hapus Mentor",
+            message: "Aksi ini tidak dapat dibatalkan. Masukkan password admin untuk mengonfirmasi penghapusan data.",
             type: "danger",
-            confirmLabel: "Ya, Hapus",
-            onConfirm: async () => {
+            confirmLabel: "Ya, Hapus Permanen",
+            showInput: true,
+            inputType: "password",
+            inputPlaceholder: "Password Admin",
+            onConfirm: async (val?: string) => {
+                if (!val) {
+                    alert("Password wajib diisi!");
+                    return;
+                }
                 setLoadingId(id);
-                const res = await deleteApplication(id);
+                const res = type === 'applicant' 
+                    ? await deleteApplication(id, val) 
+                    : await deleteMentor(id, val);
+                
                 if (!res.success) {
-                    // Show error modal
-                    setModal({
-                        isOpen: true,
-                        title: "Gagal Menghapus",
-                        message: res.error || "Terjadi kesalahan saat menghapus data.",
-                        type: "danger",
-                        confirmLabel: "Tutup",
-                        onConfirm: () => closeModal(),
-                    });
+                    alert(res.error || "Gagal menghapus data.");
+                    setLoadingId(null);
                 } else {
                     closeModal();
                     router.refresh();
+                    setLoadingId(null);
                 }
-                setLoadingId(null);
-            }
+            },
         });
     };
 
-    // Filters State (client-side filtering within current page)
-    const [filterProvince, setFilterProvince] = useState<string>('All');
-    const [filterIncome, setFilterIncome] = useState<string>('All');
-    const [filterScore, setFilterScore] = useState<string>('All');
-    const [filterStatus, setFilterStatus] = useState<string>('All');
-    const [filterScreening, setFilterScreening] = useState<string>('All');
-    const [sortBy, setSortBy] = useState<string>('date_desc');
-    const [searchQuery, setSearchQuery] = useState("");
-
-    const handleStatusUpdate = (id: string, newStatus: 'approved' | 'rejected') => {
+    const handleStatusUpdate = (id: string, newStatus: 'approved' | 'rejected', type: 'applicant' | 'mentor') => {
         const isApprove = newStatus === 'approved';
+        setModalInput("");
         setModal({
             isOpen: true,
-            title: isApprove ? "Setujui Pendaftaran" : "Tolak Pendaftaran",
+            title: isApprove ? "Setujui" : "Tolak",
             message: isApprove 
-                ? "Apakah Anda yakin ingin menyetujui pendaftaran ini?" 
-                : "Apakah Anda yakin ingin menolak pendaftaran ini?",
+                ? "Apakah Anda yakin ingin menyetujui data ini?" 
+                : "Silakan berikan alasan penolakan data ini:",
             type: isApprove ? "success" : "danger",
             confirmLabel: isApprove ? "Ya, Setujui" : "Ya, Tolak",
-            onConfirm: async () => {
+            showInput: !isApprove,
+            inputType: "textarea",
+            inputPlaceholder: "Alasan penolakan...",
+            onConfirm: async (val?: string) => {
+                if (!isApprove && !val?.trim()) {
+                    alert("Alasan penolakan wajib diisi!");
+                    return;
+                }
                 setLoadingId(id);
-                await updateApplicationStatus(id, newStatus);
+                if (type === 'applicant') {
+                    await updateApplicationStatus(id, newStatus, isApprove ? undefined : val);
+                } else {
+                    await updateMentorStatus(id, newStatus, isApprove ? undefined : val);
+                }
                 setLoadingId(null);
                 closeModal();
                 router.refresh();
@@ -100,446 +131,364 @@ export default function DashboardClient({ applications, currentPage, totalPages,
         });
     };
 
-    // Pagination handler
-    const goToPage = (page: number) => {
-        if (page < 1 || page > totalPages) return;
-        router.push(`/admin?page=${page}`);
-    };
-
-    // Export Handler
-    const handleExportExcel = async (onlyLolos: boolean = false) => {
+    const handleExportExcel = async () => {
         setIsExporting(true);
         try {
-            const allData = await exportAllApplications(onlyLolos);
-            
-            if (!allData || allData.length === 0) {
-                alert("Tidak ada data untuk di-export.");
-                return;
+            if (activeTab === 'applicants') {
+                const data = await exportAllApplications();
+                const worksheet = XLSX.utils.json_to_sheet(data.map(app => ({
+                    'Nama': app.biodata.nama,
+                    'Email': app.biodata.email,
+                    'WA': app.biodata.whatsapp,
+                    'Jenis Kelamin': app.biodata.jenis_kelamin,
+                    'Wilayah': app.biodata.provinsi_nama,
+                    'Alamat': app.biodata.alamat_detail,
+                    'Asal Sekolah': app.seleksi.asal_sekolah,
+                    'Jenjang': app.seleksi.jenjang_pendidikan,
+                    'Status': app.status,
+                    'Skor': app.scoring?.total_skor || 0,
+                    'Lolos Screening': app.scoring?.lolos_screening ? 'YA' : 'TIDAK',
+                    'Alasan Gagal': [app.scoring?.alasan_gagal?.join(', '), app.rejectedReason].filter(Boolean).join(' | ') || '-'
+                })));
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Applicants");
+                XLSX.writeFile(workbook, `YES_Applicants_${new Date().toLocaleDateString()}.xlsx`);
+            } else {
+                const data = await exportAllMentors();
+                const worksheet = XLSX.utils.json_to_sheet(data.map(m => ({
+                    'Nama': m.biodata.nama_lengkap,
+                    'Email': m.biodata.email,
+                    'WA': m.biodata.whatsapp,
+                    'Jenis Kelamin': m.biodata.jenis_kelamin,
+                    'Wilayah': m.domisili.provinsi_nama,
+                    'Alamat': m.domisili.alamat_detail,
+                    'Jenjang Pendidikan': m.pendidikan.jenjang,
+                    'Jurusan': m.pendidikan.jurusan,
+                    'Status': m.status,
+                    'Lancar Al-Quran': m.tambahan.lancar_baca_quran,
+                    'Alasan Gagal': [m.scoring?.alasan_gagal?.join(', '), m.rejectedReason].filter(Boolean).join(' | ') || '-'
+                })));
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Mentors");
+                XLSX.writeFile(workbook, `YES_Mentors_${new Date().toLocaleDateString()}.xlsx`);
             }
-
-            // Build export data mapping all fields
-            const exportData = allData.map((app, index) => {
-                let detailSkorData: Record<string, unknown> = {};
-                if (typeof app.scoring?.detail_skor === 'string') {
-                    try {
-                        detailSkorData = JSON.parse(app.scoring.detail_skor);
-                    } catch {
-                        detailSkorData = {};
-                    }
-                } else if (app.scoring?.detail_skor && typeof app.scoring.detail_skor === 'object') {
-                   detailSkorData = app.scoring.detail_skor as Record<string, unknown>;
-                }
-
-                // Format lists
-                const orgs = app.seleksi?.list_organisasi?.map(o => `${o.jenis} (${o.jabatan})${o.ket_lainnya ? ` - ${o.ket_lainnya}` : ''}`).join(', ') || '-';
-                const prestasis = app.seleksi?.list_prestasi?.map(p => `${p.keterangan} (${p.juara} Tk. ${p.tingkat})`).join(', ') || '-';
-
-                return {
-                    'No': index + 1,
-                    'Tanggal Daftar': new Date(app._createdAt).toLocaleString('id-ID'),
-                    'Status Sistem': app.status === 'approved' ? 'Diterima' : app.status === 'rejected' ? 'Ditolak' : 'Pending',
-                    'Lolos Screening': app.scoring?.lolos_screening ? 'Lolos' : 'Tidak Lolos',
-                    'Alasan Gagal Screening': app.scoring?.alasan_gagal?.join('; ') || '-',
-                    'Total Skor': app.scoring?.total_skor || 0,
-                    
-                    // BIODATA
-                    'Nama Lengkap': app.biodata?.nama || '-',
-                    'NIK': app.biodata?.nik || '-',
-                    'No KK': app.biodata?.no_kk || '-',
-                    'Email': app.biodata?.email || '-',
-                    'Whatsapp': app.biodata?.whatsapp || '-',
-                    'Jenis Kelamin': app.biodata?.jenis_kelamin || '-',
-                    'Agama': app.biodata?.agama || '-',
-                    'Tempat, Tgl Lahir': `${app.biodata?.tempat_lahir || '-'}, ${app.biodata?.tanggal_lahir || '-'}`,
-                    'Provinsi': app.biodata?.provinsi_nama || '-',
-                    'Kabupaten': app.biodata?.kabupaten_nama || '-',
-                    'Kecamatan': app.biodata?.kecamatan_nama || '-',
-                    'Kelurahan': app.biodata?.kelurahan_nama || '-',
-                    'Alamat Detail': app.biodata?.alamat_detail || '-',
-
-                    // KELUARGA
-                    'Nama Ayah': app.keluarga?.nama_ayah || '-',
-                    'Kondisi Ayah': app.keluarga?.kondisi_ayah || '-',
-                    'Pekerjaan Ayah': (app.keluarga as Record<string, unknown>)?.pekerjaan_ayah as string || '-',
-                    'Nama Ibu': app.keluarga?.nama_ibu || '-',
-                    'Kondisi Ibu': app.keluarga?.kondisi_ibu || '-',
-                    'Pekerjaan Ibu': (app.keluarga as Record<string, unknown>)?.pekerjaan_ibu as string || '-',
-                    'Penghasilan Ortu': app.keluarga?.penghasilan_ortu ? formatIncome(app.keluarga.penghasilan_ortu) : '-',
-                    'Kontak Ortu': app.keluarga?.kontak_ortu || '-',
-                    'Jml Saudara': app.keluarga?.jumlah_saudara || 0,
-                    'Punya SKTM': (app.keluarga as Record<string, unknown>)?.has_sktm as string || '-',
-                    'Punya SKB': (app.keluarga as Record<string, unknown>)?.has_skb as string || '-',
-
-                    // SELEKSI
-                    'Asal Sekolah': app.seleksi?.asal_sekolah || '-',
-                    'Jenjang Pendidikan': app.seleksi?.jenjang_pendidikan || '-',
-                    'Nilai Raport Sem 1': app.seleksi?.nilai_raport_1 || 0,
-                    'Nilai Raport Sem 2': app.seleksi?.nilai_raport_2 || 0,
-                    'Nilai Raport Sem 3': app.seleksi?.nilai_raport_3 || 0,
-                    'Rata-rata Nilai': Number(detailSkorData?.nilai_raport) || 0,
-                    'Status Beasiswa': app.seleksi?.status_beasiswa || '-',
-                    'Ket. Beasiswa': app.seleksi?.keterangan_beasiswa || '-',
-                    'Organisasi': orgs,
-                    'Prestasi': prestasis,
-                    'Hafalan': app.seleksi?.kategori_hafalan || '-',
-                    'Motivasi': app.seleksi?.motivasi || '-',
-                    'Sumber Info': app.seleksi?.sumber_info || '-',
-                    'Link Social Media': app.seleksi?.social_media || '-',
-
-                    // REKOMENDASI
-                    'Rekomendasi Admin': app.rekomendasi?.tipe === 'rekomendasikan_lolos'
-                        ? 'Rekomendasikan Lolos'
-                        : app.rekomendasi?.tipe === 'rekomendasikan_gagal'
-                        ? 'Rekomendasikan Gagal'
-                        : '-',
-                    'Catatan Rekomendasi': app.rekomendasi?.catatan || '-',
-                    'Rekomendasi Oleh': app.rekomendasi?.dibuat_oleh || '-',
-                    'Tanggal Rekomendasi': app.rekomendasi?.tanggal
-                        ? new Date(app.rekomendasi.tanggal).toLocaleString('id-ID')
-                        : '-',
-                };
-            });
-
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(exportData);
-            XLSX.utils.book_append_sheet(wb, ws, "Data Pendaftar");
-
-            // Format filename based on role/region
-            const filename = role === 'superadmin' 
-                ? (onlyLolos ? 'Rekap_Pendaftar_Lolos_YES.xlsx' : 'Rekap_Semua_Pendaftar_YES.xlsx')
-                : `Rekap_Pendaftar_YES_${region?.replace(/\s+/g, '_')}.xlsx`;
-
-            XLSX.writeFile(wb, filename);
         } catch (error) {
-            console.error("Export error:", error);
-            alert("Terjadi kesalahan saat mengekspor data.");
+            console.error("Export failed:", error);
+            alert("Gagal mengekspor data.");
         } finally {
             setIsExporting(false);
         }
     };
 
-    // Derived Data: Unique Provinces for Filter
-    const provinces = useMemo(() => {
-        const provs = new Set(applications.map(app => app.provinsi_nama).filter(Boolean));
-        return Array.from(provs).sort();
-    }, [applications]);
+    // Filters State
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterProvince, setFilterProvince] = useState<string>('All');
+    const [filterStatus, setFilterStatus] = useState<string>('All');
+    
+    // Applicant Specific Filters
+    const [filterIncome, setFilterIncome] = useState<string>('All');
+    const [filterScore, setFilterScore] = useState<string>('All');
+    const [filterScreening, setFilterScreening] = useState<string>('All');
+    
+    // Mentor Specific Filters
+    const [filterJenjang, setFilterJenjang] = useState<string>('All');
 
-    // Derived Data: Filtered & Sorted Applications
-    const processedApps = useMemo(() => {
-        let result = [...applications];
+    const [sortBy, setSortBy] = useState<string>('date_desc');
 
-        if (filterProvince !== 'All') {
-            result = result.filter(app => app.provinsi_nama === filterProvince);
-        }
-        if (filterIncome !== 'All') {
-            result = result.filter(app => app.penghasilan_ortu === filterIncome);
-        }
-        if (filterStatus !== 'All') {
-            result = result.filter(app => app.status === filterStatus);
-        }
-        if (filterScreening !== 'All') {
-            const isLolos = filterScreening === 'Lolos';
-            result = result.filter(app => app.lolos_screening === isLolos);
-        }
-        if (filterScore !== 'All') {
-            result = result.filter(app => {
-                const avg = (
-                    (Number(app.nilai_raport_1 || 0) +
-                     Number(app.nilai_raport_2 || 0) +
-                     Number(app.nilai_raport_3 || 0)) / 3
-                );
-                return filterScore === '>=60' ? avg >= 60 : avg < 60;
+    const applications = initialApplicants.items;
+    const mentors = initialMentors.items;
+
+    // Derived Data: Filtered & Sorted Logic
+    const filteredData = useMemo(() => {
+        if (activeTab === 'applicants') {
+            let result = [...applications];
+            if (filterProvince !== 'All') result = result.filter(app => app.provinsi_nama === filterProvince);
+            if (filterIncome !== 'All') result = result.filter(app => app.penghasilan_ortu === filterIncome);
+            if (filterStatus !== 'All') result = result.filter(app => app.status === filterStatus);
+            if (filterScreening !== 'All') result = result.filter(app => (filterScreening === 'Lolos' ? app.lolos_screening : !app.lolos_screening));
+            if (searchQuery) {
+                const q = searchQuery.toLowerCase();
+                result = result.filter(app => app.nama?.toLowerCase().includes(q) || app.email?.toLowerCase().includes(q));
+            }
+            // Sort
+            result.sort((a, b) => {
+                if (sortBy === 'score_desc') return (b.total_skor || 0) - (a.total_skor || 0);
+                if (sortBy === 'score_asc') return (a.total_skor || 0) - (b.total_skor || 0);
+                if (sortBy === 'date_desc') return new Date(b._createdAt).getTime() - new Date(a._createdAt).getTime();
+                if (sortBy === 'date_asc') return new Date(a._createdAt).getTime() - new Date(b._createdAt).getTime();
+                return 0;
             });
+            return result;
+        } else {
+            let result = [...mentors];
+            if (filterProvince !== 'All') result = result.filter(m => m.provinsi_nama === filterProvince);
+            if (filterStatus !== 'All') result = result.filter(m => m.status === filterStatus);
+            if (filterJenjang !== 'All') result = result.filter(m => m.jenjang === filterJenjang);
+            if (searchQuery) {
+                const q = searchQuery.toLowerCase();
+                result = result.filter(m => m.nama?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q));
+            }
+             // Sort
+             result.sort((a, b) => {
+                if (sortBy === 'date_desc') return new Date(b._createdAt).getTime() - new Date(a._createdAt).getTime();
+                if (sortBy === 'date_asc') return new Date(a._createdAt).getTime() - new Date(b._createdAt).getTime();
+                return 0;
+            });
+            return result;
         }
-        if (searchQuery) {
-            const lowerInfo = searchQuery.toLowerCase();
-            result = result.filter(app =>
-                app.nama?.toLowerCase().includes(lowerInfo) ||
-                app.email?.toLowerCase().includes(lowerInfo)
-            );
-        }
+    }, [activeTab, applications, mentors, filterProvince, filterIncome, filterStatus, filterScreening, filterJenjang, searchQuery, sortBy]);
 
-        result.sort((a, b) => {
-            if (sortBy === 'score_desc') return (b.total_skor || 0) - (a.total_skor || 0);
-            if (sortBy === 'score_asc') return (a.total_skor || 0) - (b.total_skor || 0);
-            if (sortBy === 'date_desc') return new Date(b._createdAt).getTime() - new Date(a._createdAt).getTime();
-            if (sortBy === 'date_asc') return new Date(a._createdAt).getTime() - new Date(b._createdAt).getTime();
-            return 0;
-        });
+    // Pagination constants
+    const currentData = activeTab === 'applicants' ? initialApplicants : initialMentors;
+    const totalPages = currentData.totalPages;
+    const currentPage = currentData.page;
+    const totalItems = currentData.total;
 
-        return result;
-    }, [applications, filterProvince, filterIncome, filterScore, filterStatus, filterScreening, sortBy, searchQuery]);
+    const goToPage = (page: number) => {
+        if (page < 1 || page > totalPages) return;
+        router.push(`/admin?tab=${activeTab}&page=${page}`);
+    };
 
-    // Statistics Cards Data (from current page data)
+    const switchTab = (tab: string) => {
+        setActiveTab(tab);
+        router.push(`/admin?tab=${tab}&page=1`);
+    };
+
+    // Stats
     const stats = useMemo(() => {
-        return {
-            total: totalItems,
-            lolos: applications.filter(a => a.lolos_screening).length,
-            gagal: applications.filter(a => !a.lolos_screening).length,
-            approved: applications.filter(a => a.status === 'approved').length,
-            pending: applications.filter(a => a.status === 'pending').length,
-            rejected: applications.filter(a => a.status === 'rejected').length,
+        if (activeTab === 'applicants') {
+            return {
+                total: initialApplicants.total,
+                approved: applications.filter(a => a.status === 'approved').length,
+                pending: applications.filter(a => a.status === 'pending').length,
+                rejected: applications.filter(a => a.status === 'rejected').length,
+                lolos: applications.filter(a => a.lolos_screening).length,
+                gagal: applications.filter(a => !a.lolos_screening).length,
+            };
+        } else {
+            return {
+                total: initialMentors.total,
+                approved: mentors.filter(m => m.status === 'approved').length,
+                pending: mentors.filter(m => m.status === 'pending').length,
+                rejected: mentors.filter(m => m.status === 'rejected').length,
+            };
         }
-    }, [applications, totalItems]);
-
+    }, [activeTab, initialApplicants, initialMentors, applications, mentors]);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
+            {/* Tabs Header */}
+            <div className="flex border-b border-slate-200 gap-8">
+                <button 
+                    onClick={() => switchTab('applicants')}
+                    className={`pb-4 text-sm font-bold transition-colors relative flex items-center gap-2 ${
+                        activeTab === 'applicants' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                >
+                    <Users size={18} />
+                    Penerima Manfaat
+                    {activeTab === 'applicants' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full" />}
+                </button>
+                <button 
+                    onClick={() => switchTab('mentors')}
+                    className={`pb-4 text-sm font-bold transition-colors relative flex items-center gap-2 ${
+                        activeTab === 'mentors' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                >
+                    <UserPlus size={18} />
+                    Mentor YES
+                    {activeTab === 'mentors' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full" />}
+                </button>
+                <div className="flex-1" />
+                <button
+                    onClick={handleExportExcel}
+                    disabled={isExporting}
+                    className="mb-4 flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition disabled:opacity-50"
+                >
+                    {isExporting ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
+                    Export Excel {activeTab === 'applicants' ? 'Pendaftar' : 'Mentor'}
+                </button>
+            </div>
 
-            {/* 1. Statistics Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <StatCard label="Total Pendaftar" value={stats.total} icon={<Clock size={16} />} color="bg-blue-50 text-blue-700" />
-                <StatCard label="Lolos Screening" value={stats.lolos} icon={<CheckCircle size={16} />} color="bg-green-50 text-green-700" />
-                <StatCard label="Gagal Screening" value={stats.gagal} icon={<XCircle size={16} />} color="bg-red-50 text-red-700" />
+            {/* Stats Overview */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <StatCard label={`Total ${activeTab === 'applicants' ? 'Pendaftar' : 'Calon Mentor'}`} value={stats.total} icon={<Clock size={16} />} color="bg-blue-50 text-blue-700" />
                 <StatCard label="Approved" value={stats.approved} icon={<Check size={16} />} color="bg-emerald-100 text-emerald-800" />
                 <StatCard label="Pending" value={stats.pending} icon={<Clock size={16} />} color="bg-yellow-100 text-yellow-800" />
                 <StatCard label="Rejected" value={stats.rejected} icon={<X size={16} />} color="bg-gray-100 text-gray-800" />
+                {activeTab === 'applicants' && (
+                    <StatCard label="Lolos Screening" value={stats.lolos} icon={<CheckCircle size={16} />} color="bg-green-50 text-green-700" />
+                )}
             </div>
 
-            {/* Export Section for Super Admin / Admin */}
-            <div className="flex justify-end gap-3">
-                 {role === 'superadmin' ? (
-                    <>
-                        <button 
-                            onClick={() => handleExportExcel(false)}
-                            disabled={isExporting}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition disabled:opacity-50 text-sm font-medium"
-                        >
-                            {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
-                            {isExporting ? "Mengekspor..." : "Export Semua Data"}
-                        </button>
-                        <button 
-                            onClick={() => handleExportExcel(true)}
-                            disabled={isExporting}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 text-sm font-medium"
-                        >
-                            {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-                            {isExporting ? "Mengekspor..." : "Export Data Lolos"}
-                        </button>
-                    </>
-                 ) : (
-                    <button 
-                        onClick={() => handleExportExcel(false)}
-                        disabled={isExporting}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 text-sm font-medium"
-                    >
-                        {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
-                        {isExporting ? "Mengekspor..." : "Export Excel"}
-                    </button>
-                 )}
-            </div>
-
-            {/* 2. Filters & Actions */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-4 shadow-sm">
+            {/* Filters Section */}
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-                    <div className="flex items-center gap-2 w-full md:w-auto">
-                        <div className="relative w-full md:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Cari Nama / Email..."
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
+                    <div className="relative w-full md:w-80">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Cari Nama / Email..."
+                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-500">Urutkan:</span>
-                        <select
-                            className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2"
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                        >
-                            <option value="score_desc">Skor Tertinggi</option>
-                            <option value="score_asc">Skor Terendah</option>
-                            <option value="date_desc">Terbaru</option>
-                            <option value="date_asc">Terlama</option>
-                        </select>
+                    <div className="flex gap-3">
+                         <div className="flex items-center gap-2">
+                             <span className="text-sm text-slate-500">Urutkan:</span>
+                             <select
+                                className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg p-2 outline-none"
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                            >
+                                <option value="date_desc">Terbaru</option>
+                                <option value="date_asc">Terlama</option>
+                                {activeTab === 'applicants' && (
+                                    <>
+                                        <option value="score_desc">Skor Tertinggi</option>
+                                        <option value="score_asc">Skor Terendah</option>
+                                    </>
+                                )}
+                            </select>
+                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-2 border-t border-slate-100">
-                     {/* Province Filter */}
-                     <select
-                        className="filter-select"
-                        value={filterProvince}
-                        onChange={(e) => setFilterProvince(e.target.value)}
-                    >
-                        <option value="All">Semua Provinsi</option>
-                        {provinces.map(p => <option key={p} value={p}>{p}</option>)}
-                     </select>
-
-                     {/* Income Filter */}
-                     <select
-                        className="filter-select"
-                        value={filterIncome}
-                        onChange={(e) => setFilterIncome(e.target.value)}
-                     >
-                        <option value="All">Semua Penghasilan</option>
-                        <option value="range_a">0 - &lt; 1 Juta</option>
-                        <option value="range_b">1 - 2.5 Juta</option>
-                        <option value="range_c">2.6 - 4 Juta</option>
-                        <option value="range_d">4 - 5 Juta</option>
-                        <option value="range_e">&gt; 5 Juta</option>
-                     </select>
-
-                     {/* Score Filter */}
-                     <select
-                        className="filter-select"
-                        value={filterScore}
-                        onChange={(e) => setFilterScore(e.target.value)}
-                     >
-                        <option value="All">Semua Rata-rata Nilai</option>
-                        <option value=">=60">&ge; 60 (Lolos Standar)</option>
-                        <option value="<60">&lt; 60 (Di Bawah Standar)</option>
-                     </select>
-
-                     {/* Status Filter */}
-                     <select
-                        className="filter-select"
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
-                     >
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    <select className="filter-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
                         <option value="All">Semua Status</option>
                         <option value="pending">Pending</option>
                         <option value="approved">Approved</option>
                         <option value="rejected">Rejected</option>
-                     </select>
+                    </select>
 
-                     {/* Screening Filter */}
-                     <select
-                        className="filter-select"
-                        value={filterScreening}
-                        onChange={(e) => setFilterScreening(e.target.value)}
-                     >
-                        <option value="All">Semua Screening</option>
-                        <option value="Lolos">Lolos Screening</option>
-                        <option value="Gagal">Gagal Screening</option>
-                     </select>
+                    <select className="filter-select" value={filterProvince} onChange={(e) => setFilterProvince(e.target.value)}>
+                         <option value="All">Semua Wilayah</option>
+                         {/* Static for now or derive from data */}
+                         {["Jawa Barat", "Jawa Timur", "Sumatera Utara", "Sumatera Barat", "Sumatera Selatan", "Riau", "DI Yogyakarta", "Sulawesi Selatan", "Aceh"].map(p => (
+                             <option key={p} value={p}>{p}</option>
+                         ))}
+                    </select>
+
+                    {activeTab === 'applicants' ? (
+                        <>
+                            <select className="filter-select" value={filterScreening} onChange={(e) => setFilterScreening(e.target.value)}>
+                                <option value="All">Semua Screening</option>
+                                <option value="Lolos">Lolos</option>
+                                <option value="Gagal">Gagal</option>
+                            </select>
+                            <select className="filter-select" value={filterIncome} onChange={(e) => setFilterIncome(e.target.value)}>
+                                <option value="All">Semua Penghasilan</option>
+                                <option value="range_a">0 - &lt; 1 Jt</option>
+                                <option value="range_b">1 - 2.5 Jt</option>
+                                <option value="range_c">&gt; 2.5 Jt</option>
+                            </select>
+                        </>
+                    ) : (
+                        <select className="filter-select" value={filterJenjang} onChange={(e) => setFilterJenjang(e.target.value)}>
+                            <option value="All">Semua Jenjang</option>
+                            <option value="S1">S1</option>
+                            <option value="S2">S2</option>
+                            <option value="S3">S3</option>
+                        </select>
+                    )}
                 </div>
             </div>
 
-            {/* 3. Table */}
+            {/* Main Table */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                    <h3 className="font-bold text-slate-700">Daftar Pendaftar</h3>
-                    <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-700 rounded-md">
-                        Menampilkan {processedApps.length} dari {applications.length} Data (Halaman {currentPage}/{totalPages || 1})
-                    </span>
-                </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                            <tr>
-                                <th className="px-6 py-3">Tanggal</th>
-                                <th className="px-6 py-3">Nama Lengkap</th>
-                                <th className="px-6 py-3">Data Penunjang</th>
-                                <th className="px-6 py-3 text-center">Screening</th>
-                                <th className="px-6 py-3 text-center cursor-pointer hover:bg-slate-100" onClick={() => setSortBy(sortBy === 'score_desc' ? 'score_asc' : 'score_desc')}>
-                                    <div className="flex items-center justify-center gap-1">Skor <ArrowUpDown size={12}/></div>
-                                </th>
-                                <th className="px-6 py-3 text-center">Status</th>
-                                <th className="px-6 py-3 text-center">Aksi</th>
-                            </tr>
+                            {activeTab === 'applicants' ? (
+                                <tr>
+                                    <th className="px-6 py-4">Nama Pendaftar</th>
+                                    <th className="px-6 py-4">Wilayah</th>
+                                    <th className="px-6 py-4 text-center">Screening</th>
+                                    <th className="px-6 py-4 text-center">Skor</th>
+                                    <th className="px-6 py-4 text-center">Status</th>
+                                    <th className="px-6 py-4 text-center">Aksi</th>
+                                </tr>
+                            ) : (
+                                <tr>
+                                    <th className="px-6 py-4">Nama Calon Mentor</th>
+                                    <th className="px-6 py-4">Domisili</th>
+                                    <th className="px-6 py-4">Pendidikan</th>
+                                    <th className="px-6 py-4 text-center">Status</th>
+                                    <th className="px-6 py-4 text-center">Aksi</th>
+                                </tr>
+                            )}
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {processedApps.map((app) => {
-                                const isLoading = loadingId === app._id;
-                                return (
-                                <tr key={app._id} className="hover:bg-slate-50 transition group">
-                                    <td className="px-6 py-4 text-slate-500 whitespace-nowrap text-xs">
-                                        {new Date(app._createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                        <div className="text-[10px] text-slate-400">{new Date(app._createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-slate-900">
-                                        <div>{app.nama}</div>
-                                        <div className="text-xs text-slate-500 font-normal">{app.provinsi_nama}</div>
-                                    </td>
-                                    <td className="px-6 py-4 text-xs text-slate-500">
-                                        <div><span className="font-semibold">Penghasilan:</span> {formatIncome(app.penghasilan_ortu)}</div>
-                                        <div>
-                                            <span className="font-semibold">Rata Rapor:</span> {((Number(app.nilai_raport_1 || 0) + Number(app.nilai_raport_2 || 0) + Number(app.nilai_raport_3 || 0)) / 3).toFixed(2)}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <div className="flex flex-col items-center gap-1">
-                                            {app.lolos_screening ? (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                    <CheckCircle size={12} /> Lolos
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                    <XCircle size={12} /> Gagal
-                                                </span>
-                                            )}
-                                            {app.has_rekomendasi && (
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                                    app.rekomendasi_tipe === 'rekomendasikan_lolos'
-                                                        ? 'bg-green-600 text-white'
-                                                        : 'bg-orange-500 text-white'
-                                                }`}>
-                                                    <ClipboardCheck size={10} />
-                                                    {app.rekomendasi_tipe === 'rekomendasikan_lolos' ? 'Rek. Lolos' : 'Rek. Gagal'}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                     <td className="px-6 py-4 text-center font-bold text-slate-700 text-lg">
-                                        {app.total_skor}
-                                     </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <StatusBadge status={app.status} />
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <div className="flex items-center justify-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                            {isLoading ? (
-                                                <Loader2 size={18} className="animate-spin text-slate-400" />
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleStatusUpdate(app._id, 'approved')}
-                                                        title="Approve"
-                                                        className={`action-btn hover:bg-blue-100 hover:text-blue-600 ${app.status === 'approved' ? 'text-blue-600 bg-blue-50' : 'text-slate-400'}`}
-                                                    >
-                                                        <Check size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleStatusUpdate(app._id, 'rejected')}
-                                                        title="Reject"
-                                                        className={`action-btn hover:bg-red-100 hover:text-red-600 ${app.status === 'rejected' ? 'text-red-600 bg-red-50' : 'text-slate-400'}`}
-                                                    >
-                                                        <X size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(app._id)}
-                                                        title="Hapus Permanen"
-                                                        className="action-btn hover:bg-red-100 hover:text-red-700 text-slate-400"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </>
-                                            )}
-                                            <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                                            <Link
-                                                href={`/admin/application/${app._id}`}
-                                                className="action-btn hover:bg-slate-100 hover:text-slate-800 text-slate-400"
-                                                title="Lihat Detail"
-                                            >
-                                                <Eye size={16} />
-                                            </Link>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )})}
-                             {processedApps.length === 0 && (
+                            {filteredData.map((item) => {
+                                const isLoading = loadingId === item._id;
+                                if (activeTab === 'applicants') {
+                                    const app = item as ApplicationListItem;
+                                    return (
+                                        <tr key={app._id} className="hover:bg-slate-50 transition group">
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-900">{app.nama}</div>
+                                                <div className="text-xs text-slate-400">{app.email}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600">{app.provinsi_nama}</td>
+                                            <td className="px-6 py-4 text-center">
+                                                 {app.lolos_screening ? (
+                                                    <span className="badge-success">Lolos</span>
+                                                 ) : (
+                                                    <span className="badge-danger">Gagal</span>
+                                                 )}
+                                            </td>
+                                            <td className="px-6 py-4 text-center font-black text-slate-800 text-lg">{app.total_skor}</td>
+                                            <td className="px-6 py-4 text-center"><StatusBadge status={app.status} /></td>
+                                            <td className="px-6 py-4">
+                                                <ActionButtons 
+                                                    id={app._id} 
+                                                    status={app.status} 
+                                                    type="applicant" 
+                                                    isLoading={isLoading} 
+                                                    onStatusUpdate={handleStatusUpdate} 
+                                                    onDelete={handleDelete}
+                                                    detailUrl={`/admin/application/${app._id}`}
+                                                />
+                                            </td>
+                                        </tr>
+                                    );
+                                } else {
+                                    const mentor = item as MentorListItem;
+                                    return (
+                                        <tr key={mentor._id} className="hover:bg-slate-50 transition group">
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-900">{mentor.nama}</div>
+                                                <div className="text-xs text-slate-400">{mentor.email}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600 font-medium">{mentor.provinsi_nama}</td>
+                                            <td className="px-6 py-4">
+                                                 <div className="text-xs font-bold text-blue-600">{mentor.jenjang}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center"><StatusBadge status={mentor.status} /></td>
+                                            <td className="px-6 py-4">
+                                                <ActionButtons 
+                                                    id={mentor._id} 
+                                                    status={mentor.status} 
+                                                    type="mentor" 
+                                                    isLoading={isLoading} 
+                                                    onStatusUpdate={handleStatusUpdate} 
+                                                    onDelete={handleDelete}
+                                                    detailUrl={`/admin/mentor/${mentor._id}`}
+                                                />
+                                            </td>
+                                        </tr>
+                                    );
+                                }
+                            })}
+
+                            {filteredData.length === 0 && (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Filter size={32} className="text-slate-200" />
-                                            <p>Tidak ada data yang cocok dengan filter.</p>
-                                        </div>
+                                    <td colSpan={6} className="px-6 py-20 text-center text-slate-400">
+                                        <Search size={40} className="mx-auto mb-3 opacity-20" />
+                                        <p>Tidak ada data ditemukan.</p>
                                     </td>
                                 </tr>
                             )}
@@ -547,7 +496,7 @@ export default function DashboardClient({ applications, currentPage, totalPages,
                     </table>
                 </div>
 
-                {/* 4. Pagination */}
+                {/* Pagination */}
                 {totalPages > 1 && (
                     <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
                         <p className="text-sm text-slate-500">
@@ -557,38 +506,15 @@ export default function DashboardClient({ applications, currentPage, totalPages,
                             <button
                                 onClick={() => goToPage(currentPage - 1)}
                                 disabled={currentPage <= 1}
-                                className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                                 <ChevronLeft size={16} />
                             </button>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
-                                .reduce<(number | string)[]>((acc, p, idx, arr) => {
-                                    if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
-                                    acc.push(p);
-                                    return acc;
-                                }, [])
-                                .map((p, idx) =>
-                                    typeof p === 'string' ? (
-                                        <span key={`ellipsis-${idx}`} className="px-2 text-slate-400">...</span>
-                                    ) : (
-                                        <button
-                                            key={p}
-                                            onClick={() => goToPage(p)}
-                                            className={`w-9 h-9 rounded-lg text-sm font-medium transition ${
-                                                p === currentPage
-                                                    ? 'bg-blue-600 text-white shadow-sm'
-                                                    : 'border border-slate-200 text-slate-600 hover:bg-white'
-                                            }`}
-                                        >
-                                            {p}
-                                        </button>
-                                    )
-                                )}
+                            <span className="px-4 text-sm font-bold text-slate-700">{currentPage}</span>
                             <button
                                 onClick={() => goToPage(currentPage + 1)}
                                 disabled={currentPage >= totalPages}
-                                className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                                 <ChevronRight size={16} />
                             </button>
@@ -597,13 +523,13 @@ export default function DashboardClient({ applications, currentPage, totalPages,
                 )}
             </div>
 
-             <style jsx>{`
+            <style jsx>{`
                 .filter-select {
-                    @apply bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5;
+                    @apply bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg focus:ring-blue-500 block w-full p-2 outline-none;
                 }
-                .action-btn {
-                    @apply p-1.5 rounded-md transition duration-200;
-                }
+                .badge-success { @apply px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700; }
+                .badge-danger { @apply px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700; }
+                .action-btn { @apply p-1.5 rounded-md transition duration-200; }
             `}</style>
             
             <ConfirmationModal
@@ -614,7 +540,12 @@ export default function DashboardClient({ applications, currentPage, totalPages,
                 message={modal.message}
                 type={modal.type}
                 confirmLabel={modal.confirmLabel}
-                isLoading={loadingId !== null} 
+                isLoading={loadingId !== null}
+                showInput={modal.showInput}
+                inputType={modal.inputType}
+                inputPlaceholder={modal.inputPlaceholder}
+                inputValue={modalInput}
+                onInputChange={(val) => setModalInput(val)}
             />
         </div>
     );
@@ -622,18 +553,71 @@ export default function DashboardClient({ applications, currentPage, totalPages,
 
 function StatCard({ label, value, icon, color }: { label: string, value: number, icon: React.ReactNode, color: string }) {
     return (
-        <div className={`p-4 rounded-xl border border-slate-100 bg-white shadow-sm flex flex-col items-center justify-center text-center gap-1 hover:shadow-md transition`}>
-            <div className={`p-2 rounded-full ${color} mb-1 bg-opacity-20`}>
-                {icon}
-            </div>
-            <div className="text-2xl font-bold text-slate-800">{value}</div>
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</div>
+        <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm flex flex-col items-center justify-center text-center gap-1 hover:shadow-md transition">
+            <div className={`p-2 rounded-full ${color} mb-1 bg-opacity-20`}>{icon}</div>
+            <div className="text-xl font-black text-slate-800">{value}</div>
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{label}</div>
         </div>
-    )
+    );
 }
 
 function StatusBadge({ status }: { status: string }) {
-    if (status === 'approved') return <span className="px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">Approved</span>
-    if (status === 'rejected') return <span className="px-2 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">Rejected</span>
-    return <span className="px-2 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 animate-pulse">Pending</span>
+    if (status === 'approved') return <span className="px-2 py-1 rounded-full text-[10px] font-black bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider">Approved</span>
+    if (status === 'rejected') return <span className="px-2 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wider">Rejected</span>
+    return <span className="px-2 py-1 rounded-full text-[10px] font-black bg-yellow-100 text-yellow-700 border border-yellow-200 animate-pulse uppercase tracking-wider">Pending</span>
 }
+
+function ActionButtons({ id, status, type, isLoading, onStatusUpdate, onDelete, detailUrl }: any) {
+    return (
+        <div className="flex items-center justify-center gap-2">
+            {isLoading ? (
+                <Loader2 size={18} className="animate-spin text-slate-400" />
+            ) : (
+                <>
+                    <button
+                        onClick={() => onStatusUpdate(id, 'approved', type)}
+                        disabled={status === 'approved' || status === 'rejected'}
+                        title={status === 'rejected' ? "Gagal/Ditolak (Kunci)" : "Approve"}
+                        className={`action-btn transition ${
+                            status === 'approved' 
+                            ? 'text-blue-600 bg-blue-50 cursor-default' 
+                            : status === 'rejected'
+                            ? 'text-slate-300 cursor-not-allowed'
+                            : 'text-slate-400 hover:bg-blue-100 hover:text-blue-600'
+                        }`}
+                    >
+                        <Check size={16} />
+                    </button>
+                    <button
+                        onClick={() => onStatusUpdate(id, 'rejected', type)}
+                        disabled={status === 'rejected'}
+                        title={status === 'rejected' ? "Sudah Ditolak" : "Reject"}
+                        className={`action-btn transition ${
+                            status === 'rejected' 
+                            ? 'text-red-300 bg-red-50 cursor-not-allowed' 
+                            : 'text-slate-400 hover:bg-red-100 hover:text-red-600'
+                        }`}
+                    >
+                        <X size={16} />
+                    </button>
+                    <button
+                        onClick={() => onDelete(id, type)}
+                        title="Hapus"
+                        className="action-btn hover:bg-red-100 hover:text-red-700 text-slate-400"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </>
+            )}
+            <div className="w-px h-4 bg-slate-200 mx-1"></div>
+            <Link
+                href={detailUrl}
+                className="action-btn hover:bg-slate-100 hover:text-slate-800 text-slate-400"
+                title="Lihat Detail"
+            >
+                <Eye size={16} />
+            </Link>
+        </div>
+    );
+}
+

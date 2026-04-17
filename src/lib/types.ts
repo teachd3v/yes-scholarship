@@ -94,6 +94,7 @@ export interface ApplicationDetail {
         alasan_gagal: string[];
         detail_skor: string;
     };
+    rejectedReason?: string;
     rekomendasi?: Rekomendasi | null;
 }
 
@@ -117,3 +118,67 @@ export function formatIncome(value: string | undefined | null): string {
         default: return value || "-";
     }
 }
+
+// ==================== Mentor Types ====================
+
+export interface MentorListItem {
+    _id: string;
+    _createdAt: string;
+    status: 'pending' | 'approved' | 'rejected';
+    nama: string;
+    email: string;
+    whatsapp: string;
+    provinsi_nama: string;
+    jenjang: string;
+}
+
+export interface MentorDetail {
+    _id: string;
+    _createdAt: string;
+    status: 'pending' | 'approved' | 'rejected';
+    biodata: {
+        nama_lengkap: string;
+        foto_profil_url?: string;
+        jenis_kelamin: string;
+        tempat_lahir: string;
+        tanggal_lahir: string;
+        whatsapp: string;
+        email: string;
+        status_pernikahan: string;
+    };
+    domisili: {
+        provinsi: string;
+        provinsi_nama: string;
+        kabupaten: string;
+        kabupaten_nama: string;
+        kecamatan: string;
+        kecamatan_nama: string;
+        kelurahan: string;
+        kelurahan_nama: string;
+        alamat_detail: string;
+    };
+    pendidikan: {
+        jenjang: string;
+        jurusan: string;
+    };
+    tambahan: {
+        social_media: string;
+        lancar_quran: string;
+        sumber_info: string;
+        motivasi: string;
+        cv_resume_url?: string;
+        berakhlak_islam_tidak_merokok?: boolean;
+        bersedia_rangkaian_program?: boolean;
+        mampu_mengajar_ptn?: boolean;
+        komunikatif_remaja?: boolean;
+        hafalan_1_juz?: boolean;
+        siap_komitmen?: boolean;
+    };
+    scoring?: {
+        lolos_screening: boolean;
+        alasan_gagal: string[];
+    };
+    rejectedReason?: string;
+    adminNotes?: string;
+}
+

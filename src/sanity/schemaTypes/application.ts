@@ -142,6 +142,11 @@ export default defineType({
       ],
     }),
     defineField({
+      name: 'rejectedReason',
+      title: 'Alasan Penolakan (Manual)',
+      type: 'text',
+    }),
+    defineField({
       name: 'adminNotes',
       title: 'Admin Notes',
       type: 'text',

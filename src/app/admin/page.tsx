@@ -1,15 +1,19 @@
 import DashboardClient from "./DashboardClient";
-import { getApplications } from "./actions";
+import { getApplications, getMentors } from "./actions";
 import { logoutAction, getAdminUser } from "./auth-actions";
 
 export const dynamic = 'force-dynamic';
-// export const runtime = 'edge'; // Removed for Vercel
 
-export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ page?: string; tab?: string }> }) {
   const params = await searchParams;
   const page = Number(params.page) || 1;
-  const data = await getApplications(page);
-  const adminUser = await getAdminUser();
+  const currentTab = params.tab || 'applicants';
+
+  const [applicantsData, mentorsData, adminUser] = await Promise.all([
+    getApplications(currentTab === 'applicants' ? page : 1),
+    getMentors(currentTab === 'mentors' ? page : 1),
+    getAdminUser()
+  ]);
 
   const isSuperAdmin = adminUser?.role === 'superadmin';
   const dashboardTitle = isSuperAdmin 
@@ -37,20 +41,16 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-                <h2 className="font-bold text-slate-700">Daftar Pendaftar ({data.total})</h2>
-            </div>
-
             <DashboardClient
-              applications={data.items}
-              currentPage={data.page}
-              totalPages={data.totalPages}
-              totalItems={data.total}
+              initialApplicants={applicantsData}
+              initialMentors={mentorsData}
               role={adminUser?.role}
               region={adminUser?.region}
+              defaultTab={currentTab}
             />
         </div>
       </main>
     </div>
   );
 }
+

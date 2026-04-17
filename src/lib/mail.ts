@@ -68,6 +68,25 @@ export interface EmailDocData {
   };
 }
 
+export interface MentorEmailData {
+  nama_lengkap: string;
+  email: string;
+  whatsapp: string;
+  jenis_kelamin: string;
+  tempat_lahir: string;
+  tanggal_lahir: string;
+  alamat_lengkap: string;
+  status_pernikahan: string;
+  jenjang_pendidikan: string;
+  jurusan: string;
+  social_media: string;
+  lancar_quran: string;
+  sumber_info: string;
+  motivasi: string;
+  foto_profil_assetId?: string;
+  cv_resume_assetId?: string;
+}
+
 export async function sendConfirmationEmail(to: string, name: string, docData?: EmailDocData) {
   const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || '';
   const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
@@ -201,6 +220,86 @@ export async function sendConfirmationEmail(to: string, name: string, docData?: 
     return { success: true, messageId: data?.id };
   } catch (error) {
     console.error("Error sending email:", error);
+    return { success: false, error };
+  }
+}
+
+export async function sendMentorConfirmationEmail(to: string, name: string, data: MentorEmailData) {
+  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || '';
+  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
+
+  const fotoUrl = assetIdToUrl(data.foto_profil_assetId, projectId, dataset, 160);
+  const cvUrl = assetIdToUrl(data.cv_resume_assetId, projectId, dataset, 600);
+
+  const summaryHtml = `
+    <div style="margin-top:24px; border-top:2px solid #e2e8f0; padding-top:20px;">
+      <h2 style="font-size:16px; font-weight:700; color:#1e293b; margin:0 0 16px;">Ringkasan Data Mentor Kamu</h2>
+      
+      ${fotoUrl ? `<div style="text-align:center; margin-bottom:16px;"><img src="${fotoUrl}" width="100" style="width:100px; height:100px; object-fit:cover; border-radius:50%; border:3px solid #059669;" /><p style="font-size:12px; color:#64748b; margin:6px 0 0;">Foto Profil</p></div>` : ''}
+
+      <table style="width:100%; border-collapse:collapse; font-family:Arial,sans-serif;">
+        ${sectionHeader('👤 Biodata Mentor')}
+        ${row('Nama Lengkap', data.nama_lengkap)}
+        ${row('Jenis Kelamin', data.jenis_kelamin)}
+        ${row('Status Pernikahan', data.status_pernikahan)}
+        ${row('Tempat/Tgl Lahir', `${data.tempat_lahir}, ${data.tanggal_lahir}`)}
+        ${row('Email', data.email)}
+        ${row('WhatsApp', '+62' + data.whatsapp)}
+        ${row('Alamat Domisili', data.alamat_lengkap)}
+
+        ${sectionHeader('🎓 Pendidikan & Keahlian')}
+        ${row('Jenjang', data.jenjang_pendidikan)}
+        ${row('Jurusan', data.jurusan)}
+        ${row('Lancar Al-Qur\'an', data.lancar_quran)}
+
+        ${sectionHeader('🔗 Informasi Tambahan')}
+        ${row('Sosial Media', data.social_media)}
+        ${row('Sumber Info', data.sumber_info)}
+        <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; vertical-align:top;">Motivasi</td><td style="padding:6px 0; color:#1e293b; font-size:13px; line-height:1.5;">${data.motivasi}</td></tr>
+      </table>
+
+      ${cvUrl ? `
+      <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:16px;">
+        <p style="font-size:14px; font-weight:700; color:#059669; margin:0 0 12px;">📎 CV / Resume</p>
+        <img src="${cvUrl}" width="100%" style="width:100%; max-width:400px; border-radius:8px; border:1px solid #e2e8f0;" />
+      </div>` : ''}
+    </div>`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: 'YES Registration <admin@youthekselensia.id>',
+      to: [to],
+      subject: 'Konfirmasi Pendaftaran Mentor YES 2026',
+      html: `
+        <div style="font-family:Arial,sans-serif; max-width:620px; margin:0 auto; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
+          <div style="background-color:#059669; padding:24px; text-align:center;">
+            <h1 style="color:white; margin:0; font-size:22px;">Pendaftaran Mentor Diterima!</h1>
+            <p style="color:#d1fae5; margin:6px 0 0; font-size:14px;">Mentor Youth Ekselensia Scholarship 2026</p>
+          </div>
+          <div style="padding:32px; background-color:#ffffff;">
+            <p style="font-size:16px; color:#334155; margin-bottom:16px;">Hai <strong>${name}</strong>,</p>
+            <p style="font-size:15px; color:#334155; line-height:1.6; margin-bottom:16px;">
+              Terima kasih telah mendaftar sebagai calon <strong>Mentor YES 2026</strong>. 
+              Dokumen dan data kamu telah kami terima dan akan segera ditinjau oleh tim seleksi kami.
+            </p>
+            <div style="background-color:#f0fdf4; border-left:4px solid #10b981; padding:14px 16px; margin-bottom:20px; border-radius:4px;">
+              <p style="margin:0; color:#065f46; font-size:14px; font-weight:600;">✅ Pendaftaran kamu telah masuk ke sistem kami.</p>
+            </div>
+            ${summaryHtml}
+            <hr style="border:none; border-top:1px solid #e2e8f0; margin:28px 0 16px;" />
+            <p style="font-size:12px; color:#94a3b8; text-align:center; margin:0;">
+              Email ini dikirim otomatis. Mohon tidak membalas email ini.<br/>
+              Informasi lebih lanjut akan diumumkan melalui WhatsApp atau Email resmi YES.
+            </p>
+          </div>
+        </div>
+      `,
+    });
+
+    if (error) { console.error("Error sending mentor email:", error); return { success: false, error }; }
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending mentor email:", error);
     return { success: false, error };
   }
 }

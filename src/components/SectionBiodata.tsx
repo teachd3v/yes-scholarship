@@ -14,6 +14,23 @@ type Region = {
     name: string;
 };
 
+const cleanRegionName = (name: string) => {
+    if (!name) return "";
+    // 1. Hapus karakter non-printable/zero-width
+    let cleaned = name.replace(/[\u200B-\u200D\uFEFF]/g, "");
+    
+    // 2. Deteksi spasi ganjil (seperti K O T A  D U M A I)
+    const spaceCount = (cleaned.match(/\s/g) || []).length;
+    if (spaceCount > 0 && spaceCount >= (cleaned.length / 3)) {
+         cleaned = cleaned.replace(/\s/g, "");
+         // Kembalikan spasi standar setelah KOTA atau KABUPATEN
+         cleaned = cleaned.replace(/^(KOTA|KABUPATEN)(.+)$/, "$1 $2");
+    }
+
+    // 3. Normalisasi spasi ganda dan trim
+    return cleaned.replace(/\s+/g, " ").trim().toUpperCase();
+};
+
 export default function SectionBiodata() {
     const {
         register,
@@ -136,7 +153,7 @@ export default function SectionBiodata() {
                         );
                         if (found) {
                             setValue("provinsi", found.id, { shouldValidate: false });
-                            setValue("provinsi_nama", found.name, { shouldValidate: false });
+                            setValue("provinsi_nama", cleanRegionName(found.name), { shouldValidate: false });
                             // Store detected city for kabupaten matching
                             if (geo.city) setIpDetectedCity(geo.city.toLowerCase());
                         }
@@ -171,14 +188,14 @@ export default function SectionBiodata() {
     useEffect(() => {
         if (selectedProvinsi && provinces.length > 0) {
             const found = provinces.find((p) => p.id === selectedProvinsi);
-            if (found) setValue("provinsi_nama", found.name);
+            if (found) setValue("provinsi_nama", cleanRegionName(found.name));
         }
     }, [selectedProvinsi, provinces, setValue]);
 
     useEffect(() => {
         if (selectedKabupaten && regencies.length > 0) {
             const found = regencies.find((r) => r.id === selectedKabupaten);
-            if (found) setValue("kabupaten_nama", found.name);
+            if (found) setValue("kabupaten_nama", cleanRegionName(found.name));
         }
     }, [selectedKabupaten, regencies, setValue]);
 
@@ -193,7 +210,7 @@ export default function SectionBiodata() {
         const matched = kotaMatch || anyMatch;
         if (matched) {
             setValue("kabupaten", matched.id, { shouldValidate: false });
-            setValue("kabupaten_nama", matched.name, { shouldValidate: false });
+            setValue("kabupaten_nama", cleanRegionName(matched.name), { shouldValidate: false });
         }
     }, [regencies, ipDetectedCity, selectedKabupaten, setValue]);
 
@@ -221,7 +238,7 @@ export default function SectionBiodata() {
     useEffect(() => {
         if (selectedKecamatan && districts.length > 0) {
             const found = districts.find((d) => d.id === selectedKecamatan);
-            if (found) setValue("kecamatan_nama", found.name);
+            if (found) setValue("kecamatan_nama", cleanRegionName(found.name));
         }
     }, [selectedKecamatan, districts, setValue]);
 
@@ -246,7 +263,7 @@ export default function SectionBiodata() {
     useEffect(() => {
         if (selectedKelurahan && villages.length > 0) {
             const found = villages.find((v) => v.id === selectedKelurahan);
-            if (found) setValue("kelurahan_nama", found.name);
+            if (found) setValue("kelurahan_nama", cleanRegionName(found.name));
         }
     }, [selectedKelurahan, villages, setValue]);
 
