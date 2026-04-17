@@ -1,7 +1,8 @@
 import { getApplicationById } from "../../actions";
 import FileGallery from "./FileGallery";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, User, GraduationCap, Users } from "lucide-react";
+import { ArrowLeft, CheckCircle, User, GraduationCap, Users, XCircle } from "lucide-react";
+
 import { notFound } from "next/navigation";
 import { formatIncome } from "@/lib/types";
 

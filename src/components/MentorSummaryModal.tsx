@@ -1,8 +1,7 @@
 "use client";
 
 import { MentorSchemaType } from "@/lib/schema-mentor";
-import { X, CheckCircle, User, GraduationCap, Info, FileText, Camera } from "lucide-react";
-import { useFormContext } from "react-hook-form";
+import { X, CheckCircle, User, GraduationCap, Info, Camera } from "lucide-react";
 
 interface MentorSummaryModalProps {
     isOpen: boolean;

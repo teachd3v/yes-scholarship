@@ -6,10 +6,9 @@ import SectionMentorTambahan from "@/components/SectionMentorTambahan";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { mentorSchema, MentorSchemaType } from "@/lib/schema-mentor";
-import { Save, Loader2, CheckCircle, Mail, X, BookOpen, ChevronRight, AlertTriangle } from "lucide-react";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { Loader2, CheckCircle, Mail, X, ChevronRight, AlertTriangle } from "lucide-react";
+import { useState, useCallback, useRef } from "react";
 import { compressImage } from "@/lib/image-compression";
-import Link from "next/link";
 import MentorSummaryModal from "@/components/MentorSummaryModal";
 
 export default function DaftarMentorPage() {
