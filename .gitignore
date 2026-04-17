@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+BULK_IMPORT_GUIDE.md
+DEPLOYMENT.md
+IMPLEMENTATION_PLAN.md
+REVIEW_REPORT.md
+SCORING.md
+Format Surat Kelakuan Baik-Seleksi Beasiswa YES.docx

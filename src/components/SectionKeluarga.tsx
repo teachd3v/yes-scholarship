@@ -93,6 +93,16 @@ export default function SectionKeluarga() {
                             fileData={wFileSKB}
                             badge="wajib"
                         />
+                        <a
+                            href="/format-surat-kelakuan-baik.docx"
+                            download="Format Surat Kelakuan Baik - YES.docx"
+                            className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 underline mt-1"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            Unduh Template SKB
+                        </a>
                         <p className="text-xs text-slate-400 mt-1">Opsional — Surat Kelakuan Baik dari sekolah.</p>
                         {errors.file_skb && <p className="error-text mt-1">{errors.file_skb.message as string}</p>}
                     </div>
