@@ -34,7 +34,7 @@ export const biodataSchema = z.object({
 
     // f. Agama
     agama: z.enum(["Islam", "Kristen", "Katolik", "Hindu", "Buddha", "Konghucu"], {
-        message: "Wajib pilih agama",
+        message: "Konfirmasi agama wajib dipilih",
     }),
 
     // g. Tempat Lahir

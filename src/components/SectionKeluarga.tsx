@@ -78,7 +78,6 @@ export default function SectionKeluarga() {
                             placeholder="Surat Keterangan Tidak Mampu, Kartu Program Indonesia Pintar (PIP), Kartu Program Keluarga Harapan (PKH), Kartu Indonesia Sehat (KIS)"
                             preview={sktmPreview}
                             fileData={wFileSKTM}
-                            badge="wajib"
                         />
                         <p className="text-xs text-slate-400 mt-1">Opsional — unggah salah satu dokumen pendukung ekonomi jika ada.</p>
                         {errors.file_sktm && <p className="error-text mt-1">{errors.file_sktm.message as string}</p>}
@@ -91,7 +90,6 @@ export default function SectionKeluarga() {
                             placeholder="Foto Dokumen tidak boleh blur"
                             preview={skbPreview}
                             fileData={wFileSKB}
-                            badge="wajib"
                         />
                         <a
                             href="/format-surat-kelakuan-baik.docx"
@@ -113,12 +111,12 @@ export default function SectionKeluarga() {
                 {/* --- DATA AYAH (d, f) --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="label-text">Nama Ayah</label>
+                        <label className="label-text">Nama Ayah <span className="text-red-500">*</span></label>
                         <input {...register("nama_ayah")} className="input-field" placeholder="Nama Lengkap Ayah" />
                         {errors.nama_ayah && <p className="error-text">{errors.nama_ayah.message as string}</p>}
                     </div>
                     <div>
-                        <label className="label-text">Kondisi Ayah</label>
+                        <label className="label-text">Kondisi Ayah <span className="text-red-500">*</span></label>
                         <select {...register("kondisi_ayah")} className="input-field">
                             <option value="">Pilih...</option>
                             <option value="Bekerja">Bekerja</option>
@@ -129,7 +127,7 @@ export default function SectionKeluarga() {
                     </div>
                     {kondisiAyah === "Bekerja" && (
                         <div className="md:col-span-2 animate-in fade-in slide-in-from-top-2">
-                            <label className="label-text">Keterangan Pekerjaan Ayah (opsional)</label>
+                            <label className="label-text">Keterangan Pekerjaan Ayah <span className="text-red-500">*</span></label>
                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                             <input {...register("pekerjaan_ayah" as any)} className="input-field" placeholder="PNS / Buruh / Pedagang / dll..." />
                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -141,12 +139,12 @@ export default function SectionKeluarga() {
                 {/* --- DATA IBU (e, g) --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="label-text">Nama Ibu</label>
+                        <label className="label-text">Nama Ibu <span className="text-red-500">*</span></label>
                         <input {...register("nama_ibu")} className="input-field" placeholder="Nama Lengkap Ibu" />
                         {errors.nama_ibu && <p className="error-text">{errors.nama_ibu.message as string}</p>}
                     </div>
                     <div>
-                        <label className="label-text">Kondisi Ibu</label>
+                        <label className="label-text">Kondisi Ibu <span className="text-red-500">*</span></label>
                         <select {...register("kondisi_ibu")} className="input-field">
                             <option value="">Pilih...</option>
                             <option value="Bekerja">Bekerja</option>
@@ -157,7 +155,7 @@ export default function SectionKeluarga() {
                     </div>
                     {kondisiIbu === "Bekerja" && (
                         <div className="md:col-span-2 animate-in fade-in slide-in-from-top-2">
-                            <label className="label-text">Keterangan Pekerjaan Ibu (opsional)</label>
+                            <label className="label-text">Keterangan Pekerjaan Ibu <span className="text-red-500">*</span></label>
                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                             <input {...register("pekerjaan_ibu" as any)} className="input-field" placeholder="Ibu Rumah Tangga / Guru / Pedagang / dll..." />
                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -172,7 +170,7 @@ export default function SectionKeluarga() {
                     {/* h. Penghasilan (Disembunyikan jika kedua ortu tidak bekerja/wafat) */}
                     {!isOrtuNonAktif && (
                         <div className="animate-in fade-in slide-in-from-top-2">
-                            <label className="label-text">Penghasilan Orangtua (per bulan)</label>
+                            <label className="label-text">Penghasilan Orangtua (per bulan) <span className="text-red-500">*</span></label>
                             <select {...register("penghasilan_ortu")} className="input-field">
                                 <option value="">Pilih...</option>
                                 <option value="range_a">0 - &lt; 1 Juta</option>
@@ -187,7 +185,7 @@ export default function SectionKeluarga() {
 
                     {/* i. Kontak Ortu / Wali */}
                     <div>
-                        <label className="label-text">{isKeduaWafat ? "Kontak Wali" : "Kontak Orang Tua"}</label>
+                        <label className="label-text">{isKeduaWafat ? "Kontak Wali" : "Kontak Orang Tua"} <span className="text-red-500">*</span></label>
                         <div className="relative">
                             <input type="tel" {...register("kontak_ortu")} className="input-field" placeholder="08..." />
                         </div>
@@ -196,7 +194,7 @@ export default function SectionKeluarga() {
 
                     {/* j. Jumlah Saudara */}
                     <div>
-                        <label className="label-text">Jumlah Saudara (selain diri sendiri)</label>
+                        <label className="label-text">Jumlah Saudara (selain diri sendiri) <span className="text-red-500">*</span></label>
                         <input
                             type="number"
                             {...register("jumlah_saudara")}

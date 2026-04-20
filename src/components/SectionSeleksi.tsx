@@ -89,12 +89,12 @@ export default function SectionSeleksi() {
                 <section className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="label-text">Asal Sekolah</label>
+                            <label className="label-text">Asal Sekolah <span className="text-red-500">*</span></label>
                             <input {...register("asal_sekolah")} className="input-field" placeholder="Nama Lengkap Sekolah" />
                             {errors.asal_sekolah && <p className="error-text">{errors.asal_sekolah.message}</p>}
                         </div>
                         <div>
-                            <label className="label-text">Jenis Pendidikan</label>
+                            <label className="label-text">Jenis Pendidikan <span className="text-red-500">*</span></label>
                             <select {...register("jenjang_pendidikan")} className="input-field">
                                 <option value="">Pilih...</option>
                                 <option value="SMA">SMA</option>
@@ -110,7 +110,7 @@ export default function SectionSeleksi() {
                         {/* Semester 1 */}
                         <FileUploadField label="Foto Raport Semester 1" name="foto_raport_1" placeholder="Foto Raport tidak boleh blur" preview={raport1Preview} fileData={wFotoRaport1} compact />
                         <div>
-                            <label className="label-text">Nilai Rata-rata Sem 1</label>
+                            <label className="label-text">Nilai Rata-rata Sem 1 <span className="text-red-500">*</span></label>
                             <input type="number" step="0.01" {...register("nilai_raport_1")} className="input-field" placeholder="85.50" />
                             {errors.nilai_raport_1 && <p className="error-text">{errors.nilai_raport_1.message}</p>}
                         </div>
@@ -118,7 +118,7 @@ export default function SectionSeleksi() {
                         {/* Semester 2 */}
                         <FileUploadField label="Foto Raport Semester 2" name="foto_raport_2" placeholder="Foto Raport tidak boleh blur" preview={raport2Preview} fileData={wFotoRaport2} compact />
                         <div>
-                            <label className="label-text">Nilai Rata-rata Sem 2</label>
+                            <label className="label-text">Nilai Rata-rata Sem 2 <span className="text-red-500">*</span></label>
                             <input type="number" step="0.01" {...register("nilai_raport_2")} className="input-field" placeholder="85.50" />
                             {errors.nilai_raport_2 && <p className="error-text">{errors.nilai_raport_2.message}</p>}
                         </div>
@@ -126,7 +126,7 @@ export default function SectionSeleksi() {
                         {/* Semester 3 */}
                         <FileUploadField label="Foto Raport Semester 3" name="foto_raport_3" placeholder="Foto Raport tidak boleh blur" preview={raport3Preview} fileData={wFotoRaport3} compact />
                         <div>
-                            <label className="label-text">Nilai Rata-rata Sem 3</label>
+                            <label className="label-text">Nilai Rata-rata Sem 3 <span className="text-red-500">*</span></label>
                             <input type="number" step="0.01" {...register("nilai_raport_3")} className="input-field" placeholder="85.50" />
                             {errors.nilai_raport_3 && <p className="error-text">{errors.nilai_raport_3.message}</p>}
                         </div>
@@ -135,7 +135,7 @@ export default function SectionSeleksi() {
 
                 {/* --- i. BEASISWA --- */}
                 <section>
-                    <label className="label-text">Sedang mendapatkan beasiswa?</label>
+                    <label className="label-text">Sedang mendapatkan beasiswa? <span className="text-red-500">*</span></label>
                     <select {...register("status_beasiswa")} className="input-field">
                         <option value="">Pilih...</option>
                         <option value="Tidak">Tidak</option>
@@ -144,6 +144,7 @@ export default function SectionSeleksi() {
                     </select>
                     {wBeasiswa === "Ya_Lainnya" && (
                         <div className="mt-2 animate-in fade-in slide-in-from-top-1">
+                            <label className="label-text">Sebutkan nama beasiswa lain <span className="text-red-500">*</span></label>
                             <input {...register("keterangan_beasiswa")} className="input-field" placeholder="Sebutkan nama beasiswa lain..." />
                             {errors.keterangan_beasiswa && <p className="error-text">{errors.keterangan_beasiswa.message}</p>}
                         </div>
@@ -170,7 +171,7 @@ export default function SectionSeleksi() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {/* Jenis Organisasi */}
                                         <div>
-                                            <label className="label-text text-xs">Jenis Organisasi</label>
+                                            <label className="label-text text-xs">Jenis Organisasi <span className="text-red-500">*</span></label>
                                             <select {...register(`list_organisasi.${index}.jenis`)} className="input-field text-sm">
                                                 <option value="">Pilih...</option>
                                                 <option value="OSIS">OSIS</option>
@@ -191,7 +192,7 @@ export default function SectionSeleksi() {
 
                                         {/* Level Jabatan */}
                                         <div>
-                                            <label className="label-text text-xs">Level Jabatan</label>
+                                            <label className="label-text text-xs">Level Jabatan <span className="text-red-500">*</span></label>
                                             <select {...register(`list_organisasi.${index}.jabatan`)} className="input-field text-sm">
                                                 <option value="">Pilih...</option>
                                                 <option value="Ketua">Ketua/Wakil Ketua</option>
@@ -237,7 +238,7 @@ export default function SectionSeleksi() {
                                 <div key={field.id} className="p-4 bg-yellow-50/50 rounded-lg border relative">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div>
-                                            <label className="label-text text-xs">Tingkat Prestasi</label>
+                                            <label className="label-text text-xs">Tingkat Prestasi <span className="text-red-500">*</span></label>
                                             <select {...register(`list_prestasi.${index}.tingkat`)} className="input-field text-sm">
                                                 <option value="">Pilih...</option>
                                                 <option value="Sekolah">Sekolah</option>
@@ -248,7 +249,7 @@ export default function SectionSeleksi() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="label-text text-xs">Tingkat Kejuaraan</label>
+                                            <label className="label-text text-xs">Tingkat Kejuaraan <span className="text-red-500">*</span></label>
                                             <select {...register(`list_prestasi.${index}.juara`)} className="input-field text-sm">
                                                 <option value="">Pilih...</option>
                                                 <option value="Juara 1">Juara 1</option>
@@ -259,7 +260,7 @@ export default function SectionSeleksi() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="label-text text-xs">Keterangan Lomba</label>
+                                            <label className="label-text text-xs">Keterangan Lomba <span className="text-red-500">*</span></label>
                                             <input {...register(`list_prestasi.${index}.keterangan`)} className="input-field text-sm" placeholder="Contoh: Olimpiade Matematika" />
                                         </div>
                                     </div>
@@ -294,7 +295,7 @@ export default function SectionSeleksi() {
 
                     {wToggleHafalan && (
                         <div className="animate-in fade-in">
-                            <label className="label-text">Jumlah Hafalan</label>
+                            <label className="label-text">Jumlah Hafalan <span className="text-red-500">*</span></label>
                             <select {...register("kategori_hafalan")} className="input-field">
                                 <option value="">Pilih...</option>
                                 <option value="Surat Pendek">10 Surat-Surat Pendek Al Fiil - An-Naas</option>
@@ -311,13 +312,13 @@ export default function SectionSeleksi() {
                 {/* --- m & n. ESAI & SUMBER INFO --- */}
                 <section className="space-y-4 border-t pt-6">
                     <div>
-                        <label className="label-text">Motivasi Bergabung YES</label>
+                        <label className="label-text">Motivasi Bergabung YES <span className="text-red-500">*</span></label>
                         <textarea {...register("motivasi")} className="input-field h-32" placeholder="Ceritakan motivasi kamu..." />
                         {errors.motivasi && <p className="error-text">{errors.motivasi.message}</p>}
                     </div>
 
                     <div>
-                        <label className="label-text">Sumber informasi seleksi YES</label>
+                        <label className="label-text">Sumber informasi seleksi YES <span className="text-red-500">*</span></label>
                         <select {...register("sumber_info")} className="input-field">
                             <option value="">Pilih...</option>
                             <option value="IG">Instagram</option>
@@ -328,7 +329,7 @@ export default function SectionSeleksi() {
                     </div>
 
                     <div>
-                        <label className="label-text">Link Social Media Aktif</label>
+                        <label className="label-text">Link Social Media Aktif <span className="text-red-500">*</span></label>
                         <input
                             {...register("social_media")}
                             className="input-field"

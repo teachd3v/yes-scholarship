@@ -83,51 +83,43 @@ const SECTIONS = [
 
 // Fields per section for completion tracking
 const BIODATA_FIELDS: (keyof MasterSchemaType)[] = [
-  "nama", "nik", "no_kk", "jenis_kelamin", "agama",
+  "foto_diri", "nama", "nik", "no_kk", "jenis_kelamin", "agama",
   "tempat_lahir", "tanggal_lahir", "email", "whatsapp",
   "provinsi", "kabupaten", "kecamatan", "kelurahan", "alamat_detail",
 ];
 
 const KELUARGA_FIELDS: (keyof MasterSchemaType)[] = [
-  "nama_ayah", "nama_ibu", "kondisi_ayah", "kondisi_ibu",
-  "kontak_ortu",
+  "file_kk", "file_sktm", "file_skb", "nama_ayah", "nama_ibu", "kondisi_ayah", "kondisi_ibu",
+  "kontak_ortu", "jumlah_saudara",
 ];
 
 const SELEKSI_FIELDS: (keyof MasterSchemaType)[] = [
-  "asal_sekolah", "jenjang_pendidikan",
+  "asal_sekolah", "jenjang_pendidikan", "foto_raport_1", "foto_raport_2", "foto_raport_3",
   "nilai_raport_1", "nilai_raport_2", "nilai_raport_3",
-  "status_beasiswa", "motivasi", "sumber_info",
+  "status_beasiswa", "motivasi", "sumber_info", "social_media",
 ];
 
 function isFilled(value: unknown): boolean {
   if (value === undefined || value === null || value === "") return false;
-  if (typeof value === "number") return value > 0;
+  if (typeof value === "number") return value >= 0; // 0 for number is fine usually (like jumlah_saudara)
   if (typeof value === "string") return value.trim().length > 0;
   if (Array.isArray(value)) return value.length > 0;
+  // Handle FileList (browser only)
+  if (typeof value === "object" && "length" in (value as any)) return (value as any).length > 0;
   return true;
 }
 
 function StickyStepperContent({
-  control,
   activeSection,
   onScrollTo,
+  completions,
+  overallProgress,
 }: {
-  control: Control<MasterSchemaType>;
   activeSection: number;
   onScrollTo: (id: string) => void;
+  completions: { filled: number; total: number }[];
+  overallProgress: number;
 }) {
-  const values = useWatch({ control });
-
-  const getCompletion = (fields: (keyof MasterSchemaType)[]) => {
-    const filled = fields.filter((f) => isFilled(values[f])).length;
-    return { filled, total: fields.length };
-  };
-
-  const sectionFields = [BIODATA_FIELDS, KELUARGA_FIELDS, SELEKSI_FIELDS];
-  const completions = sectionFields.map((f) => getCompletion(f));
-  const totalFilled = completions.reduce((s, c) => s + c.filled, 0);
-  const totalFields = completions.reduce((s, c) => s + c.total, 0);
-  const overallProgress = totalFields > 0 ? Math.round((totalFilled / totalFields) * 100) : 0;
 
   return (
     <div className="sticky top-[72px] z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
@@ -243,8 +235,20 @@ export default function PendaftaranPage() {
   // Auto-save & Restore Draft Logic
   const DRAFT_KEY = "yes-scholarship-draft";
 
-  // Watch all values to save them
+  // Watch all values to save them and calculate progress
   const allValues = useWatch({ control: methods.control });
+
+  const getCompletion = (fields: (keyof MasterSchemaType)[]) => {
+    const filled = fields.filter((f) => isFilled(allValues[f])).length;
+    return { filled, total: fields.length };
+  };
+
+  const sectionFields = [BIODATA_FIELDS, KELUARGA_FIELDS, SELEKSI_FIELDS];
+  const completions = sectionFields.map((f) => getCompletion(f));
+  const totalFilled = completions.reduce((s, c) => s + c.filled, 0);
+  const totalFields = completions.reduce((s, c) => s + c.total, 0);
+  const overallProgress = totalFields > 0 ? Math.round((totalFilled / totalFields) * 100) : 0;
+  const isProgressComplete = overallProgress === 100;
 
   // 1. Restore from localStorage on mount
   useEffect(() => {
@@ -510,9 +514,10 @@ export default function PendaftaranPage() {
     <main className="min-h-screen bg-slate-50">
       {/* Sticky Stepper */}
       <StickyStepperContent
-        control={methods.control}
         activeSection={activeSection}
         onScrollTo={scrollToSection}
+        completions={completions}
+        overallProgress={overallProgress}
       />
 
       <div className="max-w-4xl mx-auto space-y-6 md:space-y-10 px-3 py-6 md:px-4 md:py-10">
@@ -592,11 +597,13 @@ export default function PendaftaranPage() {
             <div className="max-w-4xl mx-auto px-1">
               <button
                 type="submit"
-                disabled={isSubmitting || isActualSubmitting}
-                className="w-full bg-blue-600 text-white font-bold py-3 md:py-4 rounded-xl hover:bg-blue-700 transition text-base md:text-lg shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={isSubmitting || isActualSubmitting || !isProgressComplete}
+                className="w-full bg-blue-600 text-white font-bold py-3 md:py-4 rounded-xl hover:bg-blue-700 transition text-base md:text-lg shadow-lg disabled:opacity-70 disabled:grayscale disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <><Loader2 size={18} className="animate-spin" /> Memvalidasi...</>
+                ) : !isProgressComplete ? (
+                  <><AlertTriangle size={20} /> LENGKAPI DATA ({overallProgress}%)</>
                 ) : (
                   <><Save size={20} /> KIRIM PENDAFTARAN LENGKAP</>
                 )}

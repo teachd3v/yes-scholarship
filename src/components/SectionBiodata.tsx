@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { MasterSchemaType } from "@/lib/schema-master";
-import { Upload, AlertCircle } from "lucide-react";
+import { Upload, AlertCircle, CheckCircle2 } from "lucide-react";
+import { WILAYAH_VALID } from "@/lib/constants";
 
 const MAX_FOTO_SIZE = 20 * 1024 * 1024; // 20MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -30,6 +31,9 @@ const cleanRegionName = (name: string) => {
     // 3. Normalisasi spasi ganda dan trim
     return cleaned.replace(/\s+/g, " ").trim().toUpperCase();
 };
+
+const normalizeForMatch = (s: string) => s.toUpperCase().replace(/[\s\.]/g, "");
+
 
 export default function SectionBiodata() {
     const {
@@ -77,6 +81,7 @@ export default function SectionBiodata() {
 
     // useWatch agar compatible dengan React Compiler
     const fotoDiri = useWatch({ control, name: "foto_diri" });
+    const wAgama = useWatch({ control, name: "agama" });
     const selectedProvinsi = useWatch({ control, name: "provinsi" });
     const selectedKabupaten = useWatch({ control, name: "kabupaten" });
     const selectedKecamatan = useWatch({ control, name: "kecamatan" });
@@ -138,7 +143,12 @@ export default function SectionBiodata() {
                 return res.json();
             })
             .then((data: Region[]) => {
-                setProvinces(data);
+                // Filter hanya provinsi yang ada di WILAYAH_VALID
+                const allowedProvs = data.filter(p => {
+                    const name = cleanRegionName(p.name);
+                    return Object.keys(WILAYAH_VALID).includes(name);
+                });
+                setProvinces(allowedProvs);
                 // Auto-detect provinsi dari IP (hanya jika provinsi belum diisi)
                 fetch("https://ipapi.co/json/")
                     .then((r) => r.ok ? r.json() : null)
@@ -174,7 +184,26 @@ export default function SectionBiodata() {
                     if (!res.ok) throw new Error("Gagal memuat kabupaten");
                     return res.json();
                 })
-                .then((data) => setRegencies(data))
+                .then((data: Region[]) => {
+                    // Filter kabupaten berdasarkan WILAYAH_VALID jika ada batasan kabupaten
+                    const provFound = provinces.find(p => p.id === selectedProvinsi);
+                    if (provFound) {
+                        const provName = cleanRegionName(provFound.name);
+                        const allowedCities = WILAYAH_VALID[provName];
+
+                        if (allowedCities && allowedCities.length > 0) {
+                            const normalizedAllowed = allowedCities.map(normalizeForMatch);
+                            const filtered = data.filter((r: Region) => 
+                                normalizedAllowed.includes(normalizeForMatch(r.name))
+                            );
+                            setRegencies(filtered);
+                        } else {
+                            setRegencies(data);
+                        }
+                    } else {
+                        setRegencies(data);
+                    }
+                })
                 .catch((err) => console.error(err.message))
                 .finally(() => setLoadingWilayah(null));
             // Reset anak-anaknya
@@ -319,7 +348,7 @@ export default function SectionBiodata() {
 
                 {/* b. NAMA LENGKAP */}
                 <div>
-                    <label className="label-text">Nama Lengkap</label>
+                    <label className="label-text">Nama Lengkap <span className="text-red-500">*</span></label>
                     <input {...register("nama")} className="input-field" placeholder="Sesuai KTP" />
                     {errors.nama && <p className="error-text">{errors.nama.message}</p>}
                 </div>
@@ -327,21 +356,21 @@ export default function SectionBiodata() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* c. NO KTP */}
                     <div>
-                        <label className="label-text">No KTP</label>
+                        <label className="label-text">No KTP <span className="text-red-500">*</span></label>
                         <input {...register("nik")} maxLength={16} className="input-field" placeholder="16 Digit" inputMode="numeric" onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '') }} />
                         {errors.nik && <p className="error-text">{errors.nik.message}</p>}
                     </div>
 
                     {/* d. NO KK */}
                     <div>
-                        <label className="label-text">No KK</label>
+                        <label className="label-text">No KK <span className="text-red-500">*</span></label>
                         <input {...register("no_kk")} maxLength={16} className="input-field" placeholder="16 Digit" inputMode="numeric" onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '') }} />
                         {errors.no_kk && <p className="error-text">{errors.no_kk.message}</p>}
                     </div>
 
                     {/* e. JENIS KELAMIN */}
                     <div>
-                        <label className="label-text">Jenis Kelamin</label>
+                        <label className="label-text">Jenis Kelamin <span className="text-red-500">*</span></label>
                         <select {...register("jenis_kelamin")} className="input-field">
                             <option value="">Pilih....</option>
                             <option value="Laki-Laki">Laki-Laki</option>
@@ -352,29 +381,37 @@ export default function SectionBiodata() {
 
                     {/* f. AGAMA */}
                     <div>
-                        <label className="label-text">Agama</label>
-                        <select {...register("agama")} className="input-field">
-                            <option value="">Pilih....</option>
-                            <option value="Islam">Islam</option>
-                            <option value="Kristen">Kristen</option>
-                            <option value="Katolik">Katolik</option>
-                            <option value="Hindu">Hindu</option>
-                            <option value="Buddha">Buddha</option>
-                            <option value="Konghucu">Konghucu</option>
-                        </select>
+                        <label className="label-text">Konfirmasi Agama <span className="text-red-500">*</span></label>
+                        <div className="mt-2 space-y-3">
+                            <label className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${wAgama === 'Islam' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-blue-200'}`}>
+                                <input
+                                    type="radio"
+                                    {...register("agama")}
+                                    value="Islam"
+                                    className="w-5 h-5 accent-green-600"
+                                />
+                                <div className="flex flex-col">
+                                    <span className={`font-semibold ${wAgama === 'Islam' ? 'text-green-700' : 'text-gray-700'}`}>Saya Beragama Islam</span>
+                                    <span className="text-xs text-gray-500">Syarat utama mengikuti program beasiswa ini</span>
+                                </div>
+                                {wAgama === 'Islam' && <CheckCircle2 className="ml-auto text-green-600" size={20} />}
+                            </label>
+                            
+                            <p className="text-[10px] text-gray-400 italic">* Bagi pendaftar non-muslim mohon maaf belum dapat mengikuti program ini.</p>
+                        </div>
                         {errors.agama && <p className="error-text">{errors.agama.message}</p>}
                     </div>
 
                     {/* g. TEMPAT LAHIR */}
                     <div>
-                        <label className="label-text">Tempat Lahir</label>
+                        <label className="label-text">Tempat Lahir <span className="text-red-500">*</span></label>
                         <input {...register("tempat_lahir")} className="input-field" />
                         {errors.tempat_lahir && <p className="error-text">{errors.tempat_lahir.message}</p>}
                     </div>
 
                     {/* h. TANGGAL LAHIR */}
                     <div>
-                        <label className="label-text">Tanggal Lahir</label>
+                        <label className="label-text">Tanggal Lahir <span className="text-red-500">*</span></label>
                         <input type="date" {...register("tanggal_lahir")} className="input-field" />
                         {errors.tanggal_lahir && <p className="error-text">{errors.tanggal_lahir.message}</p>}
                     </div>
@@ -382,14 +419,14 @@ export default function SectionBiodata() {
 
                 {/* i. EMAIL */}
                 <div>
-                    <label className="label-text">Email (Wajib Gmail)</label>
+                    <label className="label-text">Email (Wajib Gmail) <span className="text-red-500">*</span></label>
                     <input type="email" {...register("email")} className="input-field" placeholder="nama@gmail.com" />
                     {errors.email && <p className="error-text">{errors.email.message}</p>}
                 </div>
 
                 {/* j. WHATSAPP */}
                 <div>
-                    <label className="label-text">No Whatsapp</label>
+                    <label className="label-text">No Whatsapp <span className="text-red-500">*</span></label>
                     <div className={`flex items-stretch border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 ${errors.whatsapp ? "border-red-400" : "border-gray-300"}`}>
                         <span className="flex items-center px-3 bg-gray-50 border-r border-gray-300 text-gray-600 font-medium text-sm shrink-0 select-none">+62</span>
                         <input
@@ -417,7 +454,7 @@ export default function SectionBiodata() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* k. PROVINSI */}
                         <div>
-                            <label className="label-text">Provinsi</label>
+                            <label className="label-text">Provinsi <span className="text-red-500">*</span></label>
                             <select {...register("provinsi")} className="input-field" disabled={loadingWilayah === "provinsi"}>
                                 <option value="">{loadingWilayah === "provinsi" ? "Memuat..." : "Pilih..."}</option>
                                 {provinces.map((p) => (
@@ -429,7 +466,7 @@ export default function SectionBiodata() {
 
                         {/* l. KABUPATEN/KOTA */}
                         <div>
-                            <label className="label-text">Kabupaten/Kota</label>
+                            <label className="label-text">Kabupaten/Kota <span className="text-red-500">*</span></label>
                             <select
                                 {...register("kabupaten")}
                                 className="input-field disabled:bg-gray-100"
@@ -445,7 +482,7 @@ export default function SectionBiodata() {
 
                         {/* m. KECAMATAN */}
                         <div>
-                            <label className="label-text">Kecamatan</label>
+                            <label className="label-text">Kecamatan <span className="text-red-500">*</span></label>
                             <select
                                 {...register("kecamatan")}
                                 className="input-field disabled:bg-gray-100"
@@ -461,7 +498,7 @@ export default function SectionBiodata() {
 
                         {/* n. KELURAHAN */}
                         <div>
-                            <label className="label-text">Kelurahan</label>
+                            <label className="label-text">Kelurahan <span className="text-red-500">*</span></label>
                             <select
                                 {...register("kelurahan")}
                                 className="input-field disabled:bg-gray-100"
@@ -479,7 +516,7 @@ export default function SectionBiodata() {
                     {/* o. ALAMAT DETAIL (Muncul setelah Kelurahan dipilih) */}
                     {selectedKelurahan && (
                         <div className="animate-in fade-in slide-in-from-top-2">
-                            <label className="label-text">Alamat Detail</label>
+                            <label className="label-text">Alamat Detail <span className="text-red-500">*</span></label>
                             <textarea
                                 {...register("alamat_detail")}
                                 className="input-field h-24"

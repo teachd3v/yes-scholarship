@@ -1,20 +1,8 @@
 import { MasterSchemaType } from "./schema-master";
+import { WILAYAH_VALID } from "./constants";
 
 // ===================== PRE-SCREENING =====================
 
-// Wilayah yang diizinkan (Provinsi -> Daftar Kabupaten/Kota)
-// Jika daftar kabupaten kosong, berarti seluruh kabupaten di provinsi tersebut diizinkan.
-const WILAYAH_VALID: Record<string, string[]> = {
-    "SUMATERA UTARA": ["KABUPATEN LANGKAT"],
-    "SUMATERA BARAT": ["KOTA PADANG"],
-    "SUMATERA SELATAN": ["KOTA PALEMBANG"],
-    "RIAU": ["KOTA DUMAI", "KOTA PEKANBARU"],
-    "JAWA BARAT": ["KABUPATEN BOGOR", "KOTA BOGOR", "KOTA DEPOK"],
-    "DI YOGYAKARTA": [], // Semua kabupaten/kota di DIY diizinkan
-    "JAWA TIMUR": ["KOTA SURABAYA"],
-    "SULAWESI SELATAN": ["KABUPATEN SINJAI"],
-    "ACEH": ["KABUPATEN PIDIE JAYA", "KABUPATEN ACEH UTARA"],
-};
 
 export function checkPreScreening(data: MasterSchemaType) {
     const alasan: string[] = [];
