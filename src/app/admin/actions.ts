@@ -580,7 +580,7 @@ export async function resendWelcomeEmailApplication(id: string) {
                 provinsi_nama: app.biodata.provinsi_nama, kabupaten_nama: app.biodata.kabupaten_nama,
                 kecamatan_nama: app.biodata.kecamatan_nama, kelurahan_nama: app.biodata.kelurahan_nama,
                 alamat_detail: app.biodata.alamat_detail,
-                foto_diri_assetId: app.biodata.foto_diri?.asset?._ref,
+                foto_diri_assetId: (app.biodata as any).foto_diri?.asset?._ref,
             },
             keluarga: {
                 nama_ayah: app.keluarga.nama_ayah, kondisi_ayah: app.keluarga.kondisi_ayah, 
@@ -589,9 +589,9 @@ export async function resendWelcomeEmailApplication(id: string) {
                 pekerjaan_ibu: app.keluarga.pekerjaan_ibu,
                 penghasilan_ortu: app.keluarga.penghasilan_ortu, kontak_ortu: app.keluarga.kontak_ortu,
                 jumlah_saudara: app.keluarga.jumlah_saudara,
-                file_kk_assetId: app.keluarga.file_kk?.asset?._ref,
-                file_sktm_assetId: app.keluarga.file_sktm?.asset?._ref,
-                file_skb_assetId: app.keluarga.file_skb?.asset?._ref,
+                file_kk_assetId: (app.keluarga as any).file_kk?.asset?._ref,
+                file_sktm_assetId: (app.keluarga as any).file_sktm?.asset?._ref,
+                file_skb_assetId: (app.keluarga as any).file_skb?.asset?._ref,
             },
             seleksi: {
                 asal_sekolah: app.seleksi.asal_sekolah, jenjang_pendidikan: app.seleksi.jenjang_pendidikan,
@@ -600,9 +600,9 @@ export async function resendWelcomeEmailApplication(id: string) {
                 keterangan_beasiswa: app.seleksi.keterangan_beasiswa, kategori_hafalan: app.seleksi.kategori_hafalan,
                 motivasi: app.seleksi.motivasi, sumber_info: app.seleksi.sumber_info, social_media: app.seleksi.social_media,
                 list_organisasi: app.seleksi.list_organisasi || [], list_prestasi: app.seleksi.list_prestasi || [],
-                foto_raport_1_assetId: app.seleksi.foto_raport_1?.asset?._ref,
-                foto_raport_2_assetId: app.seleksi.foto_raport_2?.asset?._ref,
-                foto_raport_3_assetId: app.seleksi.foto_raport_3?.asset?._ref,
+                foto_raport_1_assetId: (app.seleksi as any).foto_raport_1?.asset?._ref,
+                foto_raport_2_assetId: (app.seleksi as any).foto_raport_2?.asset?._ref,
+                foto_raport_3_assetId: (app.seleksi as any).foto_raport_3?.asset?._ref,
             }
         };
 
