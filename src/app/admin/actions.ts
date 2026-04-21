@@ -571,38 +571,42 @@ export async function resendWelcomeEmailApplication(id: string) {
         // Not all data might perfectly map directly if it wasn't captured, but we map as much as we can.
         const { sendConfirmationEmail } = await import('@/lib/mail');
         
+        const biodata: any = app.biodata;
+        const keluarga: any = app.keluarga;
+        const seleksi: any = app.seleksi;
+        
         const emailData: any = {
             biodata: {
-                nama: app.biodata.nama, nik: app.biodata.nik, no_kk: app.biodata.no_kk,
-                email: app.biodata.email, whatsapp: app.biodata.whatsapp,
-                jenis_kelamin: app.biodata.jenis_kelamin, agama: app.biodata.agama,
-                tempat_lahir: app.biodata.tempat_lahir, tanggal_lahir: app.biodata.tanggal_lahir,
-                provinsi_nama: app.biodata.provinsi_nama, kabupaten_nama: app.biodata.kabupaten_nama,
-                kecamatan_nama: app.biodata.kecamatan_nama, kelurahan_nama: app.biodata.kelurahan_nama,
-                alamat_detail: app.biodata.alamat_detail,
-                foto_diri_assetId: (app.biodata as any).foto_diri?.asset?._ref,
+                nama: biodata.nama, nik: biodata.nik, no_kk: biodata.no_kk,
+                email: biodata.email, whatsapp: biodata.whatsapp,
+                jenis_kelamin: biodata.jenis_kelamin, agama: biodata.agama,
+                tempat_lahir: biodata.tempat_lahir, tanggal_lahir: biodata.tanggal_lahir,
+                provinsi_nama: biodata.provinsi_nama, kabupaten_nama: biodata.kabupaten_nama,
+                kecamatan_nama: biodata.kecamatan_nama, kelurahan_nama: biodata.kelurahan_nama,
+                alamat_detail: biodata.alamat_detail,
+                foto_diri_assetId: biodata.foto_diri?.asset?._ref,
             },
             keluarga: {
-                nama_ayah: app.keluarga.nama_ayah, kondisi_ayah: app.keluarga.kondisi_ayah, 
-                pekerjaan_ayah: app.keluarga.pekerjaan_ayah,
-                nama_ibu: app.keluarga.nama_ibu, kondisi_ibu: app.keluarga.kondisi_ibu,
-                pekerjaan_ibu: app.keluarga.pekerjaan_ibu,
-                penghasilan_ortu: app.keluarga.penghasilan_ortu, kontak_ortu: app.keluarga.kontak_ortu,
-                jumlah_saudara: app.keluarga.jumlah_saudara,
-                file_kk_assetId: (app.keluarga as any).file_kk?.asset?._ref,
-                file_sktm_assetId: (app.keluarga as any).file_sktm?.asset?._ref,
-                file_skb_assetId: (app.keluarga as any).file_skb?.asset?._ref,
+                nama_ayah: keluarga.nama_ayah, kondisi_ayah: keluarga.kondisi_ayah, 
+                pekerjaan_ayah: keluarga.pekerjaan_ayah,
+                nama_ibu: keluarga.nama_ibu, kondisi_ibu: keluarga.kondisi_ibu,
+                pekerjaan_ibu: keluarga.pekerjaan_ibu,
+                penghasilan_ortu: keluarga.penghasilan_ortu, kontak_ortu: keluarga.kontak_ortu,
+                jumlah_saudara: keluarga.jumlah_saudara,
+                file_kk_assetId: keluarga.file_kk?.asset?._ref,
+                file_sktm_assetId: keluarga.file_sktm?.asset?._ref,
+                file_skb_assetId: keluarga.file_skb?.asset?._ref,
             },
             seleksi: {
-                asal_sekolah: app.seleksi.asal_sekolah, jenjang_pendidikan: app.seleksi.jenjang_pendidikan,
-                nilai_raport_1: app.seleksi.nilai_raport_1, nilai_raport_2: app.seleksi.nilai_raport_2,
-                nilai_raport_3: app.seleksi.nilai_raport_3, status_beasiswa: app.seleksi.status_beasiswa,
-                keterangan_beasiswa: app.seleksi.keterangan_beasiswa, kategori_hafalan: app.seleksi.kategori_hafalan,
-                motivasi: app.seleksi.motivasi, sumber_info: app.seleksi.sumber_info, social_media: app.seleksi.social_media,
-                list_organisasi: app.seleksi.list_organisasi || [], list_prestasi: app.seleksi.list_prestasi || [],
-                foto_raport_1_assetId: (app.seleksi as any).foto_raport_1?.asset?._ref,
-                foto_raport_2_assetId: (app.seleksi as any).foto_raport_2?.asset?._ref,
-                foto_raport_3_assetId: (app.seleksi as any).foto_raport_3?.asset?._ref,
+                asal_sekolah: seleksi.asal_sekolah, jenjang_pendidikan: seleksi.jenjang_pendidikan,
+                nilai_raport_1: seleksi.nilai_raport_1, nilai_raport_2: seleksi.nilai_raport_2,
+                nilai_raport_3: seleksi.nilai_raport_3, status_beasiswa: seleksi.status_beasiswa,
+                keterangan_beasiswa: seleksi.keterangan_beasiswa, kategori_hafalan: seleksi.kategori_hafalan,
+                motivasi: seleksi.motivasi, sumber_info: seleksi.sumber_info, social_media: seleksi.social_media,
+                list_organisasi: seleksi.list_organisasi || [], list_prestasi: seleksi.list_prestasi || [],
+                foto_raport_1_assetId: seleksi.foto_raport_1?.asset?._ref,
+                foto_raport_2_assetId: seleksi.foto_raport_2?.asset?._ref,
+                foto_raport_3_assetId: seleksi.foto_raport_3?.asset?._ref,
             }
         };
 
