@@ -259,23 +259,23 @@ export default function DashboardClient({
         if (activeTab === 'applicants') {
             return {
                 total: initialApplicants.total,
-                approved: applications.filter(a => a.status === 'approved').length,
-                pending: applications.filter(a => a.status === 'pending').length,
-                rejected: applications.filter(a => a.status === 'rejected').length,
-                lolos: applications.filter(a => a.lolos_screening).length,
-                gagal: applications.filter(a => !a.lolos_screening).length,
+                approved: initialApplicants.stats?.approved || 0,
+                pending: initialApplicants.stats?.pending || 0,
+                rejected: initialApplicants.stats?.rejected || 0,
+                lolos: initialApplicants.stats?.lolos || 0,
+                gagal: initialApplicants.stats?.gagal || 0,
             };
         } else {
             return {
                 total: initialMentors.total,
-                approved: mentors.filter(m => m.status === 'approved').length,
-                pending: mentors.filter(m => m.status === 'pending').length,
-                rejected: mentors.filter(m => m.status === 'rejected').length,
+                approved: initialMentors.stats?.approved || 0,
+                pending: initialMentors.stats?.pending || 0,
+                rejected: initialMentors.stats?.rejected || 0,
                 lolos: 0,
                 gagal: 0,
             };
         }
-    }, [activeTab, initialApplicants, initialMentors, applications, mentors]);
+    }, [activeTab, initialApplicants, initialMentors]);
 
     return (
         <div className="space-y-6 p-6">

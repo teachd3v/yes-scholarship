@@ -170,7 +170,7 @@ export async function deleteRekomendasi(id: string) {
   }
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 100;
 
 export async function getApplications(page: number = 1): Promise<PaginatedResult<ApplicationListItem>> {
     try {
@@ -205,7 +205,14 @@ export async function getApplications(page: number = 1): Promise<PaginatedResult
                 "has_rekomendasi": defined(rekomendasi.tipe),
                 "rekomendasi_tipe": rekomendasi.tipe
             },
-            "total": count(*[${baseCondition}])
+            "total": count(*[${baseCondition}]),
+            "stats": {
+                "approved": count(*[${baseCondition} && status == "approved"]),
+                "pending": count(*[${baseCondition} && status == "pending"]),
+                "rejected": count(*[${baseCondition} && status == "rejected"]),
+                "lolos": count(*[${baseCondition} && scoring.lolos_screening == true]),
+                "gagal": count(*[${baseCondition} && scoring.lolos_screening == false])
+            }
         }`;
         const data = await client.fetch(query, { start, end }, { cache: 'no-store' });
         return {
@@ -214,6 +221,7 @@ export async function getApplications(page: number = 1): Promise<PaginatedResult
             page,
             pageSize: PAGE_SIZE,
             totalPages: Math.ceil((data.total || 0) / PAGE_SIZE),
+            stats: data.stats
         };
     } catch (error) {
         console.error("Error fetching applications:", error);
@@ -331,7 +339,12 @@ export async function getMentors(page: number = 1): Promise<PaginatedResult<Ment
                 "provinsi_nama": domisili.provinsi_nama,
                 "jenjang": pendidikan.jenjang
             },
-            "total": count(*[${baseCondition}])
+            "total": count(*[${baseCondition}]),
+            "stats": {
+                "approved": count(*[${baseCondition} && status == "approved"]),
+                "pending": count(*[${baseCondition} && status == "pending"]),
+                "rejected": count(*[${baseCondition} && status == "rejected"])
+            }
         }`;
         const data = await client.fetch(query, { start, end }, { cache: 'no-store' });
         return {
@@ -340,6 +353,7 @@ export async function getMentors(page: number = 1): Promise<PaginatedResult<Ment
             page,
             pageSize: PAGE_SIZE,
             totalPages: Math.ceil((data.total || 0) / PAGE_SIZE),
+            stats: data.stats
         };
     } catch (error) {
         console.error("Error fetching mentors:", error);

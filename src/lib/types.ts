@@ -104,6 +104,13 @@ export interface PaginatedResult<T> {
     page: number;
     pageSize: number;
     totalPages: number;
+    stats?: {
+        approved: number;
+        pending: number;
+        rejected: number;
+        lolos?: number;
+        gagal?: number;
+    };
 }
 
 // ==================== Helpers ====================
