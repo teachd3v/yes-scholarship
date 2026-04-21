@@ -426,7 +426,18 @@ export default function PendaftaranPage() {
     };
 
     const entries = Object.entries(data);
-    await Promise.all(entries.map(([key, value]) => processAndAppend(key, value)));
+    await Promise.all(entries.map(([key, value]) => {
+      // Data Normalization: Uppercase everything except email/links
+      let val = value;
+      if (typeof value === "string") {
+        if (key !== "email" && key !== "social_media") {
+          val = value.toUpperCase();
+        } else if (key === "email") {
+          val = value.toLowerCase();
+        }
+      }
+      return processAndAppend(key, val);
+    }));
 
     // -- Progress: Step 3 --
     setSubmitProgress(25);

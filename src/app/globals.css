@@ -33,6 +33,11 @@ body {
   background-color: #fff;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
   outline: none;
+  text-transform: uppercase;
+}
+
+.input-field[type="email"] {
+  text-transform: none;
 }
 
 .input-field:focus {
@@ -42,6 +47,7 @@ body {
 
 .input-field::placeholder {
   color: #94a3b8;
+  text-transform: none;
 }
 
 .label-text {
