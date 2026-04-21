@@ -36,6 +36,10 @@ body {
   text-transform: uppercase;
 }
 
+textarea.input-field {
+  text-transform: none;
+}
+
 .input-field[type="email"] {
   text-transform: none;
 }

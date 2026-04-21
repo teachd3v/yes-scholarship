@@ -26,7 +26,7 @@ const EXCLUDE_FIELDS = [
     'email', 'social_media', 'whatsapp', 'nik', 'no_kk', 'tanggal_lahir',
     'penghasilan_ortu', 'jenis_kelamin', 'agama', 'kondisi_ayah', 'kondisi_ibu',
     'jenjang_pendidikan', 'status_beasiswa', 'sumber_info', 'provinsi', 
-    'kabupaten', 'kecamatan', 'kelurahan', 'kategori_hafalan'
+    'kabupaten', 'kecamatan', 'kelurahan', 'kategori_hafalan', 'motivasi'
 ];
 
 function isAsset(val) {

@@ -430,7 +430,7 @@ export default function PendaftaranPage() {
       "email", "social_media", "penghasilan_ortu", "jenis_kelamin", 
       "agama", "kondisi_ayah", "kondisi_ibu", "jenjang_pendidikan",
       "status_beasiswa", "sumber_info", "provinsi", "kabupaten", 
-      "kecamatan", "kelurahan", "kategori_hafalan"
+      "kecamatan", "kelurahan", "kategori_hafalan", "motivasi"
     ];
 
     await Promise.all(entries.map(([key, value]) => {
