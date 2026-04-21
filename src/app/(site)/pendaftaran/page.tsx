@@ -426,11 +426,18 @@ export default function PendaftaranPage() {
     };
 
     const entries = Object.entries(data);
+    const EXCLUDED_UPPERCASE = [
+      "email", "social_media", "penghasilan_ortu", "jenis_kelamin", 
+      "agama", "kondisi_ayah", "kondisi_ibu", "jenjang_pendidikan",
+      "status_beasiswa", "sumber_info", "provinsi", "kabupaten", 
+      "kecamatan", "kelurahan", "kategori_hafalan"
+    ];
+
     await Promise.all(entries.map(([key, value]) => {
-      // Data Normalization: Uppercase everything except email/links
+      // Data Normalization: Uppercase everything except email/links and enums
       let val = value;
       if (typeof value === "string") {
-        if (key !== "email" && key !== "social_media") {
+        if (!EXCLUDED_UPPERCASE.includes(key)) {
           val = value.toUpperCase();
         } else if (key === "email") {
           val = value.toLowerCase();

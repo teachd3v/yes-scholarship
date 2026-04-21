@@ -145,6 +145,7 @@ export default function DashboardClient({
                     'Alamat': app.biodata.alamat_detail,
                     'Asal Sekolah': app.seleksi.asal_sekolah,
                     'Jenjang': app.seleksi.jenjang_pendidikan,
+                    'Tanggal Daftar': new Date(app._createdAt).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
                     'Status': app.status,
                     'Skor': app.scoring?.total_skor || 0,
                     'Lolos Screening': app.scoring?.lolos_screening ? 'YA' : 'TIDAK',
@@ -164,6 +165,7 @@ export default function DashboardClient({
                     'Alamat': m.domisili.alamat_detail,
                     'Jenjang Pendidikan': m.pendidikan.jenjang,
                     'Jurusan': m.pendidikan.jurusan,
+                    'Tanggal Daftar': new Date(m._createdAt).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
                     'Status': m.status,
                     'Lancar Al-Quran': m.tambahan.lancar_quran,
                     'Alasan Gagal': [m.scoring?.alasan_gagal?.join(', '), m.rejectedReason].filter(Boolean).join(' | ') || '-'
@@ -411,6 +413,7 @@ export default function DashboardClient({
                                 <tr>
                                     <th className="px-6 py-4">Nama Pendaftar</th>
                                     <th className="px-6 py-4">Wilayah</th>
+                                    <th className="px-6 py-4 text-center">Tanggal Daftar</th>
                                     <th className="px-6 py-4 text-center">Screening</th>
                                     <th className="px-6 py-4 text-center">Skor</th>
                                     <th className="px-6 py-4 text-center">Status</th>
@@ -421,6 +424,7 @@ export default function DashboardClient({
                                     <th className="px-6 py-4">Nama Calon Mentor</th>
                                     <th className="px-6 py-4">Domisili</th>
                                     <th className="px-6 py-4">Pendidikan</th>
+                                    <th className="px-6 py-4 text-center">Tanggal Daftar</th>
                                     <th className="px-6 py-4 text-center">Status</th>
                                     <th className="px-6 py-4 text-center">Aksi</th>
                                 </tr>
@@ -438,6 +442,14 @@ export default function DashboardClient({
                                                 <div className="text-xs text-slate-400">{app.email}</div>
                                             </td>
                                             <td className="px-6 py-4 text-slate-600">{app.provinsi_nama}</td>
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="text-[10px] font-bold text-slate-500">
+                                                    {new Date(app._createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                </div>
+                                                <div className="text-[9px] text-slate-400">
+                                                    {new Date(app._createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </td>
                                             <td className="px-6 py-4 text-center">
                                                  {app.lolos_screening ? (
                                                     <span className="badge-success">Lolos</span>
@@ -471,6 +483,14 @@ export default function DashboardClient({
                                             <td className="px-6 py-4 text-slate-600 font-medium">{mentor.provinsi_nama}</td>
                                             <td className="px-6 py-4">
                                                  <div className="text-xs font-bold text-blue-600">{mentor.jenjang}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="text-[10px] font-bold text-slate-500">
+                                                    {new Date(mentor._createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                </div>
+                                                <div className="text-[9px] text-slate-400">
+                                                    {new Date(mentor._createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 text-center"><StatusBadge status={mentor.status} /></td>
                                             <td className="px-6 py-4">

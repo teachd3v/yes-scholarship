@@ -21,7 +21,13 @@ const client = createClient({
   useCdn: false,
 });
 
-const EXCLUDE_FIELDS = ['_id', '_type', '_key', '_createdAt', '_updatedAt', '_rev', 'email', 'social_media', 'whatsapp', 'nik', 'no_kk', 'tanggal_lahir'];
+const EXCLUDE_FIELDS = [
+    '_id', '_type', '_key', '_createdAt', '_updatedAt', '_rev', 
+    'email', 'social_media', 'whatsapp', 'nik', 'no_kk', 'tanggal_lahir',
+    'penghasilan_ortu', 'jenis_kelamin', 'agama', 'kondisi_ayah', 'kondisi_ibu',
+    'jenjang_pendidikan', 'status_beasiswa', 'sumber_info', 'provinsi', 
+    'kabupaten', 'kecamatan', 'kelurahan', 'kategori_hafalan'
+];
 
 function isAsset(val) {
     return val && typeof val === 'object' && val._type === 'reference' && val._ref?.includes('image-');
