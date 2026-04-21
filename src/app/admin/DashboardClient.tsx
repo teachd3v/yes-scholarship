@@ -7,16 +7,18 @@ import {
     exportAllApplications,
     updateMentorStatus,
     deleteMentor,
-    exportAllMentors
+    exportAllMentors,
+    retryEmail,
+    resendWelcomeEmailApplication
 } from './actions';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
     CheckCircle, XCircle, Clock, Eye, Check, X, Loader2, Filter, 
     ArrowUpDown, Search, ChevronLeft, ChevronRight, Trash2, 
-    ClipboardCheck, Users, UserPlus, Download 
+    ClipboardCheck, Users, UserPlus, Download, Mail, RefreshCw, CheckCircle2, AlertCircle, XCircle as XCircleIcon
 } from 'lucide-react';
 import Link from 'next/link';
-import type { ApplicationListItem, MentorListItem, PaginatedResult } from '@/lib/types';
+import type { ApplicationListItem, MentorListItem, PaginatedResult, ResendEmailLog, EmailMetrics } from '@/lib/types';
 import { formatIncome } from '@/lib/types';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import * as XLSX from 'xlsx';
@@ -24,6 +26,8 @@ import * as XLSX from 'xlsx';
 interface DashboardProps {
     initialApplicants: PaginatedResult<ApplicationListItem>;
     initialMentors: PaginatedResult<MentorListItem>;
+    initialEmailLogs?: { items: ResendEmailLog[], hasNextPage: boolean };
+    initialEmailMetrics?: EmailMetrics;
     role?: 'superadmin' | 'admin_wilayah';
     region?: string;
     defaultTab?: string;
@@ -32,6 +36,8 @@ interface DashboardProps {
 export default function DashboardClient({ 
     initialApplicants, 
     initialMentors, 
+    initialEmailLogs,
+    initialEmailMetrics,
     role, 
     region,
     defaultTab = 'applicants'
@@ -127,6 +133,54 @@ export default function DashboardClient({
                 setLoadingId(null);
                 closeModal();
                 router.refresh();
+            }
+        });
+    };
+
+    const handleRetryEmail = (id: string, to: string[]) => {
+        setModalInput("");
+        setModal({
+            isOpen: true,
+            title: "Kirim Ulang Email",
+            message: `Kirim ulang email ke ${to.join(', ')}?`,
+            type: "info",
+            confirmLabel: "Ya, Kirim Ulang",
+            showInput: false,
+            onConfirm: async () => {
+                setLoadingId(id);
+                const res = await retryEmail(id);
+                setLoadingId(null);
+                closeModal();
+                if (!res.success) {
+                    alert(res.error || "Gagal mengirim ulang email");
+                } else {
+                    alert("Email berstatus dikirim ulang!");
+                    router.refresh();
+                }
+            }
+        });
+    };
+
+    const handleResendWelcomeApp = (id: string, name: string) => {
+        setModalInput("");
+        setModal({
+            isOpen: true,
+            title: "Paksa Kirim Email Welcome",
+            message: `Apakah Anda yakin ingin mengirim ulang email 'Pendaftaran Berhasil' ke pendaftar bernama ${name}? Tindakan ini akan mengirim email baru via Resend.`,
+            type: "info",
+            confirmLabel: "Ya, Kirim",
+            showInput: false,
+            onConfirm: async () => {
+                setLoadingId(id);
+                const res = await resendWelcomeEmailApplication(id);
+                setLoadingId(null);
+                closeModal();
+                if (!res.success) {
+                    alert(res.error || "Gagal mengirim email welcome!");
+                } else {
+                    alert("Berhasil! Email verifikasi telah diloncatkan kembali ke antrean.");
+                    router.refresh();
+                }
             }
         });
     };
@@ -251,6 +305,21 @@ export default function DashboardClient({
         router.push(`/admin?tab=${activeTab}&page=${page}`);
     };
 
+    const searchParams = useSearchParams();
+    const handleEmailPagination = (direction: 'before' | 'after') => {
+        const items = initialEmailLogs?.items || [];
+        if (items.length === 0) return;
+        
+        let cursor = '';
+        if (direction === 'before') {
+             cursor = items[0].id;
+        } else {
+             cursor = items[items.length - 1].id;
+        }
+
+        router.push(`/admin?tab=emails&direction=${direction}&cursor=${cursor}`);
+    };
+
     const switchTab = (tab: string) => {
         setActiveTab(tab);
         router.push(`/admin?tab=${tab}&page=1`);
@@ -306,6 +375,18 @@ export default function DashboardClient({
                         {activeTab === 'mentors' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full" />}
                     </button>
                 )}
+                {role === 'superadmin' && (
+                    <button 
+                        onClick={() => switchTab('emails')}
+                        className={`pb-4 text-sm font-bold transition-colors relative flex items-center gap-2 ${
+                            activeTab === 'emails' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+                        }`}
+                    >
+                        <Mail size={18} />
+                        Log Email
+                        {activeTab === 'emails' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full" />}
+                    </button>
+                )}
                 <div className="flex-1" />
                 <button
                     onClick={handleExportExcel}
@@ -318,17 +399,28 @@ export default function DashboardClient({
             </div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                <StatCard label={`Total ${activeTab === 'applicants' ? 'Pendaftar' : 'Calon Mentor'}`} value={stats.total} icon={<Clock size={16} />} color="bg-blue-50 text-blue-700" />
-                <StatCard label="Approved" value={stats.approved} icon={<Check size={16} />} color="bg-emerald-100 text-emerald-800" />
-                <StatCard label="Pending" value={stats.pending} icon={<Clock size={16} />} color="bg-yellow-100 text-yellow-800" />
-                <StatCard label="Rejected" value={stats.rejected} icon={<X size={16} />} color="bg-gray-100 text-gray-800" />
-                {activeTab === 'applicants' && (
-                    <StatCard label="Lolos Screening" value={stats.lolos} icon={<CheckCircle size={16} />} color="bg-green-50 text-green-700" />
-                )}
-            </div>
+            {activeTab === 'emails' ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <StatCard label="Total Emails (Recent)" value={initialEmailMetrics?.total || 0} icon={<Mail size={16} />} color="bg-blue-50 text-blue-700" />
+                    <StatCard label="Terkirim" value={initialEmailMetrics?.sent || 0} icon={<Check size={16} />} color="bg-gray-100 text-gray-600" />
+                    <StatCard label="Delivered" value={initialEmailMetrics?.delivered || 0} icon={<CheckCircle2 size={16} />} color="bg-emerald-100 text-emerald-800" />
+                    <StatCard label="Bounced" value={initialEmailMetrics?.bounced || 0} icon={<AlertCircle size={16} />} color="bg-yellow-100 text-yellow-800" />
+                    <StatCard label="Gagal" value={initialEmailMetrics?.failed || 0} icon={<XCircleIcon size={16} />} color="bg-red-100 text-red-800" />
+                </div>
+            ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <StatCard label={`Total ${activeTab === 'applicants' ? 'Pendaftar' : 'Calon Mentor'}`} value={stats.total} icon={<Clock size={16} />} color="bg-blue-50 text-blue-700" />
+                    <StatCard label="Approved" value={stats.approved} icon={<Check size={16} />} color="bg-emerald-100 text-emerald-800" />
+                    <StatCard label="Pending" value={stats.pending} icon={<Clock size={16} />} color="bg-yellow-100 text-yellow-800" />
+                    <StatCard label="Rejected" value={stats.rejected} icon={<X size={16} />} color="bg-gray-100 text-gray-800" />
+                    {activeTab === 'applicants' && (
+                        <StatCard label="Lolos Screening" value={stats.lolos} icon={<CheckCircle size={16} />} color="bg-green-50 text-green-700" />
+                    )}
+                </div>
+            )}
 
-            {/* Filters Section */}
+            {/* Filters Section (Hide For Emails) */}
+            {activeTab !== 'emails' && (
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
                     <div className="relative w-full md:w-80">
@@ -403,13 +495,22 @@ export default function DashboardClient({
                     )}
                 </div>
             </div>
+            )}
 
             {/* Main Table */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                            {activeTab === 'applicants' ? (
+                            {activeTab === 'emails' ? (
+                                <tr>
+                                    <th className="px-6 py-4">Penerima</th>
+                                    <th className="px-6 py-4">Subjek</th>
+                                    <th className="px-6 py-4 text-center">Tanggal & Waktu</th>
+                                    <th className="px-6 py-4 text-center">Status</th>
+                                    <th className="px-6 py-4 text-center">Aksi</th>
+                                </tr>
+                            ) : activeTab === 'applicants' ? (
                                 <tr>
                                     <th className="px-6 py-4">Nama Pendaftar</th>
                                     <th className="px-6 py-4">Wilayah</th>
@@ -431,7 +532,44 @@ export default function DashboardClient({
                             )}
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {filteredData.map((item) => {
+                            {activeTab === 'emails' ? (
+                                initialEmailLogs?.items?.map((email) => {
+                                    const isLoading = loadingId === email.id;
+                                    return (
+                                        <tr key={email.id} className="hover:bg-slate-50 transition">
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-800">{Array.isArray(email.to) ? email.to.join(', ') : email.to}</div>
+                                                <div className="text-xs text-slate-400">Dari: {email.from}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600 text-sm max-w-[200px] truncate" title={email.subject}>
+                                                {email.subject}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="text-[10px] font-bold text-slate-500">
+                                                    {new Date(email.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                </div>
+                                                <div className="text-[9px] text-slate-400">
+                                                    {new Date(email.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <ResendStatusBadge status={email.last_event || 'sent'} />
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <button
+                                                    onClick={() => handleRetryEmail(email.id, email.to)}
+                                                    disabled={isLoading}
+                                                    title="Kirim Ulang"
+                                                    className="action-btn hover:bg-slate-200 text-slate-600 disabled:opacity-50"
+                                                >
+                                                    {isLoading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                            filteredData.map((item) => {
                                 const isLoading = loadingId === item._id;
                                 if (activeTab === 'applicants') {
                                     const app = item as ApplicationListItem;
@@ -468,6 +606,7 @@ export default function DashboardClient({
                                                     onStatusUpdate={handleStatusUpdate} 
                                                     onDelete={handleDelete}
                                                     detailUrl={`/admin/application/${app._id}`}
+                                                    onResendEmail={() => handleResendWelcomeApp(app._id, app.nama || '')}
                                                 />
                                             </td>
                                         </tr>
@@ -507,11 +646,12 @@ export default function DashboardClient({
                                         </tr>
                                     );
                                 }
-                            })}
+                            })
+                            )}
 
-                            {filteredData.length === 0 && (
+                            {((activeTab !== 'emails' && filteredData.length === 0) || (activeTab === 'emails' && (!initialEmailLogs || initialEmailLogs.items.length === 0))) && (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-20 text-center text-slate-400">
+                                    <td colSpan={7} className="px-6 py-20 text-center text-slate-400">
                                         <Search size={40} className="mx-auto mb-3 opacity-20" />
                                         <p>Tidak ada data ditemukan.</p>
                                     </td>
@@ -522,7 +662,7 @@ export default function DashboardClient({
                 </div>
 
                 {/* Pagination */}
-                {totalPages > 1 && (
+                {activeTab !== 'emails' && totalPages > 1 && (
                     <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
                         <p className="text-sm text-slate-500">
                             Halaman {currentPage} dari {totalPages} ({totalItems} data)
@@ -542,6 +682,29 @@ export default function DashboardClient({
                                 className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                                 <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+                
+                {/* Resend Pagination */}
+                {activeTab === 'emails' && (
+                    <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+                        <p className="text-sm text-slate-500">Menampilkan Email via Resend</p>
+                        <div className="flex items-center gap-2">
+                             <button
+                                onClick={() => handleEmailPagination('before')}
+                                disabled={!searchParams.get('cursor')} // simple check, prev only if there is a cursor
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-30 text-xs font-semibold"
+                            >
+                                <div className="flex gap-1 items-center"><ChevronLeft size={14} /> Sebelumnya</div>
+                            </button>
+                            <button
+                                onClick={() => handleEmailPagination('after')}
+                                disabled={!initialEmailLogs || !initialEmailLogs.hasNextPage}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-white disabled:opacity-30 text-xs font-semibold"
+                            >
+                                <div className="flex gap-1 items-center">Selanjutnya <ChevronRight size={14} /></div>
                             </button>
                         </div>
                     </div>
@@ -592,7 +755,22 @@ function StatusBadge({ status }: { status: string }) {
     return <span className="px-2 py-1 rounded-full text-[10px] font-black bg-yellow-100 text-yellow-700 border border-yellow-200 animate-pulse uppercase tracking-wider">Pending</span>
 }
 
-function ActionButtons({ id, status, type, isLoading, onStatusUpdate, onDelete, detailUrl }: any) {
+function ResendStatusBadge({ status }: { status: string }) {
+    const format = status.toLowerCase();
+    switch (format) {
+        case 'delivered':
+             return <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">Delivered</span>;
+        case 'bounced':
+             return <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">Bounced</span>;
+        case 'failed':
+        case 'delivery_delayed':
+             return <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">Failed</span>;
+        default:
+             return <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 capitalize">{format}</span>;
+    }
+}
+
+function ActionButtons({ id, status, type, isLoading, onStatusUpdate, onDelete, detailUrl, onResendEmail }: any) {
     return (
         <div className="flex items-center justify-center gap-2">
             {isLoading ? (
@@ -632,6 +810,15 @@ function ActionButtons({ id, status, type, isLoading, onStatusUpdate, onDelete, 
                     >
                         <Trash2 size={16} />
                     </button>
+                    {type === 'applicant' && onResendEmail && (
+                        <button
+                            onClick={onResendEmail}
+                            title="Paksa Kirim Ulang Email Pendaftaran"
+                            className="action-btn hover:bg-blue-100 hover:text-blue-700 text-slate-400"
+                        >
+                            <Mail size={16} />
+                        </button>
+                    )}
                 </>
             )}
             <div className="w-px h-4 bg-slate-200 mx-1"></div>

@@ -107,8 +107,12 @@ export async function POST(req: NextRequest) {
     console.log("Raw Data Received:", JSON.stringify(rawData, null, 2));
 
     // Duplicate check: reject if NIK or email already exists
-    const nik = rawData.nik as string;
-    const email = rawData.email as string;
+    const nik = (rawData.nik as string)?.trim();
+    const email = (rawData.email as string)?.trim().toLowerCase();
+    
+    // Update rawData so subsequent uses use the cleaned version
+    rawData.nik = nik;
+    rawData.email = email;
 
     const existing = await client.fetch(
       `*[_type == "application" && (biodata.nik == $nik || biodata.email == $email)][0]{
@@ -296,10 +300,10 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    // Send Confirmation Email (don't await to avoid blocking response)
-    sendConfirmationEmail(doc.biodata.email, doc.biodata.nama, emailData);
+    // Send Confirmation Email (menunggu selesai agar proses tidak di-kill oleh Next.js server)
+    const emailResult = await sendConfirmationEmail(doc.biodata.email, doc.biodata.nama, emailData);
 
-    return NextResponse.json({ success: true, message: "Application submitted successfully" });
+    return NextResponse.json({ success: true, message: "Application submitted successfully", emailResult });
 
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);

@@ -1,18 +1,24 @@
 import DashboardClient from "./DashboardClient";
-import { getApplications, getMentors } from "./actions";
+import { getApplications, getMentors, getEmailLogs, getRecentEmailMetrics } from "./actions";
 import { logoutAction, getAdminUser } from "./auth-actions";
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ page?: string; tab?: string }> }) {
+export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ page?: string; tab?: string; cursor?: string; direction?: string }> }) {
   const params = await searchParams;
   const page = Number(params.page) || 1;
   const currentTab = params.tab || 'applicants';
+  const cursor = params.cursor || null;
+  const direction = (params.direction as 'before' | 'after') || 'after';
 
-  const [applicantsData, mentorsData, adminUser] = await Promise.all([
+  const isEmails = currentTab === 'emails';
+
+  const [applicantsData, mentorsData, adminUser, emailsData, emailsMetrics] = await Promise.all([
     getApplications(currentTab === 'applicants' ? page : 1),
     getMentors(currentTab === 'mentors' ? page : 1),
-    getAdminUser()
+    getAdminUser(),
+    isEmails ? getEmailLogs(50, cursor, direction) : { items: [], hasNextPage: false },
+    isEmails ? getRecentEmailMetrics() : { sent: 0, delivered: 0, bounced: 0, failed: 0, total: 0 }
   ]);
 
   const isSuperAdmin = adminUser?.role === 'superadmin';
@@ -44,6 +50,8 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
             <DashboardClient
               initialApplicants={applicantsData}
               initialMentors={mentorsData}
+              initialEmailLogs={emailsData}
+              initialEmailMetrics={emailsMetrics}
               role={adminUser?.role}
               region={adminUser?.region}
               defaultTab={currentTab}

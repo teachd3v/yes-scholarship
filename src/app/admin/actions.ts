@@ -2,8 +2,12 @@
 
 import { writeClient } from "@/sanity/client";
 import { revalidatePath } from "next/cache";
-import type { ApplicationListItem, ApplicationDetail, PaginatedResult, MentorListItem, MentorDetail } from "@/lib/types";
+import type { ApplicationListItem, ApplicationDetail, PaginatedResult, MentorListItem, MentorDetail, EmailMetrics, ResendEmailLog } from "@/lib/types";
 import { getAdminUser, verifyAdminPassword } from "./auth-actions";
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 
 if (!writeClient) throw new Error("Sanity writeClient not configured")
 const client = writeClient;
@@ -444,4 +448,172 @@ export async function exportAllMentors(): Promise<MentorDetail[]> {
     }
 }
 
+// ==================== Email Actions ====================
 
+export async function getEmailLogs(limit: number = 20, cursor?: string | null, direction: 'after' | 'before' = 'after') {
+    try {
+        const adminUser = await getAdminUser();
+        if (!adminUser || adminUser.role !== 'superadmin') throw new Error("Unauthorized");
+
+        const options: any = { limit };
+        if (cursor) {
+            if (direction === 'after') {
+                // If the resend sdk doesn't officially expose 'after'/'before', we can cast it.
+                options['after'] = cursor;
+            } else {
+                // Not all versions of resend sdk support before/after. Usually we just pass it as any
+                 options['before'] = cursor;
+            }
+        }
+
+        const { data, error }: any = await resend.emails.list(options);
+        
+        if (error) {
+            console.error("Resend API error:", error);
+            return { items: [], hasNextPage: false };
+        }
+
+        const items = (data?.data || data || []) as ResendEmailLog[];
+        
+        return {
+            items,
+            hasNextPage: items.length >= limit
+        };
+    } catch (error) {
+        console.error("Error fetching email logs:", error);
+        return { items: [], hasNextPage: false };
+    }
+}
+
+export async function getRecentEmailMetrics(): Promise<EmailMetrics> {
+    const metrics: EmailMetrics = { sent: 0, delivered: 0, bounced: 0, failed: 0, total: 0 };
+    try {
+        const adminUser = await getAdminUser();
+        if (!adminUser || adminUser.role !== 'superadmin') return metrics;
+
+        let totalFetched = 0;
+        let lastId: string | null = null;
+        let hasMore = true;
+
+        // Fetch up to 500 emails to build a mini scorecard
+        while (hasMore && totalFetched < 500) {
+             const options: any = { limit: 100 };
+             if (lastId) options.after = lastId;
+
+             const { data, error }: any = await resend.emails.list(options);
+             if (error) break;
+
+             const items = (data?.data || data || []) as ResendEmailLog[];
+             if (!items || items.length === 0) break;
+
+             items.forEach((email) => {
+                 metrics.total++;
+                 const status = (email.last_event || 'sent').toLowerCase();
+                 if (status === 'delivered') metrics.delivered++;
+                 else if (status === 'bounced') metrics.bounced++;
+                 else if (['failed', 'delivery_delayed', 'complained'].includes(status)) metrics.failed++;
+                 else metrics.sent++;
+             });
+
+             totalFetched += items.length;
+             if (items.length < 100) hasMore = false;
+             else lastId = items[items.length - 1].id;
+        }
+
+        return metrics;
+    } catch (error) {
+        console.error("Error generating metrics:", error);
+        return metrics;
+    }
+}
+
+export async function retryEmail(emailId: string) {
+    try {
+        const adminUser = await getAdminUser();
+        if (!adminUser || adminUser.role !== 'superadmin') return { success: false, error: 'Unauthorized' };
+
+        const { data: original, error: getErr }: any = await resend.emails.get(emailId);
+        if (getErr || !original) {
+            return { success: false, error: getErr?.message || 'Gagal mengambil data riwayat email' };
+        }
+
+        // Ambil payload HTML, text, atau subject.
+        const html = original.html || original.text || '<h1>Notifikasi</h1><p>Pesan otomatis.</p>';
+        const subjectStr = original.subject?.startsWith('[RETRY]') ? original.subject : `[RETRY] ${original.subject || 'Notifikasi'}`;
+        
+        // Kita gunakan .send untuk mengirim ulang
+        const { data: newlySent, error: sendErr } = await resend.emails.send({
+            from: original.from || 'YES Scholarship <admin@youthekselensia.id>',
+            to: Array.isArray(original.to) ? original.to : [original.to],
+            subject: subjectStr,
+            html: html,
+        });
+
+        if (sendErr) return { success: false, error: sendErr.message };
+
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error retrying email:", error);
+        return { success: false, error: error?.message || 'Terjadi kesalahan sistem' };
+    }
+}
+
+export async function resendWelcomeEmailApplication(id: string) {
+    try {
+        const adminUser = await getAdminUser();
+        if (!adminUser || adminUser.role !== 'superadmin') return { success: false, error: 'Unauthorized' };
+
+        const app = await getApplicationById(id);
+        if (!app) return { success: false, error: 'Aplikasi pendaftar tidak ditemukan' };
+
+        // We need to construct emailData to match EmailDocData in mail.ts
+        // Not all data might perfectly map directly if it wasn't captured, but we map as much as we can.
+        const { sendConfirmationEmail } = await import('@/lib/mail');
+        
+        const emailData: any = {
+            biodata: {
+                nama: app.biodata.nama, nik: app.biodata.nik, no_kk: app.biodata.no_kk,
+                email: app.biodata.email, whatsapp: app.biodata.whatsapp,
+                jenis_kelamin: app.biodata.jenis_kelamin, agama: app.biodata.agama,
+                tempat_lahir: app.biodata.tempat_lahir, tanggal_lahir: app.biodata.tanggal_lahir,
+                provinsi_nama: app.biodata.provinsi_nama, kabupaten_nama: app.biodata.kabupaten_nama,
+                kecamatan_nama: app.biodata.kecamatan_nama, kelurahan_nama: app.biodata.kelurahan_nama,
+                alamat_detail: app.biodata.alamat_detail,
+                foto_diri_assetId: app.biodata.foto_diri?.asset?._ref,
+            },
+            keluarga: {
+                nama_ayah: app.keluarga.nama_ayah, kondisi_ayah: app.keluarga.kondisi_ayah, 
+                pekerjaan_ayah: app.keluarga.pekerjaan_ayah,
+                nama_ibu: app.keluarga.nama_ibu, kondisi_ibu: app.keluarga.kondisi_ibu,
+                pekerjaan_ibu: app.keluarga.pekerjaan_ibu,
+                penghasilan_ortu: app.keluarga.penghasilan_ortu, kontak_ortu: app.keluarga.kontak_ortu,
+                jumlah_saudara: app.keluarga.jumlah_saudara,
+                file_kk_assetId: app.keluarga.file_kk?.asset?._ref,
+                file_sktm_assetId: app.keluarga.file_sktm?.asset?._ref,
+                file_skb_assetId: app.keluarga.file_skb?.asset?._ref,
+            },
+            seleksi: {
+                asal_sekolah: app.seleksi.asal_sekolah, jenjang_pendidikan: app.seleksi.jenjang_pendidikan,
+                nilai_raport_1: app.seleksi.nilai_raport_1, nilai_raport_2: app.seleksi.nilai_raport_2,
+                nilai_raport_3: app.seleksi.nilai_raport_3, status_beasiswa: app.seleksi.status_beasiswa,
+                keterangan_beasiswa: app.seleksi.keterangan_beasiswa, kategori_hafalan: app.seleksi.kategori_hafalan,
+                motivasi: app.seleksi.motivasi, sumber_info: app.seleksi.sumber_info, social_media: app.seleksi.social_media,
+                list_organisasi: app.seleksi.list_organisasi || [], list_prestasi: app.seleksi.list_prestasi || [],
+                foto_raport_1_assetId: app.seleksi.foto_raport_1?.asset?._ref,
+                foto_raport_2_assetId: app.seleksi.foto_raport_2?.asset?._ref,
+                foto_raport_3_assetId: app.seleksi.foto_raport_3?.asset?._ref,
+            }
+        };
+
+        const res = await sendConfirmationEmail(app.biodata.email, app.biodata.nama, emailData);
+        if (!res || !res.success) {
+            return { success: false, error: 'Gagal mengirim email verifikasi melalui Resend' };
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error resend welcome email:", error);
+        return { success: false, error: error?.message || 'Terjadi kesalahan sistem' };
+    }
+}

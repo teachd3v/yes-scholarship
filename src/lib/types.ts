@@ -189,3 +189,35 @@ export interface MentorDetail {
     adminNotes?: string;
 }
 
+// ==================== Email Types ====================
+
+export interface EmailMetrics {
+    sent: number;
+    delivered: number;
+    bounced: number;
+    failed: number;
+    total: number;
+}
+
+export interface ResendEmailLog {
+    id: string;
+    to: string[];
+    from: string;
+    created_at: string;
+    subject: string;
+    html?: string;
+    text?: string;
+    bcc?: string[];
+    cc?: string[];
+    reply_to?: string[];
+    last_event: string;
+}
+
+export interface EmailLogResponse {
+    items: ResendEmailLog[];
+    metrics: EmailMetrics;
+    hasNextPage: boolean;
+    nextCursor?: string | null;
+    prevCursor?: string | null;
+}
+
