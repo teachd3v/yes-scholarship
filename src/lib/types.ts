@@ -56,6 +56,7 @@ export interface ApplicationDetail {
         kelurahan: string;
         kelurahan_nama: string;
         alamat_detail: string;
+        foto_diri?: { asset?: { _ref?: string } };
         foto_diri_url?: string;
     };
     keluarga: {
@@ -70,8 +71,11 @@ export interface ApplicationDetail {
         jumlah_saudara: number;
         has_sktm?: string;
         has_skb?: string;
+        file_kk?: { asset?: { _ref?: string } };
         file_kk_url?: string;
+        file_sktm?: { asset?: { _ref?: string } };
         file_sktm_url?: string;
+        file_skb?: { asset?: { _ref?: string } };
         file_skb_url?: string;
     };
     seleksi: {
