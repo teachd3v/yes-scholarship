@@ -34,14 +34,6 @@ function sectionHeader(title: string) {
   return `<tr><td colspan="2" style="padding:16px 0 6px; font-size:14px; font-weight:700; color:#1e40af; border-bottom:2px solid #dbeafe;">${title}</td></tr>`;
 }
 
-function photoBlock(label: string, url: string | null) {
-  if (!url) return '';
-  return `
-    <div style="display:inline-block; margin:6px 8px 6px 0; text-align:center; vertical-align:top;">
-      <img src="${url}" alt="${label}" width="140" style="width:140px; height:105px; object-fit:cover; border-radius:8px; border:1px solid #e2e8f0; display:block;" />
-      <p style="margin:4px 0 0; font-size:11px; color:#64748b;">${label}</p>
-    </div>`;
-}
 
 export interface EmailDocData {
   biodata: {
@@ -97,12 +89,6 @@ export async function sendConfirmationEmail(to: string, name: string, docData?: 
     const { biodata, keluarga, seleksi } = docData;
 
     const fotoDiriUrl = assetIdToUrl(biodata.foto_diri_assetId, projectId, dataset, 160);
-    const kkUrl = assetIdToUrl(keluarga.file_kk_assetId, projectId, dataset, 400);
-    const sktmUrl = assetIdToUrl(keluarga.file_sktm_assetId, projectId, dataset, 400);
-    const skbUrl = assetIdToUrl(keluarga.file_skb_assetId, projectId, dataset, 400);
-    const r1Url = assetIdToUrl(seleksi.foto_raport_1_assetId, projectId, dataset, 400);
-    const r2Url = assetIdToUrl(seleksi.foto_raport_2_assetId, projectId, dataset, 400);
-    const r3Url = assetIdToUrl(seleksi.foto_raport_3_assetId, projectId, dataset, 400);
 
     const alamatLengkap = [biodata.alamat_detail, biodata.kelurahan_nama, biodata.kecamatan_nama, biodata.kabupaten_nama, biodata.provinsi_nama].filter(Boolean).join(', ');
     const avgNilai = ((seleksi.nilai_raport_1 + seleksi.nilai_raport_2 + seleksi.nilai_raport_3) / 3).toFixed(2);
@@ -114,6 +100,15 @@ export async function sendConfirmationEmail(to: string, name: string, docData?: 
     const presList = seleksi.list_prestasi?.length
       ? seleksi.list_prestasi.map((p, i) => `${i + 1}. ${p.keterangan} (${p.juara} Tk. ${p.tingkat})`).join('<br/>')
       : '—';
+
+    const docsUploaded = [
+      keluarga.file_kk_assetId ? 'Kartu Keluarga' : null,
+      keluarga.file_sktm_assetId ? 'SKTM/KIP/PKH/KIS' : null,
+      keluarga.file_skb_assetId ? 'SKB' : null,
+      seleksi.foto_raport_1_assetId ? 'Raport Sem 1' : null,
+      seleksi.foto_raport_2_assetId ? 'Raport Sem 2' : null,
+      seleksi.foto_raport_3_assetId ? 'Raport Sem 3' : null,
+    ].filter(Boolean);
 
     summaryHtml = `
       <div style="margin-top:24px; border-top:2px solid #e2e8f0; padding-top:20px;">
@@ -163,17 +158,10 @@ export async function sendConfirmationEmail(to: string, name: string, docData?: 
           <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; vertical-align:top;">Motivasi</td><td style="padding:6px 0; color:#1e293b; font-size:13px; line-height:1.5;">${seleksi.motivasi || '—'}</td></tr>
         </table>
 
-        ${(kkUrl || sktmUrl || skbUrl || r1Url || r2Url || r3Url) ? `
-        <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:16px;">
-          <p style="font-size:14px; font-weight:700; color:#1e40af; margin:0 0 12px;">📎 Dokumen yang Diunggah</p>
-          <div style="line-height:0;">
-            ${photoBlock('Kartu Keluarga', kkUrl)}
-            ${photoBlock('SKTM/KIP/PKH/KIS', sktmUrl)}
-            ${photoBlock('SKB', skbUrl)}
-            ${photoBlock('Raport Sem 1', r1Url)}
-            ${photoBlock('Raport Sem 2', r2Url)}
-            ${photoBlock('Raport Sem 3', r3Url)}
-          </div>
+        ${docsUploaded.length > 0 ? `
+        <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:16px; background-color:#f0fdf4; border-radius:8px; padding:14px 16px;">
+          <p style="font-size:13px; font-weight:700; color:#166534; margin:0 0 8px;">📎 Dokumen Terunggah (${docsUploaded.length} file)</p>
+          <p style="font-size:13px; color:#166534; margin:0;">${docsUploaded.join(' &nbsp;•&nbsp; ')}</p>
         </div>` : ''}
       </div>`;
   }
@@ -229,12 +217,11 @@ export async function sendMentorConfirmationEmail(to: string, name: string, data
   const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
 
   const fotoUrl = assetIdToUrl(data.foto_profil_assetId, projectId, dataset, 160);
-  const cvUrl = assetIdToUrl(data.cv_resume_assetId, projectId, dataset, 600);
 
   const summaryHtml = `
     <div style="margin-top:24px; border-top:2px solid #e2e8f0; padding-top:20px;">
       <h2 style="font-size:16px; font-weight:700; color:#1e293b; margin:0 0 16px;">Ringkasan Data Mentor Kamu</h2>
-      
+
       ${fotoUrl ? `<div style="text-align:center; margin-bottom:16px;"><img src="${fotoUrl}" width="100" style="width:100px; height:100px; object-fit:cover; border-radius:50%; border:3px solid #059669;" /><p style="font-size:12px; color:#64748b; margin:6px 0 0;">Foto Profil</p></div>` : ''}
 
       <table style="width:100%; border-collapse:collapse; font-family:Arial,sans-serif;">
@@ -258,10 +245,9 @@ export async function sendMentorConfirmationEmail(to: string, name: string, data
         <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; vertical-align:top;">Motivasi</td><td style="padding:6px 0; color:#1e293b; font-size:13px; line-height:1.5;">${data.motivasi}</td></tr>
       </table>
 
-      ${cvUrl ? `
-      <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:16px;">
-        <p style="font-size:14px; font-weight:700; color:#059669; margin:0 0 12px;">📎 CV / Resume</p>
-        <img src="${cvUrl}" width="100%" style="width:100%; max-width:400px; border-radius:8px; border:1px solid #e2e8f0;" />
+      ${data.cv_resume_assetId ? `
+      <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:16px; background-color:#f0fdf4; border-radius:8px; padding:14px 16px;">
+        <p style="font-size:13px; font-weight:700; color:#065f46; margin:0;">📎 CV / Resume berhasil diunggah</p>
       </div>` : ''}
     </div>`;
 
