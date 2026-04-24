@@ -92,8 +92,11 @@ export interface ApplicationDetail {
         kategori_hafalan?: string;
         list_organisasi?: { jenis: string; jabatan: string; ket_lainnya?: string }[];
         list_prestasi?: { tingkat: string; juara: string; keterangan: string }[];
+        foto_raport_1?: { asset?: { _ref?: string } };
         foto_raport_1_url?: string;
+        foto_raport_2?: { asset?: { _ref?: string } };
         foto_raport_2_url?: string;
+        foto_raport_3?: { asset?: { _ref?: string } };
         foto_raport_3_url?: string;
     };
     scoring?: {
