@@ -63,9 +63,13 @@ export interface ApplicationDetail {
         nama_ibu: string;
         kondisi_ayah: string;
         kondisi_ibu: string;
+        pekerjaan_ayah?: string;
+        pekerjaan_ibu?: string;
         penghasilan_ortu: string;
         kontak_ortu: string;
         jumlah_saudara: number;
+        has_sktm?: string;
+        has_skb?: string;
         file_kk_url?: string;
         file_sktm_url?: string;
         file_skb_url?: string;

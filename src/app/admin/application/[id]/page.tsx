@@ -1,7 +1,7 @@
 import { getApplicationById } from "../../actions";
 import FileGallery from "./FileGallery";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, User, GraduationCap, Users, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, User, GraduationCap, Users, XCircle, Award, Building2 } from "lucide-react";
 
 import { notFound } from "next/navigation";
 import { formatIncome } from "@/lib/types";
@@ -155,7 +155,7 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                  <SectionCard title="Pendidikan & Seleksi" icon={<GraduationCap size={20} />}>
                     <Field label="Asal Sekolah" value={app.seleksi.asal_sekolah} />
                     <Field label="Jenjang" value={app.seleksi.jenjang_pendidikan} />
-                    <div className="col-span-1 md:col-span-2 grid grid-cols-4 gap-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <div className="col-span-1 md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
                         <div className="text-center border-r border-blue-200 last:border-0">
                             <div className="text-xs text-slate-500">Sem 1</div>
                             <div className="font-bold text-blue-700">{app.seleksi.nilai_raport_1}</div>
@@ -180,6 +180,40 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                     <Field label="Hafalan" value={app.seleksi.kategori_hafalan || '-'} />
                     <Field label="Social Media" value={app.seleksi.social_media || '-'} isLink={true} fullWidth />
                     <Field label="Motivasi" value={app.seleksi.motivasi} fullWidth />
+                </SectionCard>
+
+                <SectionCard title="Organisasi" icon={<Building2 size={20} />}>
+                    {(app.seleksi.list_organisasi && app.seleksi.list_organisasi.length > 0) ? (
+                        app.seleksi.list_organisasi.map((org, i) => (
+                            <div key={i} className="col-span-1 md:col-span-2 bg-slate-50 rounded-lg p-4 border border-slate-100">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-semibold text-slate-700">{org.jenis}</span>
+                                    <span className="text-slate-400">—</span>
+                                    <span className="text-slate-600">{org.jabatan}</span>
+                                </div>
+                                {org.ket_lainnya && <p className="text-sm text-slate-500">{org.ket_lainnya}</p>}
+                            </div>
+                        ))
+                    ) : (
+                        <p className="col-span-2 text-slate-400 text-sm">Tidak ada data organisasi.</p>
+                    )}
+                </SectionCard>
+
+                <SectionCard title="Prestasi" icon={<Award size={20} />}>
+                    {(app.seleksi.list_prestasi && app.seleksi.list_prestasi.length > 0) ? (
+                        app.seleksi.list_prestasi.map((p, i) => (
+                            <div key={i} className="col-span-1 md:col-span-2 bg-amber-50 rounded-lg p-4 border border-amber-100">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-semibold text-amber-700">Juara {p.juara}</span>
+                                    <span className="text-slate-400">—</span>
+                                    <span className="text-slate-600">Tingkat {p.tingkat}</span>
+                                </div>
+                                <p className="text-sm text-slate-600">{p.keterangan}</p>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="col-span-2 text-slate-400 text-sm">Tidak ada data prestasi.</p>
+                    )}
                 </SectionCard>
 
                 <FileGallery 

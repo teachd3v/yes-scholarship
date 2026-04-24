@@ -24,13 +24,13 @@ export default function LatestBlog({ posts }: LatestBlogProps) {
                 </Link>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-8">
                 {posts.map((post, index) => (
                     <article
                         key={index}
                         className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition group border border-slate-100"
                     >
-                        <div className="h-48 overflow-hidden">
+                        <div className="h-36 md:h-48 overflow-hidden">
                             <img
                                 src={typeof post.image === 'string' ? post.image : urlFor(post.image).url()}
                                 alt={post.title}

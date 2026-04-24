@@ -3,6 +3,7 @@
 import { writeClient } from "@/sanity/client";
 import { revalidatePath } from "next/cache";
 import type { ApplicationListItem, ApplicationDetail, PaginatedResult, MentorListItem, MentorDetail, EmailMetrics, ResendEmailLog } from "@/lib/types";
+import type { EmailDocData } from "@/lib/mail";
 import { getAdminUser, verifyAdminPassword } from "./auth-actions";
 import { Resend } from 'resend';
 
@@ -74,7 +75,7 @@ export async function updateApplicationData(
 
 export async function updateApplicationStatus(id: string, status: 'approved' | 'rejected' | 'pending', reason?: string) {
   try {
-    const patch: any = { status };
+    const patch: { status: 'approved' | 'rejected' | 'pending'; rejectedReason?: string } = { status };
     if (status === 'rejected' && reason) {
         patch.rejectedReason = reason;
     }
@@ -416,7 +417,7 @@ export async function getMentors(
 
 export async function updateMentorStatus(id: string, status: 'approved' | 'rejected' | 'pending', reason?: string) {
   try {
-    const patch: any = { status };
+    const patch: { status: 'approved' | 'rejected' | 'pending'; rejectedReason?: string } = { status };
     if (status === 'rejected' && reason) {
         patch.rejectedReason = reason;
     }
@@ -504,18 +505,17 @@ export async function getEmailLogs(limit: number = 20, cursor?: string | null, d
         const adminUser = await getAdminUser();
         if (!adminUser || adminUser.role !== 'superadmin') throw new Error("Unauthorized");
 
-        const options: any = { limit };
+        const options: { limit: number; after?: string; before?: string } = { limit };
         if (cursor) {
             if (direction === 'after') {
-                // If the resend sdk doesn't officially expose 'after'/'before', we can cast it.
-                options['after'] = cursor;
+                options.after = cursor;
             } else {
-                // Not all versions of resend sdk support before/after. Usually we just pass it as any
-                 options['before'] = cursor;
+                // Resend SDK may not type 'before' in all versions — cast to bypass
+                options.before = cursor;
             }
         }
 
-        const { data, error }: any = await resend.emails.list(options);
+        const { data, error } = await resend.emails.list(options as Parameters<typeof resend.emails.list>[0]);
         
         if (error) {
             console.error("Resend API error:", error);
@@ -546,10 +546,10 @@ export async function getRecentEmailMetrics(): Promise<EmailMetrics> {
 
         // Fetch up to 500 emails to build a mini scorecard
         while (hasMore && totalFetched < 500) {
-             const options: any = { limit: 100 };
+             const options: { limit: number; after?: string } = { limit: 100 };
              if (lastId) options.after = lastId;
 
-             const { data, error }: any = await resend.emails.list(options);
+             const { data, error } = await resend.emails.list(options as Parameters<typeof resend.emails.list>[0]);
              if (error) break;
 
              const items = (data?.data || data || []) as ResendEmailLog[];
@@ -581,7 +581,7 @@ export async function retryEmail(emailId: string) {
         const adminUser = await getAdminUser();
         if (!adminUser || adminUser.role !== 'superadmin') return { success: false, error: 'Unauthorized' };
 
-        const { data: original, error: getErr }: any = await resend.emails.get(emailId);
+        const { data: original, error: getErr } = await resend.emails.get(emailId);
         if (getErr || !original) {
             return { success: false, error: getErr?.message || 'Gagal mengambil data riwayat email' };
         }
@@ -602,9 +602,10 @@ export async function retryEmail(emailId: string) {
 
         revalidatePath('/admin');
         return { success: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error("Error retrying email:", error);
-        return { success: false, error: error?.message || 'Terjadi kesalahan sistem' };
+        const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem';
+        return { success: false, error: message };
     }
 }
 
@@ -620,11 +621,11 @@ export async function resendWelcomeEmailApplication(id: string) {
         // Not all data might perfectly map directly if it wasn't captured, but we map as much as we can.
         const { sendConfirmationEmail } = await import('@/lib/mail');
         
-        const biodata: any = app.biodata;
-        const keluarga: any = app.keluarga;
-        const seleksi: any = app.seleksi;
-        
-        const emailData: any = {
+        const biodata = app.biodata;
+        const keluarga = app.keluarga;
+        const seleksi = app.seleksi;
+
+        const emailData: EmailDocData = {
             biodata: {
                 nama: biodata.nama, nik: biodata.nik, no_kk: biodata.no_kk,
                 email: biodata.email, whatsapp: biodata.whatsapp,
@@ -665,8 +666,9 @@ export async function resendWelcomeEmailApplication(id: string) {
         }
 
         return { success: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error("Error resend welcome email:", error);
-        return { success: false, error: error?.message || 'Terjadi kesalahan sistem' };
+        const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem';
+        return { success: false, error: message };
     }
 }

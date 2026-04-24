@@ -22,8 +22,8 @@ export default function Footer() {
                 <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-600 rounded-full blur-[120px]"></div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-6 relative z-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 lg:gap-8 mb-12 md:mb-16">
                     {/* Brand Column */}
                     <div className="col-span-1 lg:col-span-1 flex flex-col gap-6">
                         <Link href="/" className="inline-block transition-transform hover:scale-105 duration-300">
@@ -67,7 +67,7 @@ export default function Footer() {
                             Hubungi Kami
                             <span className="block w-8 h-1 bg-yellow-400 mt-2 rounded-full"></span>
                         </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-5">
+                        <div className="grid grid-cols-1 gap-5">
                             <div className="flex items-start gap-4 group cursor-default">
                                 <div className="p-2.5 bg-slate-800/50 rounded-xl group-hover:bg-blue-600/20 transition-colors border border-slate-700/50">
                                     <MapPin className="w-5 h-5 text-blue-400" />

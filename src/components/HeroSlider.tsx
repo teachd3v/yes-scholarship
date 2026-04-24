@@ -46,13 +46,13 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
             ></div>
             <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 to-blue-900/40"></div>
 
-            <div className="relative z-20 h-full flex items-center max-w-7xl mx-auto px-8 md:px-16">
-              <div className="max-w-2xl text-white pt-20">
-                <h1 className="text-3xl md:text-6xl font-extrabold mb-6 leading-tight">{slide.headline}</h1>
-                <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-lg">{slide.subheadline}</p>
+            <div className="relative z-20 h-full flex items-center max-w-7xl mx-auto px-4 md:px-8 lg:px-16">
+              <div className="max-w-2xl text-white pt-16 md:pt-20">
+                <h1 className="text-2xl md:text-4xl lg:text-6xl font-extrabold mb-4 md:mb-6 leading-tight">{slide.headline}</h1>
+                <p className="text-sm md:text-lg lg:text-xl text-blue-100 mb-6 md:mb-8 max-w-lg">{slide.subheadline}</p>
                 <Link
                   href={slide.cta_link}
-                  className="inline-block bg-yellow-400 text-blue-900 px-8 py-4 rounded-full font-bold hover:bg-yellow-300 transition transform hover:-translate-y-1"
+                  className="inline-block bg-yellow-400 text-blue-900 px-6 py-3 md:px-8 md:py-4 rounded-full font-bold hover:bg-yellow-300 transition transform hover:-translate-y-1 text-sm md:text-base"
                 >
                   {slide.cta_text}
                 </Link>

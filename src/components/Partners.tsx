@@ -12,11 +12,11 @@ interface PartnersProps {
 
 export default function Partners({ partners }: PartnersProps) {
     return (
-        <section className="py-16 px-6 text-center">
+        <section className="py-12 md:py-16 px-4 md:px-6 text-center">
             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-8">Mitra & Kolaborator Program</p>
-            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-70 hover:opacity-100 transition duration-500">
+            <div className="flex flex-wrap justify-center items-center gap-6 md:gap-16 opacity-70 hover:opacity-100 transition duration-500">
                 {partners?.map((p, index) => (
-                    <div key={index} className="h-34 md:h-34 flex items-center justify-center">
+                    <div key={index} className="h-16 md:h-24 flex items-center justify-center">
                         <img
                             src={typeof p.logo === 'string' ? p.logo : urlFor(p.logo).url()}
                             alt={p.name}

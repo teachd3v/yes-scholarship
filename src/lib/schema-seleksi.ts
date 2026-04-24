@@ -60,56 +60,6 @@ export const seleksiSchema = z.object({
         .min(1, "Link social media wajib diisi")
         .url("Format harus berupa URL yang valid, contoh: https://instagram.com/username"),
 
-}).superRefine((data, ctx) => {
-    // 1. Validasi Conditional Beasiswa
-    if (data.status_beasiswa === "Ya_Lainnya" && !data.keterangan_beasiswa) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["keterangan_beasiswa"],
-            message: "Sebutkan nama beasiswa lainnya",
-        });
-    }
-
-    // 2. Validasi Conditional Organisasi
-    if (data.toggle_organisasi) {
-        if (!data.list_organisasi || data.list_organisasi.length === 0) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ["list_organisasi"],
-                message: "Minimal isi 1 organisasi jika diaktifkan",
-            });
-        }
-        // Cek jika pilih 'Lainnya' di dalam list
-        data.list_organisasi?.forEach((item, index) => {
-            if (item.jenis === "Lainnya" && !item.ket_lainnya) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: [`list_organisasi`, index, `ket_lainnya`],
-                    message: "Sebutkan organisasi lainnya",
-                });
-            }
-        });
-    }
-
-    // 3. Validasi Conditional Prestasi
-    if (data.toggle_prestasi) {
-        if (!data.list_prestasi || data.list_prestasi.length === 0) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ["list_prestasi"],
-                message: "Minimal isi 1 prestasi jika diaktifkan",
-            });
-        }
-    }
-
-    // 4. Validasi Conditional Hafalan
-    if (data.toggle_hafalan && !data.kategori_hafalan) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["kategori_hafalan"],
-            message: "Pilih jumlah hafalan",
-        });
-    }
 });
 
 export type SeleksiSchemaType = z.infer<typeof seleksiSchema>;

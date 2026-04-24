@@ -192,21 +192,69 @@ export default function DashboardClient({
                 const data = await exportAllApplications();
                 const worksheet = XLSX.utils.json_to_sheet(data.map(app => ({
                     'Nama': app.biodata.nama,
+                    'NIK': app.biodata.nik,
+                    'No KK': app.biodata.no_kk,
                     'Email': app.biodata.email,
                     'WA': app.biodata.whatsapp,
                     'Jenis Kelamin': app.biodata.jenis_kelamin,
+                    'Agama': app.biodata.agama,
+                    'Tempat Lahir': app.biodata.tempat_lahir,
+                    'Tanggal Lahir': app.biodata.tanggal_lahir,
                     'Wilayah': app.biodata.provinsi_nama,
+                    'Kabupaten': app.biodata.kabupaten_nama,
                     'Alamat': app.biodata.alamat_detail,
+                    'Nama Ayah': app.keluarga.nama_ayah,
+                    'Nama Ibu': app.keluarga.nama_ibu,
+                    'Kondisi Ayah': app.keluarga.kondisi_ayah,
+                    'Kondisi Ibu': app.keluarga.kondisi_ibu,
+                    'Pekerjaan Ayah': app.keluarga.pekerjaan_ayah,
+                    'Pekerjaan Ibu': app.keluarga.pekerjaan_ibu,
+                    'Penghasilan Ortu': app.keluarga.penghasilan_ortu,
+                    'Jumlah Saudara': app.keluarga.jumlah_saudara,
+                    'Kontak Ortu': app.keluarga.kontak_ortu,
+                    'Punya SKTM': app.keluarga.has_sktm,
+                    'Punya SKB': app.keluarga.has_skb,
                     'Asal Sekolah': app.seleksi.asal_sekolah,
                     'Jenjang': app.seleksi.jenjang_pendidikan,
+                    'Nilai Raport 1': app.seleksi.nilai_raport_1,
+                    'Nilai Raport 2': app.seleksi.nilai_raport_2,
+                    'Nilai Raport 3': app.seleksi.nilai_raport_3,
+                    'Status Beasiswa': app.seleksi.status_beasiswa,
+                    'Ket. Beasiswa': app.seleksi.keterangan_beasiswa || '-',
+                    'Kategori Hafalan': app.seleksi.kategori_hafalan || '-',
+                    'Sumber Info': app.seleksi.sumber_info,
+                    'Social Media': app.seleksi.social_media || '-',
+                    'Motivasi': app.seleksi.motivasi,
                     'Tanggal Daftar': new Date(app._createdAt).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
                     'Status': app.status,
                     'Skor': app.scoring?.total_skor || 0,
                     'Lolos Screening': app.scoring?.lolos_screening ? 'YA' : 'TIDAK',
                     'Alasan Gagal': [app.scoring?.alasan_gagal?.join(', '), app.rejectedReason].filter(Boolean).join(' | ') || '-'
                 })));
+                const orgRows = data.flatMap(app =>
+                    (app.seleksi.list_organisasi || []).map(org => ({
+                        'Nama Pendaftar': app.biodata.nama,
+                        'Email': app.biodata.email,
+                        'Wilayah': app.biodata.provinsi_nama,
+                        'Jenis Organisasi': org.jenis,
+                        'Jabatan': org.jabatan,
+                        'Keterangan': org.ket_lainnya || '-',
+                    }))
+                );
+                const prestasiRows = data.flatMap(app =>
+                    (app.seleksi.list_prestasi || []).map(p => ({
+                        'Nama Pendaftar': app.biodata.nama,
+                        'Email': app.biodata.email,
+                        'Wilayah': app.biodata.provinsi_nama,
+                        'Tingkat': p.tingkat,
+                        'Juara': p.juara,
+                        'Keterangan': p.keterangan,
+                    }))
+                );
                 const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Applicants");
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pendaftar");
+                XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(orgRows.length ? orgRows : [{ 'Info': 'Tidak ada data organisasi' }]), "Organisasi");
+                XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(prestasiRows.length ? prestasiRows : [{ 'Info': 'Tidak ada data prestasi' }]), "Prestasi");
                 XLSX.writeFile(workbook, `YES_Applicants_${new Date().toLocaleDateString()}.xlsx`);
             } else {
                 const data = await exportAllMentors();
@@ -350,9 +398,9 @@ export default function DashboardClient({
     }, [activeTab, initialApplicants, initialMentors]);
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-4 md:space-y-6 p-3 md:p-6">
             {/* Tabs Header */}
-            <div className="flex border-b border-slate-200 gap-8">
+            <div className="flex border-b border-slate-200 gap-4 md:gap-8 overflow-x-auto scrollbar-none">
                 <button 
                     onClick={() => switchTab('applicants')}
                     className={`pb-4 text-sm font-bold transition-colors relative flex items-center gap-2 ${
@@ -392,10 +440,11 @@ export default function DashboardClient({
                 <button
                     onClick={handleExportExcel}
                     disabled={isExporting}
-                    className="mb-4 flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition disabled:opacity-50"
+                    className="mb-4 flex items-center gap-1.5 px-3 md:px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs md:text-sm font-bold hover:bg-emerald-700 transition disabled:opacity-50 whitespace-nowrap"
                 >
-                    {isExporting ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
-                    Export Excel {activeTab === 'applicants' ? 'Pendaftar' : 'Mentor'}
+                    {isExporting ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}
+                    <span className="hidden sm:inline">Export Excel {activeTab === 'applicants' ? 'Pendaftar' : 'Mentor'}</span>
+                    <span className="sm:hidden">Export</span>
                 </button>
             </div>
 

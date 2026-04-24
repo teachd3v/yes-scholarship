@@ -13,20 +13,23 @@ Semua kriteria **wajib lolos**. Jika satu saja gagal, pendaftar otomatis **TIDAK
 |---|----------|--------------|------------|
 | 1 | Agama | Islam | Selain Islam |
 | 2 | Status Beasiswa | "Tidak Menerima" atau "Hanya PIP" | Menerima beasiswa lainnya (Ya_Lainnya) |
-| 3 | Domisili Provinsi | Salah satu dari 8 provinsi di bawah | Di luar 8 provinsi tersebut |
+| 3 | Domisili Provinsi | Salah satu dari 9 provinsi di bawah | Di luar 9 provinsi tersebut |
 
 ### Provinsi yang Diizinkan
 
-| Provinsi | Kota Cakupan |
-|----------|--------------|
-| Sumatera Utara | Medan |
-| Sumatera Selatan | Palembang |
-| Sumatera Barat | Padang |
-| Jawa Barat | Bogor, Depok |
-| DI Yogyakarta | Yogyakarta |
-| Jawa Timur | Surabaya |
-| Sulawesi Selatan | Sinjai |
-| Riau | Pekanbaru |
+> Source of truth: [`src/lib/constants.ts`](src/lib/constants.ts)
+
+| Provinsi | Kabupaten/Kota yang Diizinkan |
+|----------|-------------------------------|
+| Aceh | Kabupaten Pidie Jaya, Kabupaten Aceh Utara |
+| Sumatera Utara | Kabupaten Langkat |
+| Sumatera Barat | Kota Padang |
+| Sumatera Selatan | Kota Palembang |
+| Riau | Kota Dumai, Kota Pekanbaru |
+| Jawa Barat | Kabupaten Bogor, Kota Bogor, Kota Depok |
+| DI Yogyakarta | Seluruh kabupaten/kota |
+| Jawa Timur | Kota Surabaya |
+| Sulawesi Selatan | Kabupaten Sinjai |
 
 ---
 

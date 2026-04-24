@@ -14,8 +14,8 @@ const INCOME_LABELS: Record<string, string> = {
 
 function Row({ label, value }: { label: string; value?: string | number | null }) {
     return (
-        <div className="flex gap-2 py-1.5 border-b border-slate-100 last:border-0 text-sm">
-            <span className="text-slate-400 w-40 shrink-0">{label}</span>
+        <div className="flex flex-col sm:flex-row sm:gap-2 py-1.5 border-b border-slate-100 last:border-0 text-sm">
+            <span className="text-slate-400 sm:w-40 shrink-0 text-xs sm:text-sm">{label}</span>
             <span className="font-medium text-slate-800 break-words min-w-0">{value || <span className="text-slate-300 italic">—</span>}</span>
         </div>
     );

@@ -36,6 +36,25 @@ export default function SectionSeleksi() {
 
     const isIslam = wAgama === "Islam";
 
+    const duplicateOrgIndices = useMemo(() => {
+        if (!wListOrg || wListOrg.length < 2) return new Set<number>();
+        const seen = new Map<string, number>();
+        const dupes = new Set<number>();
+        wListOrg.forEach((item, i) => {
+            if (!item?.jenis || !item?.jabatan) return;
+            const key = item.jenis === "Lainnya"
+                ? `${item.jenis}|${item.jabatan}|${item.ket_lainnya || ""}`
+                : `${item.jenis}|${item.jabatan}`;
+            if (seen.has(key)) {
+                dupes.add(i);
+                dupes.add(seen.get(key)!);
+            } else {
+                seen.set(key, i);
+            }
+        });
+        return dupes;
+    }, [wListOrg]);
+
     // Reset hafalan & Rohis saat agama bukan Islam
     useEffect(() => {
         if (wAgama && !isIslam) {
@@ -180,6 +199,12 @@ export default function SectionSeleksi() {
                                                 <option value="Komunitas">Komunitas</option>
                                                 <option value="Lainnya">Lainnya</option>
                                             </select>
+                                            {duplicateOrgIndices.has(index) && (
+                                                <p className="error-text">Organisasi ini sudah ditambahkan sebelumnya</p>
+                                            )}
+                                            {!duplicateOrgIndices.has(index) && errors.list_organisasi?.[index]?.jenis && (
+                                                <p className="error-text">{errors.list_organisasi[index].jenis?.message}</p>
+                                            )}
                                             {/* Conditional Input Lainnya dalam Array */}
                                             {wListOrg?.[index]?.jenis === "Lainnya" && (
                                                 <input

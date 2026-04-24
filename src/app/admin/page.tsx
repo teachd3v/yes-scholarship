@@ -35,17 +35,17 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-            <div className="bg-blue-600 text-white font-bold p-2 text-xl rounded-lg">YES</div>
-            <h1 className="text-xl font-bold text-slate-800">{dashboardTitle}</h1>
+      <nav className="bg-white border-b border-slate-200 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center sticky top-0 z-10">
+        <div className="flex items-center gap-2 min-w-0">
+            <div className="bg-blue-600 text-white font-bold p-1.5 md:p-2 text-base md:text-xl rounded-lg shrink-0">YES</div>
+            <h1 className="text-sm md:text-xl font-bold text-slate-800 truncate">{dashboardTitle}</h1>
         </div>
-        <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-500">
+        <div className="flex items-center gap-2 md:gap-4 shrink-0">
+            <span className="text-xs md:text-sm text-slate-500 hidden sm:inline">
                 {adminUser?.username || 'Admin'}
             </span>
             <form action={logoutAction}>
-                <button type="submit" className="text-sm text-red-600 font-medium hover:underline">
+                <button type="submit" className="text-xs md:text-sm text-red-600 font-medium hover:underline">
                     Logout
                 </button>
             </form>

@@ -31,7 +31,7 @@ export default function Navbar() {
 
     return (
         <nav className="sticky top-0 z-50 bg-white border-b border-slate-200" id="navbar">
-            <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
                 <div className="flex justify-between items-center bg-white relative z-50">
                     <Link href="/" className="flex items-center gap-2">
                         <Image
