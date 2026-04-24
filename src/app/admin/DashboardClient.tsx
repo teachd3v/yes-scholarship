@@ -468,8 +468,8 @@ export default function DashboardClient({
                          <option value="All">Semua Wilayah</option>
                          {Array.from(new Set([
                              ...["JAWA BARAT", "JAWA TIMUR", "SUMATERA UTARA", "SUMATERA BARAT", "SUMATERA SELATAN", "RIAU", "DI YOGYAKARTA", "SULAWESI SELATAN", "ACEH", "DKI JAKARTA", "BANTEN", "JAWA TENGAH", "BALI", "LAMPUNG", "KALIMANTAN TIMUR", "KALIMANTAN BARAT"],
-                             ...applications.map(a => a.provinsi_nama?.toUpperCase()).filter(Boolean),
-                             ...mentors.map(m => m.provinsi_nama?.toUpperCase()).filter(Boolean)
+                             ...initialApplicants.items.map(a => a.provinsi_nama?.toUpperCase()).filter(Boolean),
+                             ...initialMentors.items.map(m => m.provinsi_nama?.toUpperCase()).filter(Boolean)
                          ])).sort().map(p => (
                              <option key={p} value={p}>{p}</option>
                          ))}
