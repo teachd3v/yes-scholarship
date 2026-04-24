@@ -13,6 +13,8 @@ import { checkPreScreening, calculateScore } from "@/lib/scoring";
 import { Save, Loader2, User, Users, GraduationCap, CheckCircle, Mail, X, Check, AlertTriangle, ChevronRight, Image, BookOpen } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { compressImage } from "@/lib/image-compression";
+import { CLOSE_DATE, useCountdown, pad } from "@/components/RegistrationGate";
+import { Clock } from "lucide-react";
 import Link from "next/link";
 
 // Mapping field key → [Label, sectionId]
@@ -114,11 +116,13 @@ function StickyStepperContent({
   onScrollTo,
   completions,
   overallProgress,
+  countdown,
 }: {
   activeSection: number;
   onScrollTo: (id: string) => void;
   completions: { filled: number; total: number }[];
   overallProgress: number;
+  countdown?: { days: number; hours: number; minutes: number; seconds: number; show: boolean };
 }) {
 
   return (
@@ -126,6 +130,13 @@ function StickyStepperContent({
       <div className="max-w-4xl mx-auto px-3 py-3">
         {/* Progress bar */}
         <div className="flex items-center gap-3 mb-2">
+          {countdown?.show && (
+            <div className="sm:hidden flex items-center gap-1 text-[10px] font-black text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-100 tabular-nums shrink-0">
+              <Clock size={10} className="animate-pulse" />
+              {countdown.days > 0 && `${countdown.days}d `}
+              {pad(countdown.hours)}:{pad(countdown.minutes)}
+            </div>
+          )}
           <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500 ease-out"
@@ -231,6 +242,19 @@ export default function PendaftaranPage() {
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { isSubmitting } = methods.formState;
   const errorBannerRef = useRef<HTMLDivElement>(null);
+
+  // Countdown logic
+  const countdown = useCountdown(CLOSE_DATE);
+  const [showCountdown, setShowCountdown] = useState(false);
+
+  useEffect(() => {
+    // Show countdown starting from April 24, 2026 00:00 WIB (TEMPORARY FOR TESTING)
+    const threshold = new Date("2026-04-24T00:00:00+07:00").getTime();
+    const check = () => setShowCountdown(Date.now() >= threshold);
+    check();
+    const id = setInterval(check, 60000); // Check every minute
+    return () => clearInterval(id);
+  }, []);
 
   // Auto-save & Restore Draft Logic
   const DRAFT_KEY = "yes-scholarship-draft";
@@ -536,20 +560,28 @@ export default function PendaftaranPage() {
         onScrollTo={scrollToSection}
         completions={completions}
         overallProgress={overallProgress}
+        countdown={{ ...countdown, show: showCountdown }}
       />
 
       <div className="max-w-4xl mx-auto space-y-6 md:space-y-10 px-3 py-6 md:px-4 md:py-10">
         <header className="text-center mb-2">
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Formulir Seleksi YES 2026</h1>
           <p className="text-slate-500 mt-2 text-sm md:text-base mb-4">Mohon isi data secara berurutan dan teliti.</p>
-          <button
-            type="button"
-            onClick={() => setShowGuidelines(true)}
-            className="inline-flex mt-1 flex-row items-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold py-2 px-5 rounded-xl transition text-sm md:text-base border border-blue-100 shadow-sm"
-          >
-            <BookOpen size={18} />
-            Panduan Mengisi & Syarat Dokumen
-          </button>
+          {showCountdown ? (
+            <div className="inline-flex mt-1 items-center gap-2.5 bg-red-50 text-red-700 font-black py-2.5 px-5 rounded-2xl border-2 border-red-100 shadow-sm animate-pulse text-sm md:text-base tabular-nums">
+              <Clock size={20} className="text-red-500" />
+              <span>Sisa Waktu: {countdown.days} hari {pad(countdown.hours)}:{pad(countdown.minutes)}:{pad(countdown.seconds)}</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowGuidelines(true)}
+              className="inline-flex mt-1 flex-row items-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold py-2 px-5 rounded-xl transition text-sm md:text-base border border-blue-100 shadow-sm"
+            >
+              <BookOpen size={18} />
+              Panduan Mengisi & Syarat Dokumen
+            </button>
+          )}
         </header>
 
         {/* Validation Errors (Zod) */}

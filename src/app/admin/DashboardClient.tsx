@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
     updateApplicationStatus, 
     deleteApplication, 
@@ -236,76 +236,74 @@ export default function DashboardClient({
         }
     };
 
-    // Filters State
-    const [searchQuery, setSearchQuery] = useState("");
-    const [filterProvince, setFilterProvince] = useState<string>('All');
-    const [filterStatus, setFilterStatus] = useState<string>('All');
+    // Filters State - sync with searchParams
+    const searchParams = useSearchParams();
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || "");
+    const [filterProvince, setFilterProvince] = useState<string>(searchParams.get('province') || 'All');
+    const [filterStatus, setFilterStatus] = useState<string>(searchParams.get('status') || 'All');
     
     // Applicant Specific Filters
-    const [filterIncome, setFilterIncome] = useState<string>('All');
-    const [filterScore, setFilterScore] = useState<string>('All');
-    const [filterScreening, setFilterScreening] = useState<string>('All');
+    const [filterIncome, setFilterIncome] = useState<string>(searchParams.get('income') || 'All');
+    const [filterScreening, setFilterScreening] = useState<string>(searchParams.get('screening') || 'All');
     
     // Mentor Specific Filters
-    const [filterJenjang, setFilterJenjang] = useState<string>('All');
+    const [filterJenjang, setFilterJenjang] = useState<string>(searchParams.get('jenjang') || 'All');
 
-    const [sortBy, setSortBy] = useState<string>('date_desc');
+    const [sortBy, setSortBy] = useState<string>(searchParams.get('sort') || 'date_desc');
 
-    const applications = initialApplicants.items;
-    const mentors = initialMentors.items;
+    // Debounced search effect
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            const params = new URLSearchParams(window.location.search);
+            if (searchQuery) params.set('q', searchQuery);
+            else params.delete('q');
+            params.set('page', '1'); // Reset to page 1 on search
+            router.push(`/admin?${params.toString()}`);
+        }, 600);
+        return () => clearTimeout(timeoutId);
+    }, [searchQuery, router]);
 
-    // Derived Data: Filtered & Sorted Logic
-    const filteredData = useMemo(() => {
-        if (activeTab === 'applicants') {
-            let result = [...applications];
-            if (filterProvince !== 'All') result = result.filter(app => app.provinsi_nama === filterProvince);
-            if (filterIncome !== 'All') result = result.filter(app => app.penghasilan_ortu === filterIncome);
-            if (filterStatus !== 'All') result = result.filter(app => app.status === filterStatus);
-            if (filterScreening !== 'All') result = result.filter(app => (filterScreening === 'Lolos' ? app.lolos_screening : !app.lolos_screening));
-            if (searchQuery) {
-                const q = searchQuery.toLowerCase();
-                result = result.filter(app => app.nama?.toLowerCase().includes(q) || app.email?.toLowerCase().includes(q));
-            }
-            // Sort
-            result.sort((a, b) => {
-                if (sortBy === 'score_desc') return (b.total_skor || 0) - (a.total_skor || 0);
-                if (sortBy === 'score_asc') return (a.total_skor || 0) - (b.total_skor || 0);
-                if (sortBy === 'date_desc') return new Date(b._createdAt).getTime() - new Date(a._createdAt).getTime();
-                if (sortBy === 'date_asc') return new Date(a._createdAt).getTime() - new Date(b._createdAt).getTime();
-                return 0;
-            });
-            return result;
-        } else {
-            let result = [...mentors];
-            if (filterProvince !== 'All') result = result.filter(m => m.provinsi_nama === filterProvince);
-            if (filterStatus !== 'All') result = result.filter(m => m.status === filterStatus);
-            if (filterJenjang !== 'All') result = result.filter(m => m.jenjang === filterJenjang);
-            if (searchQuery) {
-                const q = searchQuery.toLowerCase();
-                result = result.filter(m => m.nama?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q));
-            }
-             // Sort
-             result.sort((a, b) => {
-                if (sortBy === 'date_desc') return new Date(b._createdAt).getTime() - new Date(a._createdAt).getTime();
-                if (sortBy === 'date_asc') return new Date(a._createdAt).getTime() - new Date(b._createdAt).getTime();
-                return 0;
-            });
-            return result;
+    // Update filters effect (excluding search)
+    const updateFilters = useCallback(() => {
+        const params = new URLSearchParams(window.location.search);
+        
+        if (filterProvince !== 'All') params.set('province', filterProvince); else params.delete('province');
+        if (filterStatus !== 'All') params.set('status', filterStatus); else params.delete('status');
+        if (filterIncome !== 'All') params.set('income', filterIncome); else params.delete('income');
+        if (filterScreening !== 'All') params.set('screening', filterScreening); else params.delete('screening');
+        if (filterJenjang !== 'All') params.set('jenjang', filterJenjang); else params.delete('jenjang');
+        if (sortBy !== 'date_desc') params.set('sort', sortBy); else params.delete('sort');
+        
+        params.set('page', '1'); // Reset to page 1 on filter change
+        router.push(`/admin?${params.toString()}`);
+    }, [filterProvince, filterStatus, filterIncome, filterScreening, filterJenjang, sortBy, router]);
+
+    // Run updateFilters when dropdowns change
+    const firstUpdate = useState(true);
+    useEffect(() => {
+        if (firstUpdate[0]) {
+            firstUpdate[1](false);
+            return;
         }
-    }, [activeTab, applications, mentors, filterProvince, filterIncome, filterStatus, filterScreening, filterJenjang, searchQuery, sortBy]);
+        updateFilters();
+    }, [filterProvince, filterStatus, filterIncome, filterScreening, filterJenjang, sortBy]);
 
     // Pagination constants
     const currentData = activeTab === 'applicants' ? initialApplicants : initialMentors;
+    const filteredData = currentData.items; 
+
     const totalPages = currentData.totalPages;
     const currentPage = currentData.page;
     const totalItems = currentData.total;
 
     const goToPage = (page: number) => {
         if (page < 1 || page > totalPages) return;
-        router.push(`/admin?tab=${activeTab}&page=${page}`);
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', page.toString());
+        router.push(`/admin?${params.toString()}`);
     };
 
-    const searchParams = useSearchParams();
+
     const handleEmailPagination = (direction: 'before' | 'after') => {
         const items = initialEmailLogs?.items || [];
         if (items.length === 0) return;
@@ -322,7 +320,10 @@ export default function DashboardClient({
 
     const switchTab = (tab: string) => {
         setActiveTab(tab);
-        router.push(`/admin?tab=${tab}&page=1`);
+        const params = new URLSearchParams();
+        params.set('tab', tab);
+        params.set('page', '1');
+        router.push(`/admin?${params.toString()}`);
     };
 
     // Stats
@@ -465,8 +466,11 @@ export default function DashboardClient({
 
                     <select className="filter-select" value={filterProvince} onChange={(e) => setFilterProvince(e.target.value)}>
                          <option value="All">Semua Wilayah</option>
-                         {/* Static for now or derive from data */}
-                         {["Jawa Barat", "Jawa Timur", "Sumatera Utara", "Sumatera Barat", "Sumatera Selatan", "Riau", "DI Yogyakarta", "Sulawesi Selatan", "Aceh"].map(p => (
+                         {Array.from(new Set([
+                             ...["JAWA BARAT", "JAWA TIMUR", "SUMATERA UTARA", "SUMATERA BARAT", "SUMATERA SELATAN", "RIAU", "DI YOGYAKARTA", "SULAWESI SELATAN", "ACEH", "DKI JAKARTA", "BANTEN", "JAWA TENGAH", "BALI", "LAMPUNG", "KALIMANTAN TIMUR", "KALIMANTAN BARAT"],
+                             ...applications.map(a => a.provinsi_nama?.toUpperCase()).filter(Boolean),
+                             ...mentors.map(m => m.provinsi_nama?.toUpperCase()).filter(Boolean)
+                         ])).sort().map(p => (
                              <option key={p} value={p}>{p}</option>
                          ))}
                     </select>

@@ -4,18 +4,25 @@ import { logoutAction, getAdminUser } from "./auth-actions";
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ page?: string; tab?: string; cursor?: string; direction?: string }> }) {
+export default async function AdminDashboard({ searchParams }: { searchParams: Promise<any> }) {
   const params = await searchParams;
   const page = Number(params.page) || 1;
   const currentTab = params.tab || 'applicants';
   const cursor = params.cursor || null;
   const direction = (params.direction as 'before' | 'after') || 'after';
 
+  const q = params.q || '';
+  const province = params.province || 'All';
+  const status = params.status || 'All';
+  const screening = params.screening || 'All';
+  const income = params.income || 'All';
+  const jenjang = params.jenjang || 'All';
+
   const isEmails = currentTab === 'emails';
 
   const [applicantsData, mentorsData, adminUser, emailsData, emailsMetrics] = await Promise.all([
-    getApplications(currentTab === 'applicants' ? page : 1),
-    getMentors(currentTab === 'mentors' ? page : 1),
+    getApplications(currentTab === 'applicants' ? page : 1, { search: q, province, status, screening, income }),
+    getMentors(currentTab === 'mentors' ? page : 1, { search: q, province, status, jenjang }),
     getAdminUser(),
     isEmails ? getEmailLogs(50, cursor, direction) : { items: [], hasNextPage: false },
     isEmails ? getRecentEmailMetrics() : { sent: 0, delivered: 0, bounced: 0, failed: 0, total: 0 }

@@ -176,7 +176,16 @@ export async function deleteRekomendasi(id: string) {
 
 const PAGE_SIZE = 100;
 
-export async function getApplications(page: number = 1): Promise<PaginatedResult<ApplicationListItem>> {
+export async function getApplications(
+    page: number = 1, 
+    filters: { 
+        search?: string, 
+        province?: string, 
+        status?: string, 
+        screening?: string, 
+        income?: string 
+    } = {}
+): Promise<PaginatedResult<ApplicationListItem>> {
     try {
         const adminUser = await getAdminUser();
         if (!adminUser) throw new Error("Unauthorized");
@@ -185,8 +194,28 @@ export async function getApplications(page: number = 1): Promise<PaginatedResult
         const end = start + PAGE_SIZE;
 
         let baseCondition = `_type == "application"`;
+        
+        // Role based restriction
         if (adminUser.role === 'admin_wilayah' && adminUser.region) {
              baseCondition += ` && biodata.provinsi_nama match "${adminUser.region}"`;
+        }
+
+        // Dynamic filters
+        if (filters.province && filters.province !== 'All') {
+            baseCondition += ` && biodata.provinsi_nama match "${filters.province}"`;
+        }
+        if (filters.status && filters.status !== 'All') {
+            baseCondition += ` && status == "${filters.status}"`;
+        }
+        if (filters.screening && filters.screening !== 'All') {
+            const isLolos = filters.screening === 'Lolos';
+            baseCondition += ` && scoring.lolos_screening == ${isLolos}`;
+        }
+        if (filters.income && filters.income !== 'All') {
+            baseCondition += ` && keluarga.penghasilan_ortu == "${filters.income}"`;
+        }
+        if (filters.search) {
+            baseCondition += ` && (biodata.nama match "*${filters.search}*" || biodata.email match "*${filters.search}*")`;
         }
         // Super Admin sees all data by default, no lolos_screening filter here anymore.
 
@@ -320,7 +349,15 @@ export async function getApplicationById(id: string): Promise<ApplicationDetail 
 
 // ==================== Mentor Actions ====================
 
-export async function getMentors(page: number = 1): Promise<PaginatedResult<MentorListItem>> {
+export async function getMentors(
+    page: number = 1,
+    filters: {
+        search?: string,
+        province?: string,
+        status?: string,
+        jenjang?: string
+    } = {}
+): Promise<PaginatedResult<MentorListItem>> {
     try {
         const adminUser = await getAdminUser();
         if (!adminUser) throw new Error("Unauthorized");
@@ -329,8 +366,20 @@ export async function getMentors(page: number = 1): Promise<PaginatedResult<Ment
         const end = start + PAGE_SIZE;
 
         let baseCondition = `_type == "mentor"`;
-        // Mentor selection is national, usually not filtered by region like scholarship applicants,
-        // but we can add filter if needed later.
+        
+        // Dynamic filters
+        if (filters.province && filters.province !== 'All') {
+            baseCondition += ` && domisili.provinsi_nama match "${filters.province}"`;
+        }
+        if (filters.status && filters.status !== 'All') {
+            baseCondition += ` && status == "${filters.status}"`;
+        }
+        if (filters.jenjang && filters.jenjang !== 'All') {
+            baseCondition += ` && pendidikan.jenjang == "${filters.jenjang}"`;
+        }
+        if (filters.search) {
+            baseCondition += ` && (biodata.nama_lengkap match "*${filters.search}*" || biodata.email match "*${filters.search}*")`;
+        }
 
         const query = `{
             "items": *[${baseCondition}] | order(_createdAt desc) [$start...$end] {
