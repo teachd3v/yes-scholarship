@@ -410,6 +410,16 @@ export default function PendaftaranPage() {
   const doActualSubmit = useCallback(async (data: MasterSchemaType) => {
     setIsActualSubmitting(true);
 
+    // Check network connectivity first
+    if (!navigator.onLine) {
+      setSubmitError("Anda tidak terhubung ke internet. Periksa koneksi Anda dan coba lagi.");
+      setTimeout(() => {
+        errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+      setIsActualSubmitting(false);
+      return;
+    }
+
     // -- Progress: Step 1 --
     setSubmitProgress(5);
     setSubmitStep("Memvalidasi data...");
@@ -451,9 +461,9 @@ export default function PendaftaranPage() {
 
     const entries = Object.entries(data);
     const EXCLUDED_UPPERCASE = [
-      "email", "social_media", "penghasilan_ortu", "jenis_kelamin", 
+      "email", "social_media", "penghasilan_ortu", "jenis_kelamin",
       "agama", "kondisi_ayah", "kondisi_ibu", "jenjang_pendidikan",
-      "status_beasiswa", "sumber_info", "provinsi", "kabupaten", 
+      "status_beasiswa", "sumber_info", "provinsi", "kabupaten",
       "kecamatan", "kelurahan", "kategori_hafalan", "motivasi"
     ];
 
@@ -497,28 +507,114 @@ export default function PendaftaranPage() {
       });
     }, 250);
 
+    // Retry logic with exponential backoff
+    const MAX_RETRIES = 3;
+    const INITIAL_DELAY = 1000; // 1 second
+    const FETCH_TIMEOUT = 120000; // 120 seconds = 2 minutes
+
+    async function fetchWithTimeout(url: string, options: RequestInit & { timeout?: number }) {
+      const { timeout = FETCH_TIMEOUT, ...fetchOptions } = options;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      try {
+        return await fetch(url, { ...fetchOptions, signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    async function submitWithRetry(): Promise<Response> {
+      let lastError: Error | null = null;
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          // Update progress message to indicate retry attempt
+          if (attempt > 1) {
+            setSubmitStep(`Mengunggah berkas ke server... (percobaan ${attempt}/${MAX_RETRIES})`);
+          }
+
+          console.log(`[Attempt ${attempt}/${MAX_RETRIES}] Submitting form...`);
+
+          const response = await fetchWithTimeout('/api/application/submit', {
+            method: 'POST',
+            body: formData,
+            timeout: FETCH_TIMEOUT
+          });
+
+          return response;
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error(String(error));
+
+          // Check if this is a timeout error
+          if (lastError.name === 'AbortError') {
+            lastError = new Error('Timeout: Server membutuhkan waktu lebih lama untuk memproses. Silakan coba lagi.');
+          }
+
+          console.error(`[Attempt ${attempt}/${MAX_RETRIES}] Error:`, lastError.message);
+
+          // If this was the last attempt, throw the error
+          if (attempt === MAX_RETRIES) {
+            throw lastError;
+          }
+
+          // Calculate delay with exponential backoff: 1s, 2s, 4s
+          const delay = INITIAL_DELAY * Math.pow(2, attempt - 1);
+          console.log(`Waiting ${delay}ms before retry...`);
+
+          // Update UI to show waiting for retry
+          setSubmitStep(`Menunggu ${delay / 1000} detik sebelum mencoba ulang...`);
+
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+
+      throw lastError || new Error('Submission failed after all retries');
+    }
+
     try {
       setSubmitError("");
-      const response = await fetch('/api/application/submit', { method: 'POST', body: formData });
+      const response = await submitWithRetry();
 
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       setSubmitProgress(90);
       setSubmitStep("Memproses pendaftaran...");
 
+      // Handle specific HTTP error codes with better messages
       if (response.status === 413) {
         throw new Error("Ukuran file terlalu besar untuk dikirim. Coba perkecil ukuran foto dokumen lalu kirim ulang.");
       }
 
-      const result = await response.json();
+      if (response.status === 429) {
+        throw new Error("Terlalu banyak percobaan. Silakan coba lagi dalam 1 jam.");
+      }
+
+      let result: any;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        // If we can't parse JSON, it might be a server error
+        if (!response.ok) {
+          throw new Error(`Server error (${response.status}): ${response.statusText}`);
+        }
+        throw new Error("Gagal memproses respons dari server. Silakan coba lagi.");
+      }
 
       if (!response.ok) {
         setSubmitProgress(0);
         setShowSummary(false);
-        if (result.code === "DUPLICATE_ENTRY" || result.code === "FILE_ERROR") {
-          setSubmitError(result.message);
+
+        // Handle specific error codes with better messages
+        if (result.code === "DUPLICATE_ENTRY") {
+          setSubmitError(result.message || "Data Anda sudah terdaftar sebelumnya.");
+        } else if (result.code === "FILE_ERROR") {
+          setSubmitError(result.message || "Ada masalah dengan file yang Anda upload. Coba gunakan file yang lebih kecil.");
+        } else if (result.code === "RATE_LIMITED") {
+          setSubmitError("Terlalu banyak percobaan. Silakan coba lagi nanti.");
         } else {
-          throw new Error(result.message || "Gagal mengirim data");
+          throw new Error(result.message || "Gagal mengirim data ke server");
         }
+
         setTimeout(() => {
           errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
         }, 100);
@@ -540,9 +636,31 @@ export default function PendaftaranPage() {
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       setSubmitProgress(0);
       setShowSummary(false);
+
+      let errorMessage = "Terjadi kesalahan saat mengirim pendaftaran.";
+
+      if (error instanceof Error) {
+        const msg = error.message;
+
+        // Categorize errors based on error message
+        if (msg.includes('Failed to fetch')) {
+          errorMessage = "Koneksi ke server gagal. Periksa internet Anda dan coba lagi.";
+        } else if (msg.includes('Timeout') || msg.includes('AbortError')) {
+          errorMessage = "Proses pengiriman memakan waktu terlalu lama. Server sedang sibuk. Coba lagi dalam beberapa menit.";
+        } else if (msg.includes('NetworkError') || !navigator.onLine) {
+          errorMessage = "Koneksi internet Anda terputus. Pastikan Anda terhubung ke internet dan coba lagi.";
+        } else if (msg.includes('file')) {
+          errorMessage = `File Error: ${msg}`;
+        } else if (msg.includes('duplicate') || msg.includes('terdaftar')) {
+          errorMessage = msg;
+        } else {
+          errorMessage = msg;
+        }
+      }
+
       console.error("Submission error:", error);
-      const msg = error instanceof Error ? error.message : "Terjadi kesalahan saat mengirim pendaftaran.";
-      setSubmitError(`${msg} Silakan coba lagi atau hubungi panitia jika masalah berlanjut.`);
+      setSubmitError(`${errorMessage} Jika masalah berlanjut, hubungi panitia atau coba lagi nanti.`);
+
       setTimeout(() => {
         errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 100);

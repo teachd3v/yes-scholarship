@@ -301,13 +301,69 @@ export async function POST(req: NextRequest) {
     };
 
     // Send Confirmation Email (menunggu selesai agar proses tidak di-kill oleh Next.js server)
-    const emailResult = await sendConfirmationEmail(doc.biodata.email, doc.biodata.nama, emailData);
+    try {
+      const emailResult = await sendConfirmationEmail(doc.biodata.email, doc.biodata.nama, emailData);
+      console.log("Email sent successfully:", emailResult);
+    } catch (emailError) {
+      // Log email error but don't fail the entire submission
+      // The application is already saved in Sanity
+      console.error("Email sending error (non-critical):", emailError);
+    }
 
-    return NextResponse.json({ success: true, message: "Application submitted successfully", emailResult });
+    return NextResponse.json({ success: true, message: "Application submitted successfully" });
 
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    console.error("Submission Error:", errMsg);
-    return NextResponse.json({ success: false, message: "Internal Server Error: " + errMsg }, { status: 500 });
+    const errStack = error instanceof Error ? error.stack : '';
+
+    // Categorize error for better debugging
+    let statusCode = 500;
+    let errorCode = 'INTERNAL_ERROR';
+    let userMessage = "Internal Server Error: " + errMsg;
+
+    // Check for specific error types
+    if (errMsg.includes('ECONNREFUSED') || errMsg.includes('getaddrinfo')) {
+      statusCode = 503;
+      errorCode = 'SERVICE_UNAVAILABLE';
+      userMessage = "Koneksi ke Sanity CMS gagal. Silakan coba lagi dalam beberapa menit.";
+      console.error("Sanity connection error:", errMsg);
+    } else if (errMsg.includes('timeout') || errMsg.includes('ETIMEDOUT')) {
+      statusCode = 504;
+      errorCode = 'GATEWAY_TIMEOUT';
+      userMessage = "Proses pengiriman memakan waktu terlalu lama. Silakan coba lagi.";
+      console.error("Timeout error:", errMsg);
+    } else if (errMsg.includes('rate limit') || errMsg.includes('429')) {
+      statusCode = 429;
+      errorCode = 'RATE_LIMITED';
+      userMessage = "Terlalu banyak percobaan. Silakan coba lagi dalam 1 jam.";
+      console.error("Rate limit error:", errMsg);
+    } else if (errMsg.includes('DUPLICATE') || errMsg.includes('duplicate')) {
+      statusCode = 409;
+      errorCode = 'DUPLICATE_ENTRY';
+      // Message is already set correctly above
+      console.error("Duplicate entry error:", errMsg);
+    } else if (errMsg.includes('File') || errMsg.includes('file')) {
+      statusCode = 400;
+      errorCode = 'FILE_ERROR';
+      userMessage = "Ada masalah dengan file: " + errMsg;
+      console.error("File error:", errMsg);
+    }
+
+    console.error("Submission Error Details:", {
+      message: errMsg,
+      code: errorCode,
+      statusCode,
+      stack: errStack
+    });
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: userMessage,
+        code: errorCode,
+        details: process.env.NODE_ENV === 'development' ? errMsg : undefined
+      },
+      { status: statusCode }
+    );
   }
 }
