@@ -141,9 +141,11 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                 <SectionCard title="Keluarga" icon={<Users size={20} />}>
                     <Field label="Nama Ayah" value={app.keluarga.nama_ayah} />
                     <Field label="Kondisi Ayah" value={app.keluarga.kondisi_ayah} />
+                    {app.keluarga.kondisi_ayah === 'Bekerja' && <Field label="Pekerjaan Ayah" value={app.keluarga.pekerjaan_ayah || '-'} />}
                     <Field label="Nama Ibu" value={app.keluarga.nama_ibu} />
                     <Field label="Kondisi Ibu" value={app.keluarga.kondisi_ibu} />
-                    <Field 
+                    {app.keluarga.kondisi_ibu === 'Bekerja' && <Field label="Pekerjaan Ibu" value={app.keluarga.pekerjaan_ibu || '-'} />}
+                    <Field
                         label="Penghasilan" 
                         value={formatIncome(app.keluarga.penghasilan_ortu)} 
                     />
