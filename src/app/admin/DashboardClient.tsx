@@ -61,7 +61,7 @@ export default function DashboardClient({
         title: string;
         message: string;
         confirmLabel?: string;
-        type?: "danger" | "success" | "info" | "warning" | "error";
+        type?: "danger" | "success" | "info" | "warning";
         onConfirm: (val?: string) => void;
         showInput?: boolean;
         inputType?: "text" | "password" | "textarea";
@@ -286,7 +286,7 @@ export default function DashboardClient({
                     isOpen: true,
                     title: 'Akses Ditolak',
                     message: 'Password admin yang kamu masukkan salah.',
-                    type: 'error'
+                    type: 'danger'
                 });
                 return;
             }
@@ -326,7 +326,7 @@ export default function DashboardClient({
                 isOpen: true,
                 title: 'Error Blasting',
                 message: 'Terjadi kesalahan sistem saat mengirim email.',
-                type: 'error'
+                type: 'danger'
             });
         } finally {
             setLoadingId(null);
