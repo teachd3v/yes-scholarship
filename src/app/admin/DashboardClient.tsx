@@ -9,13 +9,18 @@ import {
     deleteMentor,
     exportAllMentors,
     retryEmail,
-    resendWelcomeEmailApplication
+    resendWelcomeEmailApplication,
+    blastAnnouncement,
+    blastAnnouncementFromList,
+    blastSingleFromList,
+    verifyAdminPassword
 } from './actions';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
     CheckCircle, XCircle, Clock, Eye, Check, X, Loader2, Filter, 
     ArrowUpDown, Search, ChevronLeft, ChevronRight, Trash2, 
-    ClipboardCheck, Users, UserPlus, Download, Mail, RefreshCw, CheckCircle2, AlertCircle, XCircle as XCircleIcon
+    ClipboardCheck, Users, UserPlus, Download, Mail, RefreshCw, CheckCircle2, AlertCircle, XCircle as XCircleIcon,
+    Megaphone, Send, Info, FileText, Upload
 } from 'lucide-react';
 import Link from 'next/link';
 import type { ApplicationListItem, MentorListItem, PaginatedResult, ResendEmailLog, EmailMetrics } from '@/lib/types';
@@ -46,6 +51,9 @@ export default function DashboardClient({
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const [isExporting, setIsExporting] = useState(false);
     const [activeTab, setActiveTab] = useState(defaultTab);
+    const [importedData, setImportedData] = useState<any[]>([]);
+    const [blastProgress, setBlastProgress] = useState<{ current: number, total: number } | null>(null);
+    const [isParsing, setIsParsing] = useState(false);
 
     // Modal State
     const [modal, setModal] = useState<{
@@ -53,7 +61,7 @@ export default function DashboardClient({
         title: string;
         message: string;
         confirmLabel?: string;
-        type?: "danger" | "success" | "info" | "warning";
+        type?: "danger" | "success" | "info" | "warning" | "error";
         onConfirm: (val?: string) => void;
         showInput?: boolean;
         inputType?: "text" | "password" | "textarea";
@@ -65,6 +73,7 @@ export default function DashboardClient({
         onConfirm: () => { },
     });
 
+    const setModalConfig = (config: any) => setModal({ ...modal, ...config });
     const [modalInput, setModalInput] = useState("");
 
     const closeModal = () => {
@@ -183,6 +192,145 @@ export default function DashboardClient({
                 }
             }
         });
+    };
+    
+    const handleBlastAnnouncement = (type: 'lolos' | 'gagal') => {
+        setModalInput("");
+        setModal({
+            isOpen: true,
+            title: `Blast Pengumuman ${type.toUpperCase()}`,
+            message: `Aksi ini akan mengirimkan email pengumuman secara MASAL ke SEMUA pendaftar yang berstatus ${type.toUpperCase()}. Masukkan password admin untuk mengonfirmasi.`,
+            type: type === 'lolos' ? 'success' : 'warning',
+            confirmLabel: `Ya, Kirim Blast ${type.toUpperCase()}`,
+            showInput: true,
+            inputType: "password",
+            inputPlaceholder: "Password Admin",
+            onConfirm: async (val?: string) => {
+                if (!val) {
+                    alert("Password wajib diisi!");
+                    return;
+                }
+                setLoadingId('blast');
+                const res = await blastAnnouncement(type, val);
+                setLoadingId(null);
+                closeModal();
+                if (!res.success) {
+                    alert(res.error || "Gagal melakukan blasting.");
+                } else {
+                    alert(res.message);
+                    router.refresh();
+                }
+            }
+        });
+    };
+
+    const handleDownloadTemplate = () => {
+        const template = [
+            { 'Nama Lengkap': 'Ahmad Fulan', 'Email': 'fulan@example.com', 'Sekolah': 'SMA Negeri 1 Jakarta', 'Status': 'lolos', 'Alasan Gagal': '' },
+            { 'Nama Lengkap': 'Siti Aminah', 'Email': 'siti@example.com', 'Sekolah': 'SMA Negeri 2 Bandung', 'Status': 'gagal', 'Alasan Gagal': 'Skor administrasi belum memenuhi ambang batas minimum.' },
+        ];
+        const ws = XLSX.utils.json_to_sheet(template);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Template Blast");
+        XLSX.writeFile(wb, "Template_Blast_Pengumuman_YES.xlsx");
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsParsing(true);
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const bstr = evt.target?.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws);
+                // Sanitize data to be plain objects for Server Actions
+                const sanitized = JSON.parse(JSON.stringify(data));
+                setImportedData(sanitized);
+                setModal({
+                    isOpen: true,
+                    title: "Impor Berhasil",
+                    message: `Berhasil mengimpor ${sanitized.length} data dari file Excel. Silakan periksa daftar di bawah sebelum melakukan blasting.`,
+                    type: "success",
+                    confirmLabel: "Siap, Cek Data",
+                    onConfirm: closeModal
+                });
+            } catch (error) {
+                console.error("Parse error:", error);
+                setModal({
+                    isOpen: true,
+                    title: "Gagal Impor",
+                    message: "Terjadi kesalahan saat membaca file Excel. Pastikan format file benar.",
+                    type: "danger",
+                    confirmLabel: "Tutup",
+                    onConfirm: closeModal
+                });
+            } finally {
+                setIsParsing(false);
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
+    const handleBlastFromList = async (password: string) => {
+        setLoadingId('blast-list');
+        try {
+            // Verifikasi password dulu sekali
+            const isValid = await verifyAdminPassword(password);
+            if (!isValid) {
+                setModalConfig({
+                    isOpen: true,
+                    title: 'Akses Ditolak',
+                    message: 'Password admin yang kamu masukkan salah.',
+                    type: 'error'
+                });
+                return;
+            }
+
+            setBlastProgress({ current: 0, total: importedData.length });
+            let success = 0;
+            let fail = 0;
+
+            for (let i = 0; i < importedData.length; i++) {
+                const result = await blastSingleFromList(importedData[i]);
+                if (result.success) {
+                    success++;
+                } else {
+                    fail++;
+                }
+                setBlastProgress({ current: i + 1, total: importedData.length });
+                
+                // Safety delay 600ms
+                if (i < importedData.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 600));
+                }
+            }
+
+            setModalConfig({
+                isOpen: true,
+                title: 'Blasting Selesai',
+                message: `Proses pengiriman selesai. Berhasil: ${success}, Gagal: ${fail}.`,
+                type: 'success'
+            });
+            
+            setImportedData([]);
+            setBlastProgress(null);
+            router.refresh();
+        } catch (error) {
+            console.error("Error blasting:", error);
+            setModalConfig({
+                isOpen: true,
+                title: 'Error Blasting',
+                message: 'Terjadi kesalahan sistem saat mengirim email.',
+                type: 'error'
+            });
+        } finally {
+            setLoadingId(null);
+        }
     };
 
     const handleExportExcel = async () => {
@@ -399,6 +547,20 @@ export default function DashboardClient({
 
     return (
         <div className="space-y-4 md:space-y-6 p-3 md:p-6">
+            <ConfirmationModal
+                isOpen={modal.isOpen}
+                onClose={closeModal}
+                title={modal.title}
+                message={modal.message}
+                type={modal.type || 'info'}
+                confirmLabel={modal.confirmLabel || "Konfirmasi"}
+                onConfirm={() => modal.onConfirm(modalInput)}
+                showInput={modal.showInput}
+                inputPlaceholder={modal.inputPlaceholder}
+                onInputChange={(e) => setModalInput(e.target.value)}
+                inputType={modal.inputType}
+            />
+
             {/* Tabs Header */}
             <div className="flex border-b border-slate-200 gap-4 md:gap-8 overflow-x-auto scrollbar-none">
                 <button 
@@ -436,16 +598,30 @@ export default function DashboardClient({
                         {activeTab === 'emails' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full" />}
                     </button>
                 )}
+                {role === 'superadmin' && (
+                    <button 
+                        onClick={() => switchTab('announcement')}
+                        className={`pb-4 text-sm font-bold transition-colors relative flex items-center gap-2 ${
+                            activeTab === 'announcement' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+                        }`}
+                    >
+                        <Megaphone size={18} />
+                        Pengumuman
+                        {activeTab === 'announcement' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full" />}
+                    </button>
+                )}
                 <div className="flex-1" />
-                <button
-                    onClick={handleExportExcel}
-                    disabled={isExporting}
-                    className="mb-4 flex items-center gap-1.5 px-3 md:px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs md:text-sm font-bold hover:bg-emerald-700 transition disabled:opacity-50 whitespace-nowrap"
-                >
-                    {isExporting ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}
-                    <span className="hidden sm:inline">Export Excel {activeTab === 'applicants' ? 'Pendaftar' : 'Mentor'}</span>
-                    <span className="sm:hidden">Export</span>
-                </button>
+                {(activeTab === 'applicants' || activeTab === 'mentors') && (
+                    <button
+                        onClick={handleExportExcel}
+                        disabled={isExporting}
+                        className="mb-4 flex items-center gap-1.5 px-3 md:px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs md:text-sm font-bold hover:bg-emerald-700 transition disabled:opacity-50 whitespace-nowrap"
+                    >
+                        {isExporting ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}
+                        <span className="hidden sm:inline">Export Excel {activeTab === 'applicants' ? 'Pendaftar' : 'Mentor'}</span>
+                        <span className="sm:hidden">Export</span>
+                    </button>
+                )}
             </div>
 
             {/* Stats Overview */}
@@ -456,6 +632,254 @@ export default function DashboardClient({
                     <StatCard label="Delivered" value={initialEmailMetrics?.delivered || 0} icon={<CheckCircle2 size={16} />} color="bg-emerald-100 text-emerald-800" />
                     <StatCard label="Bounced" value={initialEmailMetrics?.bounced || 0} icon={<AlertCircle size={16} />} color="bg-yellow-100 text-yellow-800" />
                     <StatCard label="Gagal" value={initialEmailMetrics?.failed || 0} icon={<XCircleIcon size={16} />} color="bg-red-100 text-red-800" />
+                </div>
+            ) : activeTab === 'announcement' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-4 mb-6">
+                             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                                <Info size={24} />
+                             </div>
+                             <div>
+                                <h3 className="font-bold text-slate-900 text-lg">Landing Page Pengumuman</h3>
+                                <p className="text-sm text-slate-500">Akses publik untuk hasil seleksi</p>
+                             </div>
+                        </div>
+                        <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+                            Pastikan Anda sudah mengunggah file PDF hasil seleksi di Sanity Studio dan mengaktifkan statusnya agar dapat diakses oleh pendaftar melalui link berikut:
+                        </p>
+                        <Link 
+                            href="/pengumuman-administrasi" 
+                            target="_blank"
+                            className="inline-flex items-center gap-2 text-blue-600 font-bold hover:underline"
+                        >
+                            <Eye size={16} /> Lihat Halaman Pengumuman
+                        </Link>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center text-yellow-600">
+                                    <Megaphone size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-900 text-lg">Blasting Notifikasi (File Excel)</h3>
+                                    <p className="text-sm text-slate-500">Kirim email masal dari file eksternal</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleDownloadTemplate}
+                                className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition"
+                            >
+                                <Download size={14} /> Unduh Template Excel
+                            </button>
+                        </div>
+
+                        {importedData.length === 0 ? (
+                            <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl p-10 bg-slate-50">
+                                <Upload className="text-slate-300 mb-4" size={40} />
+                                <p className="text-sm text-slate-500 mb-4 text-center">
+                                    Unggah file Excel yang sudah diisi sesuai template untuk memulai blasting.
+                                </p>
+                                <label className="cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-md">
+                                    Pilih File Excel
+                                    <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleFileUpload} />
+                                </label>
+                                {isParsing && <div className="mt-4 text-xs text-blue-600 font-bold animate-pulse">Memproses file...</div>}
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="text-sm font-bold text-slate-700">
+                                        📋 Preview Daftar Blasting ({importedData.length} Data)
+                                    </div>
+                                    <button 
+                                        onClick={() => setImportedData([])}
+                                        className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1"
+                                    >
+                                        <X size={14} /> Batalkan / Reset
+                                    </button>
+                                </div>
+                                <div className="max-h-60 overflow-y-auto border border-slate-100 rounded-xl mb-6">
+                                    <table className="w-full text-xs text-left">
+                                        <thead className="bg-slate-50 sticky top-0">
+                                            <tr>
+                                                <th className="px-4 py-2">Nama</th>
+                                                <th className="px-4 py-2">Sekolah</th>
+                                                <th className="px-4 py-2">Email</th>
+                                                <th className="px-4 py-2 text-center">Status</th>
+                                                <th className="px-4 py-2">Alasan Gagal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            {importedData.map((row, i) => (
+                                                <tr key={i}>
+                                                    <td className="px-4 py-2 font-medium">{row.Nama || row['Nama Lengkap'] || '-'}</td>
+                                                    <td className="px-4 py-2 text-slate-600">{row.Sekolah || row['Asal Sekolah'] || row.sekolah || '-'}</td>
+                                                    <td className="px-4 py-2">{row.Email || row['Alamat Email'] || '-'}</td>
+                                                    <td className="px-4 py-2 text-center">
+                                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                                            String(row.Status || '').toLowerCase() === 'lolos' 
+                                                            ? 'bg-emerald-100 text-emerald-700' 
+                                                            : 'bg-red-100 text-red-700'
+                                                        }`}>
+                                                            {row.Status || '-'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-2 text-slate-500 italic truncate max-w-[150px]" title={row['Alasan Gagal'] || row.Alasan || ''}>
+                                                        {row['Alasan Gagal'] || row.Alasan || '-'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <button
+                                    onClick={() => setModal({
+                                        isOpen: true,
+                                        title: 'Konfirmasi Blast',
+                                        message: 'Masukkan password admin untuk melanjutkan blasting ke semua daftar yang sudah diunggah.',
+                                        type: 'info',
+                                        showInput: true,
+                                        inputType: 'password',
+                                        inputPlaceholder: 'Password Admin',
+                                        onConfirm: (val) => val && handleBlastFromList(val)
+                                    })}
+                                    disabled={loadingId === 'blast-list'}
+                                    className="w-full flex items-center justify-center gap-2 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg disabled:opacity-50"
+                                >
+                                    {loadingId === 'blast-list' ? (
+                                        <>
+                                            <Loader2 className="animate-spin" size={18} />
+                                            Menyiapkan...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send size={18} />
+                                            Konfirmasi & Kirim Blast ({importedData.length} Email)
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                        
+                        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4 border-t border-slate-100 pt-6">
+                            <Link 
+                                href="/api/preview-email?type=lolos" 
+                                target="_blank"
+                                className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1"
+                            >
+                                <Eye size={12} /> Preview Email Lolos
+                            </Link>
+                            <Link 
+                                href="/api/preview-email?type=gagal" 
+                                target="_blank"
+                                className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1"
+                            >
+                                <Eye size={12} /> Preview Email Gagal
+                            </Link>
+                        </div>
+
+                        {blastProgress && (
+                            <div className="mt-6 p-6 bg-blue-50 border border-blue-100 rounded-2xl">
+                                <div className="flex justify-between items-center mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-ping" />
+                                        <span className="text-sm font-bold text-blue-900">Sedang Mengirim Email...</span>
+                                    </div>
+                                    <span className="text-xs font-black text-blue-600 bg-white px-2 py-1 rounded-full shadow-sm">
+                                        {blastProgress.current} / {blastProgress.total}
+                                    </span>
+                                </div>
+                                <div className="w-full h-3 bg-blue-200 rounded-full overflow-hidden">
+                                    <div 
+                                        className="h-full bg-blue-600 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(37,99,235,0.5)]"
+                                        style={{ width: `${(blastProgress.current / blastProgress.total) * 100}%` }}
+                                    />
+                                </div>
+                                <p className="mt-3 text-[10px] text-blue-500 text-center font-medium animate-pulse">
+                                    Mohon jangan tutup atau refresh halaman ini sampai proses selesai.
+                                </p>
+                            </div>
+                        )}
+
+                        {loadingId === 'blast-list' && !blastProgress && (
+                            <div className="mt-4 flex items-center justify-center gap-2 text-blue-600 text-sm font-bold animate-pulse">
+                                <Loader2 className="animate-spin" size={16} />
+                                Menyiapkan pengiriman...
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Email Logs for Announcement */}
+                    <div className="col-span-1 md:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                                <FileText size={18} className="text-blue-600" />
+                                Riwayat Pengiriman Email Terkini
+                            </h3>
+                            <button onClick={() => router.refresh()} className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
+                                <RefreshCw size={12} /> Refresh Data
+                            </button>
+                         </div>
+                         <div className="overflow-x-auto">
+                            <table className="w-full text-xs text-left">
+                                <thead className="bg-slate-50 text-slate-500">
+                                    <tr>
+                                        <th className="px-6 py-3">Waktu</th>
+                                        <th className="px-6 py-3">Penerima</th>
+                                        <th className="px-6 py-3">Subjek</th>
+                                        <th className="px-6 py-3 text-center">Tipe</th>
+                                        <th className="px-6 py-3 text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {initialEmailLogs?.items
+                                        ?.filter(email => {
+                                            // Filter by Tag or Subject
+                                            const hasAnnouncementTag = email.tags?.some(t => t.name === 'category' && t.value === 'announcement');
+                                            const hasAnnouncementSubject = email.subject?.includes("Pengumuman Seleksi Administrasi") || email.subject?.includes("Kamu Lolos Seleksi Administrasi");
+                                            return hasAnnouncementTag || hasAnnouncementSubject;
+                                        })
+                                        ?.slice(0, 20)
+                                        .map((email) => {
+                                            const typeTag = email.tags?.find(t => t.name === 'type')?.value;
+                                            const isLolos = typeTag === 'lolos' || email.subject?.includes("Selamat");
+                                            
+                                            return (
+                                                <tr key={email.id} className="hover:bg-slate-50 transition">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="font-bold text-slate-700">{new Date(email.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
+                                                        <div className="text-[10px] text-slate-400">{new Date(email.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 font-medium text-slate-800">{Array.isArray(email.to) ? email.to[0] : email.to}</td>
+                                                    <td className="px-6 py-4 text-slate-500 truncate max-w-[200px]">{email.subject}</td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${
+                                                            isLolos ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                                                        }`}>
+                                                            {isLolos ? 'Lolos' : 'Gagal'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <ResendStatusBadge status={email.last_event || 'sent'} />
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    {(!initialEmailLogs || initialEmailLogs.items.length === 0) && (
+                                        <tr>
+                                            <td colSpan={4} className="px-6 py-10 text-center text-slate-400 italic">
+                                                Belum ada aktivitas pengiriman terekam.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                         </div>
+                    </div>
                 </div>
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -469,8 +893,8 @@ export default function DashboardClient({
                 </div>
             )}
 
-            {/* Filters Section (Hide For Emails) */}
-            {activeTab !== 'emails' && (
+            {/* Filters Section (Hide For Emails & Announcement) */}
+            {activeTab !== 'emails' && activeTab !== 'announcement' && (
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
                     <div className="relative w-full md:w-80">
@@ -551,6 +975,7 @@ export default function DashboardClient({
             )}
 
             {/* Main Table */}
+            {activeTab !== 'announcement' && (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
@@ -763,6 +1188,7 @@ export default function DashboardClient({
                     </div>
                 )}
             </div>
+            )}
 
             <style jsx>{`
                 .filter-select {

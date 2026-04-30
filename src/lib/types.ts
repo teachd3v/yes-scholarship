@@ -222,6 +222,7 @@ export interface ResendEmailLog {
     cc?: string[];
     reply_to?: string[];
     last_event: string;
+    tags?: { name: string; value: string }[];
 }
 
 export interface EmailLogResponse {

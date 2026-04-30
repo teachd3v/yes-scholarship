@@ -2,172 +2,76 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const INCOME_LABELS: Record<string, string> = {
-  range_a: "0 - < 1 Juta",
-  range_b: "1 - 2.5 Juta",
-  range_c: "2.6 - 4 Juta",
-  range_d: "4 - 5 Juta",
-  range_e: "> 5 Juta",
-};
-
-/** Konversi Sanity asset _id ke CDN image URL (resize ke lebar tertentu) */
-function assetIdToUrl(assetId: string | undefined, projectId: string, dataset: string, width = 400): string | null {
-  if (!assetId) return null;
-  // assetId: "image-abc123-1200x800-jpg" → CDN: abc123-1200x800.jpg
-  const stripped = assetId.replace(/^image-/, '');
-  const lastDash = stripped.lastIndexOf('-');
-  if (lastDash === -1) return null;
-  const filename = stripped.substring(0, lastDash) + '.' + stripped.substring(lastDash + 1);
-  return `https://cdn.sanity.io/images/${projectId}/${dataset}/${filename}?w=${width}&auto=format`;
-}
-
-function row(label: string, value: string | number | null | undefined) {
-  const v = value !== undefined && value !== null && value !== '' ? String(value) : '—';
-  return `
-    <tr>
-      <td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">${label}</td>
-      <td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${v}</td>
-    </tr>`;
-}
-
-function sectionHeader(title: string) {
-  return `<tr><td colspan="2" style="padding:16px 0 6px; font-size:14px; font-weight:700; color:#1e40af; border-bottom:2px solid #dbeafe;">${title}</td></tr>`;
-}
-
-
-export interface EmailDocData {
+interface EmailDocData {
   biodata: {
-    nama: string; nik: string; no_kk: string; email: string; whatsapp: string;
-    jenis_kelamin: string; agama: string; tempat_lahir: string; tanggal_lahir: string;
-    provinsi_nama: string; kabupaten_nama: string; kecamatan_nama: string;
-    kelurahan_nama: string; alamat_detail: string;
+    nama: string;
+    nik: string;
+    no_kk: string;
+    email: string;
+    whatsapp: string;
+    jenis_kelamin: string;
+    agama: string;
+    tempat_lahir: string;
+    tanggal_lahir: string;
+    provinsi_nama: string;
+    kabupaten_nama: string;
+    kecamatan_nama: string;
+    kelurahan_nama: string;
+    alamat_detail: string;
     foto_diri_assetId?: string;
   };
   keluarga: {
-    nama_ayah: string; kondisi_ayah: string; pekerjaan_ayah?: string;
-    nama_ibu: string; kondisi_ibu: string; pekerjaan_ibu?: string;
-    penghasilan_ortu: string; kontak_ortu: string; jumlah_saudara: number;
-    file_kk_assetId?: string; file_sktm_assetId?: string; file_skb_assetId?: string;
+    nama_ayah: string;
+    pekerjaan_ayah?: string;
+    kondisi_ayah: string;
+    nama_ibu: string;
+    pekerjaan_ibu?: string;
+    kondisi_ibu: string;
+    penghasilan_ortu: string;
+    kontak_ortu: string;
+    jumlah_saudara: number;
+    has_sktm?: string;
+    has_skb?: string;
+    file_kk_assetId?: string;
+    file_sktm_assetId?: string;
+    file_skb_assetId?: string;
   };
   seleksi: {
-    asal_sekolah: string; jenjang_pendidikan: string;
-    nilai_raport_1: number; nilai_raport_2: number; nilai_raport_3: number;
-    foto_raport_1_assetId?: string; foto_raport_2_assetId?: string; foto_raport_3_assetId?: string;
-    status_beasiswa: string; keterangan_beasiswa?: string;
-    kategori_hafalan?: string; motivasi: string; sumber_info: string; social_media?: string;
-    list_organisasi?: { jenis: string; jabatan: string; ket_lainnya?: string }[];
-    list_prestasi?: { tingkat: string; juara: string; keterangan: string }[];
+    asal_sekolah: string;
+    jenjang_pendidikan: string;
+    nilai_raport_1: number;
+    nilai_raport_2: number;
+    nilai_raport_3: number;
+    status_beasiswa: string;
+    motivasi: string;
+    sumber_info: string;
+    foto_raport_1_assetId?: string;
+    foto_raport_2_assetId?: string;
+    foto_raport_3_assetId?: string;
+    list_organisasi?: any[];
+    list_prestasi?: any[];
+    kategori_hafalan?: string;
+    social_media?: string;
   };
 }
 
-export interface MentorEmailData {
-  nama_lengkap: string;
-  email: string;
-  whatsapp: string;
-  jenis_kelamin: string;
-  tempat_lahir: string;
-  tanggal_lahir: string;
-  alamat_lengkap: string;
-  status_pernikahan: string;
-  jenjang_pendidikan: string;
-  jurusan: string;
-  social_media: string;
-  lancar_quran: string;
-  sumber_info: string;
-  motivasi: string;
-  foto_profil_assetId?: string;
-  cv_resume_assetId?: string;
+function getSanityImageUrl(assetId?: string) {
+  if (!assetId) return null;
+  // Sanity asset ID format: image-d7e41e809b45...-720x1280-webp
+  // We need to convert it to: https://cdn.sanity.io/images/lxtfznya/production/d7e41e809b45...-720x1280.webp
+  const parts = assetId.split('-');
+  if (parts.length < 4) return null;
+  
+  const id = parts[1];
+  const dimensions = parts[2];
+  const extension = parts[3];
+  
+  return `https://cdn.sanity.io/images/lxtfznya/production/${id}-${dimensions}.${extension}?w=200&auto=format`;
 }
 
-export async function sendConfirmationEmail(to: string, name: string, docData?: EmailDocData) {
-  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || '';
-  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
-
-  // Build summary HTML if data provided
-  let summaryHtml = '';
-  if (docData) {
-    const { biodata, keluarga, seleksi } = docData;
-
-    const fotoDiriUrl = assetIdToUrl(biodata.foto_diri_assetId, projectId, dataset, 160);
-
-    const alamatLengkap = [biodata.alamat_detail, biodata.kelurahan_nama, biodata.kecamatan_nama, biodata.kabupaten_nama, biodata.provinsi_nama].filter(Boolean).join(', ');
-    const avgNilai = ((seleksi.nilai_raport_1 + seleksi.nilai_raport_2 + seleksi.nilai_raport_3) / 3).toFixed(2);
-
-    const orgList = seleksi.list_organisasi?.length
-      ? seleksi.list_organisasi.map((o, i) => `${i + 1}. ${o.jenis === 'Lainnya' ? o.ket_lainnya : o.jenis} — ${o.jabatan}`).join('<br/>')
-      : '—';
-
-    const presList = seleksi.list_prestasi?.length
-      ? seleksi.list_prestasi.map((p, i) => `${i + 1}. ${p.keterangan} (${p.juara} Tk. ${p.tingkat})`).join('<br/>')
-      : '—';
-
-    const docsUploaded = [
-      keluarga.file_kk_assetId ? 'Kartu Keluarga' : null,
-      keluarga.file_sktm_assetId ? 'SKTM/KIP/PKH/KIS' : null,
-      keluarga.file_skb_assetId ? 'SKB' : null,
-      seleksi.foto_raport_1_assetId ? 'Raport Sem 1' : null,
-      seleksi.foto_raport_2_assetId ? 'Raport Sem 2' : null,
-      seleksi.foto_raport_3_assetId ? 'Raport Sem 3' : null,
-    ].filter(Boolean);
-
-    summaryHtml = `
-      <div style="margin-top:24px; border-top:2px solid #e2e8f0; padding-top:20px;">
-        <h2 style="font-size:16px; font-weight:700; color:#1e293b; margin:0 0 16px;">Ringkasan Data Pendaftaran Kamu</h2>
-        <p style="font-size:13px; color:#64748b; margin:0 0 16px;">Simpan email ini sebagai bukti bahwa data kamu telah berhasil tercatat. Pastikan semua data berikut sudah sesuai.</p>
-
-        ${fotoDiriUrl ? `<div style="text-align:center; margin-bottom:16px;"><img src="${fotoDiriUrl}" width="100" style="width:100px; height:100px; object-fit:cover; border-radius:50%; border:3px solid #2563eb;" /><p style="font-size:12px; color:#64748b; margin:6px 0 0;">Foto Diri</p></div>` : ''}
-
-        <table style="width:100%; border-collapse:collapse; font-family:Arial,sans-serif;">
-          ${sectionHeader('📋 Biodata Diri')}
-          ${row('Nama Lengkap', biodata.nama)}
-          ${row('NIK', biodata.nik)}
-          ${row('No KK', biodata.no_kk)}
-          ${row('Jenis Kelamin', biodata.jenis_kelamin)}
-          ${row('Agama', biodata.agama)}
-          ${row('Tempat Lahir', biodata.tempat_lahir)}
-          ${row('Tanggal Lahir', biodata.tanggal_lahir)}
-          ${row('Email', biodata.email)}
-          ${row('WhatsApp', '+62' + biodata.whatsapp)}
-          ${row('Alamat Domisili', alamatLengkap)}
-
-          ${sectionHeader('👨‍👩‍👧 Data Keluarga')}
-          ${row('Nama Ayah', keluarga.nama_ayah)}
-          ${row('Kondisi Ayah', keluarga.kondisi_ayah)}
-          ${keluarga.pekerjaan_ayah ? row('Pekerjaan Ayah', keluarga.pekerjaan_ayah) : ''}
-          ${row('Nama Ibu', keluarga.nama_ibu)}
-          ${row('Kondisi Ibu', keluarga.kondisi_ibu)}
-          ${keluarga.pekerjaan_ibu ? row('Pekerjaan Ibu', keluarga.pekerjaan_ibu) : ''}
-          ${row('Penghasilan Ortu', INCOME_LABELS[keluarga.penghasilan_ortu] || keluarga.penghasilan_ortu || '—')}
-          ${row('Kontak Ortu/Wali', keluarga.kontak_ortu)}
-          ${row('Jumlah Saudara', keluarga.jumlah_saudara)}
-
-          ${sectionHeader('🎓 Data Seleksi & Prestasi')}
-          ${row('Asal Sekolah', seleksi.asal_sekolah)}
-          ${row('Jenis Pendidikan', seleksi.jenjang_pendidikan)}
-          ${row('Nilai Raport Sem 1', seleksi.nilai_raport_1)}
-          ${row('Nilai Raport Sem 2', seleksi.nilai_raport_2)}
-          ${row('Nilai Raport Sem 3', seleksi.nilai_raport_3)}
-          ${row('Rata-rata Nilai', avgNilai)}
-          ${row('Status Beasiswa', seleksi.status_beasiswa)}
-          ${seleksi.keterangan_beasiswa ? row('Keterangan Beasiswa', seleksi.keterangan_beasiswa) : ''}
-          ${seleksi.kategori_hafalan ? row('Hafalan Quran', seleksi.kategori_hafalan) : ''}
-          <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; vertical-align:top;">Organisasi</td><td style="padding:6px 0; color:#1e293b; font-size:13px;">${orgList}</td></tr>
-          <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; vertical-align:top;">Prestasi</td><td style="padding:6px 0; color:#1e293b; font-size:13px;">${presList}</td></tr>
-          ${row('Sumber Info', seleksi.sumber_info)}
-          ${seleksi.social_media ? row('Social Media', seleksi.social_media) : ''}
-          <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; vertical-align:top;">Motivasi</td><td style="padding:6px 0; color:#1e293b; font-size:13px; line-height:1.5;">${seleksi.motivasi || '—'}</td></tr>
-        </table>
-
-        ${docsUploaded.length > 0 ? `
-        <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:16px; background-color:#f0fdf4; border-radius:8px; padding:14px 16px;">
-          <p style="font-size:13px; font-weight:700; color:#166534; margin:0 0 8px;">📎 Dokumen Terunggah (${docsUploaded.length} file)</p>
-          <p style="font-size:13px; color:#166534; margin:0;">${docsUploaded.join(' &nbsp;•&nbsp; ')}</p>
-        </div>` : ''}
-      </div>`;
-  }
-
+export async function sendConfirmationEmail(to: string, data: EmailDocData) {
   try {
-    const { data, error } = await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: 'YES Scholarship <admin@youthekselensia.id>',
       to: [to],
       subject: 'Pendaftaran Berhasil - YES Scholarship 2026',
@@ -178,7 +82,7 @@ export async function sendConfirmationEmail(to: string, name: string, docData?: 
             <p style="color:#bfdbfe; margin:6px 0 0; font-size:14px;">YES Scholarship 2026</p>
           </div>
           <div style="padding:32px; background-color:#ffffff;">
-            <p style="font-size:16px; color:#334155; margin-bottom:16px;">Hai <strong>${name}</strong>,</p>
+            <p style="font-size:16px; color:#334155; margin-bottom:16px;">Hai <strong>${data.biodata.nama.toUpperCase()}</strong>,</p>
             <p style="font-size:15px; color:#334155; line-height:1.6; margin-bottom:16px;">
               Terima kasih telah mendaftar di program <strong>Youth Ekselensia Scholarship (YES) 2026</strong>.
               Data pendaftaranmu telah kami terima dan sedang dalam proses verifikasi.
@@ -189,10 +93,62 @@ export async function sendConfirmationEmail(to: string, name: string, docData?: 
             <div style="background-color:#eff6ff; border-radius:8px; padding:14px 16px; margin-bottom:20px;">
               <p style="margin:0; color:#1e40af; font-size:14px;">
                 📣 Pantau pengumuman seleksi di Instagram resmi kami:
-                <a href="https://instagram.com/youthekselensia.id" style="color:#2563eb; font-weight:bold;">@youthekselensia.id</a>
+                <a href="https://instagram.com/youthekselensia" style="color:#2563eb; font-weight:bold;">@youthekselensia</a>
               </p>
             </div>
-            ${summaryHtml}
+            
+            <div style="margin-top:24px; border-top:2px solid #e2e8f0; padding-top:20px;">
+              <h2 style="font-size:16px; font-weight:700; color:#1e293b; margin:0 0 16px;">Ringkasan Data Pendaftaran Kamu</h2>
+              <p style="font-size:13px; color:#64748b; margin:0 0 16px;">Simpan email ini sebagai bukti bahwa data kamu telah berhasil tercatat. Pastikan semua data berikut sudah sesuai.</p>
+
+              ${getSanityImageUrl(data.biodata.foto_diri_assetId) ? `
+              <div style="text-align:center; margin-bottom:16px;">
+                <img src="${getSanityImageUrl(data.biodata.foto_diri_assetId)}" width="100" style="width:100px; height:100px; object-fit:cover; border-radius:50%; border:3px solid #2563eb;" />
+                <p style="font-size:12px; color:#64748b; margin:6px 0 0;">Foto Diri</p>
+              </div>
+              ` : ''}
+
+              <table style="width:100%; border-collapse:collapse; font-family:Arial,sans-serif;">
+                <tr><td colspan="2" style="padding:16px 0 6px; font-size:14px; font-weight:700; color:#1e40af; border-bottom:2px solid #dbeafe;">📋 Biodata Diri</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Nama Lengkap</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.biodata.nama.toUpperCase()}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">NIK</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.biodata.nik}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">No KK</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.biodata.no_kk}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Jenis Kelamin</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.biodata.jenis_kelamin}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Agama</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.biodata.agama}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Tempat Lahir</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.biodata.tempat_lahir}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Tanggal Lahir</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.biodata.tanggal_lahir}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Email</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.biodata.email}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">WhatsApp</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.biodata.whatsapp}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Alamat Domisili</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.biodata.alamat_detail}, ${data.biodata.kelurahan_nama}, ${data.biodata.kecamatan_nama}, ${data.biodata.kabupaten_nama}, ${data.biodata.provinsi_nama}</td></tr>
+
+                <tr><td colspan="2" style="padding:16px 0 6px; font-size:14px; font-weight:700; color:#1e40af; border-bottom:2px solid #dbeafe;">👨👩👧 Data Keluarga</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Nama Ayah</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.keluarga.nama_ayah}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Kondisi Ayah</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.keluarga.kondisi_ayah}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Nama Ibu</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.keluarga.nama_ibu}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Kondisi Ibu</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.keluarga.kondisi_ibu}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Penghasilan Ortu</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.keluarga.penghasilan_ortu}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Kontak Ortu/Wali</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.keluarga.kontak_ortu}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Jumlah Saudara</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.keluarga.jumlah_saudara}</td></tr>
+
+                <tr><td colspan="2" style="padding:16px 0 6px; font-size:14px; font-weight:700; color:#1e40af; border-bottom:2px solid #dbeafe;">🎓 Data Seleksi & Prestasi</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Asal Sekolah</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.seleksi.asal_sekolah}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Jenis Pendidikan</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.seleksi.jenjang_pendidikan}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Rata-rata Nilai</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${((data.seleksi.nilai_raport_1 + data.seleksi.nilai_raport_2 + data.seleksi.nilai_raport_3) / 3).toFixed(2)}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Status Beasiswa</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.seleksi.status_beasiswa}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Hafalan Quran</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.seleksi.kategori_hafalan || '-'}</td></tr>
+                
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; vertical-align:top;">Organisasi</td><td style="padding:6px 0; color:#1e293b; font-size:13px;">${(data.seleksi.list_organisasi || []).map((o:any, i:number) => `${i+1}. ${o.nama} — ${o.jabatan}`).join('<br/>') || '-'}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; vertical-align:top;">Prestasi</td><td style="padding:6px 0; color:#1e293b; font-size:13px;">${(data.seleksi.list_prestasi || []).map((p:any, i:number) => `${i+1}. ${p.nama} (${p.tingkat})`).join('<br/>') || '-'}</td></tr>
+                
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Sumber Info</td><td style="padding:6px 0; color:#1e293b; font-size:13px; font-weight:500;">${data.seleksi.sumber_info}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; width:160px; vertical-align:top;">Motivasi</td><td style="padding:6px 0; color:#1e293b; font-size:13px; line-height:1.5;">${data.seleksi.motivasi}</td></tr>
+              </table>
+
+              <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:16px; background-color:#f0fdf4; border-radius:8px; padding:14px 16px;">
+                <p style="font-size:13px; font-weight:700; color:#166534; margin:0 0 8px;">📎 Dokumen Terunggah</p>
+                <p style="font-size:13px; color:#166534; margin:0;">Kartu Keluarga &nbsp;•&nbsp; SKTM/KIP/PKH/KIS &nbsp;•&nbsp; SKB &nbsp;•&nbsp; Raport Sem 1 &nbsp;•&nbsp; Raport Sem 2 &nbsp;•&nbsp; Raport Sem 3</p>
+              </div>
+            </div>
             <hr style="border:none; border-top:1px solid #e2e8f0; margin:28px 0 16px;" />
             <p style="font-size:12px; color:#94a3b8; text-align:center; margin:0;">
               Email ini dikirim otomatis. Mohon tidak membalas email ini.<br/>
@@ -203,80 +159,40 @@ export async function sendConfirmationEmail(to: string, name: string, docData?: 
       `,
     });
 
-    if (error) { console.error("Error sending email:", error); return { success: false, error }; }
-    console.log("Email confirmation sent:", data?.id);
-    return { success: true, messageId: data?.id };
+    if (error) {
+      console.error("Error sending confirmation email:", error);
+      return { success: false, error };
+    }
+    return { success: true };
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("Error sending confirmation email:", error);
     return { success: false, error };
   }
 }
 
-export async function sendMentorConfirmationEmail(to: string, name: string, data: MentorEmailData) {
-  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || '';
-  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
-
-  const fotoUrl = assetIdToUrl(data.foto_profil_assetId, projectId, dataset, 160);
-
-  const summaryHtml = `
-    <div style="margin-top:24px; border-top:2px solid #e2e8f0; padding-top:20px;">
-      <h2 style="font-size:16px; font-weight:700; color:#1e293b; margin:0 0 16px;">Ringkasan Data Mentor Kamu</h2>
-
-      ${fotoUrl ? `<div style="text-align:center; margin-bottom:16px;"><img src="${fotoUrl}" width="100" style="width:100px; height:100px; object-fit:cover; border-radius:50%; border:3px solid #059669;" /><p style="font-size:12px; color:#64748b; margin:6px 0 0;">Foto Profil</p></div>` : ''}
-
-      <table style="width:100%; border-collapse:collapse; font-family:Arial,sans-serif;">
-        ${sectionHeader('👤 Biodata Mentor')}
-        ${row('Nama Lengkap', data.nama_lengkap)}
-        ${row('Jenis Kelamin', data.jenis_kelamin)}
-        ${row('Status Pernikahan', data.status_pernikahan)}
-        ${row('Tempat/Tgl Lahir', `${data.tempat_lahir}, ${data.tanggal_lahir}`)}
-        ${row('Email', data.email)}
-        ${row('WhatsApp', '+62' + data.whatsapp)}
-        ${row('Alamat Domisili', data.alamat_lengkap)}
-
-        ${sectionHeader('🎓 Pendidikan & Keahlian')}
-        ${row('Jenjang', data.jenjang_pendidikan)}
-        ${row('Jurusan', data.jurusan)}
-        ${row('Lancar Al-Qur\'an', data.lancar_quran)}
-
-        ${sectionHeader('🔗 Informasi Tambahan')}
-        ${row('Sosial Media', data.social_media)}
-        ${row('Sumber Info', data.sumber_info)}
-        <tr><td style="padding:6px 12px 6px 0; color:#64748b; font-size:13px; vertical-align:top;">Motivasi</td><td style="padding:6px 0; color:#1e293b; font-size:13px; line-height:1.5;">${data.motivasi}</td></tr>
-      </table>
-
-      ${data.cv_resume_assetId ? `
-      <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:16px; background-color:#f0fdf4; border-radius:8px; padding:14px 16px;">
-        <p style="font-size:13px; font-weight:700; color:#065f46; margin:0;">📎 CV / Resume berhasil diunggah</p>
-      </div>` : ''}
-    </div>`;
-
+export async function sendMentorConfirmationEmail(to: string, data: any) {
   try {
     const { error } = await resend.emails.send({
-      from: 'YES Registration <admin@youthekselensia.id>',
+      from: 'YES Scholarship <admin@youthekselensia.id>',
       to: [to],
-      subject: 'Konfirmasi Pendaftaran Mentor YES 2026',
+      subject: 'Pendaftaran Mentor Berhasil - YES Scholarship 2026',
       html: `
-        <div style="font-family:Arial,sans-serif; max-width:620px; margin:0 auto; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
-          <div style="background-color:#059669; padding:24px; text-align:center;">
-            <h1 style="color:white; margin:0; font-size:22px;">Pendaftaran Mentor Diterima!</h1>
-            <p style="color:#d1fae5; margin:6px 0 0; font-size:14px;">Mentor Youth Ekselensia Scholarship 2026</p>
+        <div style="font-family:Arial,sans-serif; max-width:600px; margin:0 auto; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
+          <div style="background-color:#059669; padding:32px 24px; text-align:center;">
+            <h1 style="color:white; margin:0; font-size:24px;">Pendaftaran Mentor Berhasil!</h1>
+            <p style="color:#d1fae5; margin:8px 0 0;">Terima kasih atas dedikasi Anda, Kak ${data.biodata.nama_lengkap}.</p>
           </div>
-          <div style="padding:32px; background-color:#ffffff;">
-            <p style="font-size:16px; color:#334155; margin-bottom:16px;">Hai <strong>${name}</strong>,</p>
-            <p style="font-size:15px; color:#334155; line-height:1.6; margin-bottom:16px;">
-              Terima kasih telah mendaftar sebagai calon <strong>Mentor YES 2026</strong>. 
-              Dokumen dan data kamu telah kami terima dan akan segera ditinjau oleh tim seleksi kami.
-            </p>
-            <div style="background-color:#f0fdf4; border-left:4px solid #10b981; padding:14px 16px; margin-bottom:20px; border-radius:4px;">
-              <p style="margin:0; color:#065f46; font-size:14px; font-weight:600;">✅ Pendaftaran kamu telah masuk ke sistem kami.</p>
-            </div>
-            ${summaryHtml}
-            <hr style="border:none; border-top:1px solid #e2e8f0; margin:28px 0 16px;" />
-            <p style="font-size:12px; color:#94a3b8; text-align:center; margin:0;">
-              Email ini dikirim otomatis. Mohon tidak membalas email ini.<br/>
-              Informasi lebih lanjut akan diumumkan melalui WhatsApp atau Email resmi YES.
-            </p>
+          <div style="padding:24px; background-color:#ffffff;">
+             <p style="font-size:16px; color:#334155;">Data pendaftaran mentor Anda telah masuk ke sistem kami.</p>
+             <div style="margin-top:24px; padding:16px; background-color:#f0fdf4; border-radius:8px; border-left:4px solid #059669;">
+                <p style="margin:0; font-size:14px; color:#065f46; line-height:1.5;">
+                  <strong>Informasi</strong><br/>
+                  Proses seleksi mentor akan segera dilakukan. Kami akan menghubungi Anda kembali melalui email ini atau WhatsApp jika Anda terpilih ke tahap selanjutnya.
+                </p>
+             </div>
+          </div>
+          <div style="padding:24px; background-color:#f1f5f9; text-align:center;">
+            <p style="margin:0; font-size:12px; color:#94a3b8;">Youth Ekselensia Scholarship — Mewujudkan Mimpi Anak Bangsa</p>
           </div>
         </div>
       `,
@@ -288,4 +204,156 @@ export async function sendMentorConfirmationEmail(to: string, name: string, data
     console.error("Error sending mentor email:", error);
     return { success: false, error };
   }
+}
+
+// ==================== Announcement Emails ====================
+
+export function getAnnouncementLolosHtml(name: string, school?: string): string {
+    const schoolText = school ? ` dari <strong>${school}</strong>` : '';
+    return `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.1); border: 1px solid #f1f5f9;">
+          <!-- Header with Gradient -->
+          <div style="background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); padding: 60px 40px; text-align: center;">
+            <div style="background-color: rgba(255,255,255,0.2); display: inline-block; padding: 12px 24px; border-radius: 100px; color: #ffffff; font-size: 14px; font-weight: bold; margin-bottom: 24px; letter-spacing: 1px;">
+              YES SCHOLARSHIP 2026
+            </div>
+            <h1 style="color: #ffffff; margin: 0; font-size: 42px; font-weight: 800; line-height: 1.2;">Hooray! <br/>Kamu Lolos! 🎉</h1>
+          </div>
+
+          <div style="padding: 40px;">
+            <p style="font-size: 18px; color: #1e293b; line-height: 1.6; margin-bottom: 32px;">
+              Halo <strong>${name}</strong>${schoolText}, <br/><br/>
+              Gokil! Perjuangan kamu berbuah manis. Kami dengan bangga mengumumkan bahwa kamu <strong>LOLOS</strong> tahap Seleksi Administrasi program <strong>Youth Ekselensia Scholarship (YES) 2026</strong>. 🥳
+            </p>
+
+            <div style="background-color: #f0fdf4; border-radius: 20px; padding: 32px; border: 1px solid #dcfce7; margin-bottom: 32px;">
+              <h3 style="color: #166534; margin-top: 0; font-size: 20px;">
+                🚀 Apa Langkah Selanjutnya?
+              </h3>
+              <p style="color: #166534; font-size: 16px; line-height: 1.5; margin-bottom: 0;">
+                Siapkan diri kamu buat <strong>Tes Tahap 2 (Akademik)</strong>. Info lengkap soal jadwal dan teknisnya bakal kita update terus di Instagram <a href="https://instagram.com/youthekselensia" style="color: #10b981; font-weight: bold; text-decoration: none;">@youthekselensia</a>. Jangan sampai ketinggalan ya!
+              </p>
+            </div>
+
+            <p style="font-size: 14px; color: #64748b; text-align: center; margin-top: 40px; line-height: 1.5;">
+              Sekali lagi selamat ya! Manfaatin waktu ini buat belajar dan persiapin mental. Sampai ketemu di tahap selanjutnya!
+            </p>
+          </div>
+
+          <div style="background-color: #f8fafc; padding: 32px; text-align: center; border-top: 1px solid #f1f5f9;">
+            <p style="margin: 0; font-size: 14px; color: #94a3b8;">
+              Youth Ekselensia Scholarship — Mewujudkan Mimpi Anak Bangsa
+            </p>
+          </div>
+        </div>
+    `;
+}
+
+export async function sendAnnouncementLolosEmail(to: string, name: string, school?: string) {
+    try {
+      const html = getAnnouncementLolosHtml(name, school);
+      console.log(`[Resend] Attempting to send Lolos email to: ${to}`);
+      
+      const { data, error } = await resend.emails.send({
+        from: 'YES Scholarship <admin@youthekselensia.id>',
+        to: [to],
+        subject: '🎉 Selamat! Kamu Lolos Seleksi Administrasi YES 2026',
+        tags: [
+          { name: 'category', value: 'announcement' },
+          { name: 'type', value: 'lolos' }
+        ],
+        html: html
+      });
+
+      if (error) {
+        console.error("[Resend Error] Lolos email failed:", error);
+        return { success: false, error };
+      }
+
+      console.log("[Resend Success] Lolos email sent, ID:", data?.id);
+      return { success: true, id: data?.id };
+    } catch (error) {
+      console.error("Error sending lolos email:", error);
+      return { success: false, error };
+    }
+}
+
+export function getAnnouncementGagalHtml(name: string, reason?: string, school?: string): string {
+    const schoolText = school ? ` dari <strong>${school}</strong>` : '';
+    return `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.1); border: 1px solid #f1f5f9;">
+          <!-- Header for Gagal -->
+          <div style="background: linear-gradient(135deg, #64748b 0%, #475569 100%); padding: 60px 40px; text-align: center;">
+            <div style="background-color: rgba(255,255,255,0.2); display: inline-block; padding: 12px 24px; border-radius: 100px; color: #ffffff; font-size: 14px; font-weight: bold; margin-bottom: 24px; letter-spacing: 1px;">
+              YES SCHOLARSHIP 2026
+            </div>
+            <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 800; line-height: 1.2;">Semangat Terus, <br/>${name}! 💪</h1>
+          </div>
+
+          <div style="padding: 40px;">
+            <p style="font-size: 16px; color: #475569; line-height: 1.6; margin-bottom: 32px;">
+              Halo <strong>${name}</strong>${schoolText}, <br/><br/>
+              Makasih banyak ya sudah daftar dan ikut proses seleksi administrasi program <strong>YES 2026</strong>. Kami sangat mengapresiasi semangat dan mimpi besar kamu!
+            </p>
+
+            <p style="font-size: 16px; color: #475569; line-height: 1.6; margin-bottom: 32px;">
+              Setelah proses kurasi yang super ketat, dengan berat hati kami sampaikan bahwa kamu belum bisa lanjut ke tahap berikutnya untuk periode kali ini.
+            </p>
+
+            <div style="background-color: #f8fafc; border-radius: 20px; padding: 24px; border: 1px solid #e2e8f0; margin-bottom: 32px;">
+              <p style="margin: 0; font-size: 13px; color: #94a3b8; font-weight: bold; text-transform: uppercase; margin-bottom: 8px;">
+                Catatan dari Tim Seleksi:
+              </p>
+              <p style="margin: 0; font-size: 15px; color: #475569; line-height: 1.5; font-style: italic;">
+                "${reason || 'Tetap semangat, peluang lain masih menantimu!'}"
+              </p>
+            </div>
+
+            <div style="text-align: center; background-color: #fff7ed; border-radius: 20px; padding: 24px; border: 1px solid #ffedd5;">
+              <p style="margin: 0; font-size: 15px; color: #9a3412; line-height: 1.6;">
+                <strong>Ingat ya:</strong> Kegagalan hari ini bukan akhir dari segalanya. Ini cuma satu langkah kecil buat kamu jadi lebih hebat lagi. Jangan nyerah sama mimpi kamu! 🌟
+              </p>
+            </div>
+
+            <p style="font-size: 14px; color: #94a3b8; text-align: center; margin-top: 40px; line-height: 1.5;">
+              Kami mendoakan yang terbaik buat langkah pendidikan kamu ke depan. Stay inspired!
+            </p>
+          </div>
+
+          <div style="background-color: #f8fafc; padding: 32px; text-align: center; border-top: 1px solid #f1f5f9;">
+            <p style="margin: 0; font-size: 14px; color: #94a3b8;">
+              Youth Ekselensia Scholarship — Tetaplah Menginspirasi
+            </p>
+          </div>
+        </div>
+    `;
+}
+
+export async function sendAnnouncementGagalEmail(to: string, name: string, reason?: string, school?: string) {
+    try {
+      const html = getAnnouncementGagalHtml(name, reason, school);
+      console.log(`[Resend] Attempting to send Gagal email to: ${to}`);
+
+      const { data, error } = await resend.emails.send({
+        from: 'YES Scholarship <admin@youthekselensia.id>',
+        to: [to],
+        subject: 'Pengumuman Seleksi Administrasi YES 2026',
+        tags: [
+          { name: 'category', value: 'announcement' },
+          { name: 'type', value: 'gagal' }
+        ],
+        html: html
+      });
+
+      if (error) {
+        console.error("[Resend Error] Gagal email failed:", error);
+        return { success: false, error };
+      }
+
+      console.log("[Resend Success] Gagal email sent, ID:", data?.id);
+      return { success: true, id: data?.id };
+    } catch (error) {
+      console.error("Error sending gagal email:", error);
+      return { success: false, error };
+    }
 }

@@ -4,7 +4,9 @@ import { writeClient } from "@/sanity/client";
 import { revalidatePath } from "next/cache";
 import type { ApplicationListItem, ApplicationDetail, PaginatedResult, MentorListItem, MentorDetail, EmailMetrics, ResendEmailLog } from "@/lib/types";
 import type { EmailDocData } from "@/lib/mail";
+import { sendAnnouncementLolosEmail, sendAnnouncementGagalEmail } from "@/lib/mail";
 import { getAdminUser, verifyAdminPassword } from "./auth-actions";
+export { verifyAdminPassword };
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -544,17 +546,10 @@ export async function getRecentEmailMetrics(): Promise<EmailMetrics> {
         let lastId: string | null = null;
         let hasMore = true;
 
-        // Fetch up to 500 emails to build a mini scorecard
-        while (hasMore && totalFetched < 500) {
-             const options: { limit: number; after?: string } = { limit: 100 };
-             if (lastId) options.after = lastId;
-
-             const { data, error } = await resend.emails.list(options as Parameters<typeof resend.emails.list>[0]);
-             if (error) break;
-
+        // Fetch only the latest 100 emails to build a scorecard (Safe for rate limits)
+        const { data, error } = await resend.emails.list({ limit: 100 });
+        if (!error && data) {
              const items = (data?.data || data || []) as ResendEmailLog[];
-             if (!items || items.length === 0) break;
-
              items.forEach((email) => {
                  metrics.total++;
                  const status = (email.last_event || 'sent').toLowerCase();
@@ -563,10 +558,6 @@ export async function getRecentEmailMetrics(): Promise<EmailMetrics> {
                  else if (['failed', 'delivery_delayed', 'complained'].includes(status)) metrics.failed++;
                  else metrics.sent++;
              });
-
-             totalFetched += items.length;
-             if (items.length < 100) hasMore = false;
-             else lastId = items[items.length - 1].id;
         }
 
         return metrics;
@@ -660,7 +651,7 @@ export async function resendWelcomeEmailApplication(id: string) {
             }
         };
 
-        const res = await sendConfirmationEmail(app.biodata.email, app.biodata.nama, emailData);
+        const res = await sendConfirmationEmail(app.biodata.email, emailData);
         if (!res || !res.success) {
             return { success: false, error: 'Gagal mengirim email verifikasi melalui Resend' };
         }
@@ -670,5 +661,157 @@ export async function resendWelcomeEmailApplication(id: string) {
         console.error("Error resend welcome email:", error);
         const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem';
         return { success: false, error: message };
+    }
+}
+
+export async function blastAnnouncement(type: 'lolos' | 'gagal', password?: string) {
+    try {
+        if (!password) return { success: false, error: "Password admin wajib diisi" };
+        const valid = await verifyAdminPassword(password);
+        if (!valid) return { success: false, error: "Password salah" };
+
+        const adminUser = await getAdminUser();
+        if (!adminUser || adminUser.role !== 'superadmin') {
+            return { success: false, error: "Hanya Super Admin yang dapat melakukan blasting" };
+        }
+
+        // Fetch candidates
+        const isLolos = type === 'lolos';
+        const query = `*[_type == "application" && scoring.lolos_screening == ${isLolos}]{
+            _id,
+            "nama": biodata.nama,
+            "email": biodata.email,
+            "rejectedReason": rejectedReason,
+            "alasan_gagal": scoring.alasan_gagal
+        }`;
+
+        const candidates = await client.fetch(query);
+        if (!candidates || candidates.length === 0) {
+            return { success: false, error: `Tidak ada pendaftar dengan status ${type.toUpperCase()} untuk dikirimkan blast.` };
+        }
+
+        const { sendAnnouncementLolosEmail, sendAnnouncementGagalEmail } = await import('@/lib/mail');
+
+        let successCount = 0;
+        let failCount = 0;
+
+        // Process in small batches or one by one (to avoid rate limits and timeouts)
+        // For simplicity and reliability in server actions, we'll do them sequentially or in small chunks
+        for (const person of candidates) {
+            try {
+                if (isLolos) {
+                    await sendAnnouncementLolosEmail(person.email, person.nama);
+                } else {
+                    const reason = [person.alasan_gagal?.join(', '), person.rejectedReason].filter(Boolean).join(' | ');
+                    await sendAnnouncementGagalEmail(person.email, person.nama, reason || undefined);
+                }
+                successCount++;
+            } catch (err) {
+                console.error(`Failed to send blast to ${person.email}:`, err);
+                failCount++;
+            }
+        }
+
+        return { 
+            success: true, 
+            message: `Blasting selesai. Berhasil: ${successCount}, Gagal: ${failCount}.` 
+        };
+    } catch (error) {
+        console.error("Error blasting announcement:", error);
+        return { success: false, error: "Terjadi kesalahan saat memproses blasting." };
+    }
+}
+
+export async function blastAnnouncementFromList(list: any[], password?: string) {
+    try {
+        if (!password) return { success: false, error: "Password admin wajib diisi" };
+        const valid = await verifyAdminPassword(password);
+        if (!valid) return { success: false, error: "Password salah" };
+
+        const adminUser = await getAdminUser();
+        if (!adminUser || adminUser.role !== 'superadmin') {
+            return { success: false, error: "Hanya Super Admin yang dapat melakukan blasting" };
+        }
+
+        if (!list || list.length === 0) {
+            return { success: false, error: "Daftar penerima kosong." };
+        }
+
+        const { sendAnnouncementLolosEmail, sendAnnouncementGagalEmail } = await import('@/lib/mail');
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const person of list) {
+            try {
+                // Map fields from excel (flexible casing)
+                const email = person.email || person.Email || person['Alamat Email'];
+                const nama = person.nama || person.Nama || person['Nama Lengkap'];
+                const status = (person.status || person.Status || '').toLowerCase();
+                const reason = person.alasan || person.Alasan || person['Alasan Gagal'];
+
+                if (!email || !nama) {
+                    failCount++;
+                    continue;
+                }
+
+                if (status === 'lolos') {
+                    await sendAnnouncementLolosEmail(email, nama);
+                } else if (status === 'gagal') {
+                    await sendAnnouncementGagalEmail(email, nama, reason || undefined);
+                } else {
+                    // Skip if status unknown
+                    failCount++;
+                    continue;
+                }
+                successCount++;
+                // Safety delay to respect Resend's 2 req/sec limit
+                await new Promise(resolve => setTimeout(resolve, 600));
+            } catch (err) {
+                console.error(`Failed to send blast to ${person.email || 'unknown email'}:`, err);
+                failCount++;
+            }
+        }
+
+        return { 
+            success: true, 
+            message: `Blasting dari file selesai. Berhasil: ${successCount}, Gagal: ${failCount}.` 
+        };
+    } catch (error) {
+        console.error("Error blasting from list:", error);
+        return { success: false, error: "Terjadi kesalahan saat memproses blasting dari file." };
+    }
+}
+
+export async function blastSingleFromList(person: any) {
+    try {
+        const adminUser = await getAdminUser();
+        if (!adminUser || adminUser.role !== 'superadmin') return { success: false, error: 'Unauthorized' };
+
+        const email = person.email || person.Email || person['Alamat Email'];
+        const nama = person.nama || person.Nama || person['Nama Lengkap'];
+        const sekolah = person.sekolah || person.Sekolah || person['Asal Sekolah'];
+        const status = (person.status || person.Status || '').toLowerCase();
+        const reason = person.alasan || person.Alasan || person['Alasan Gagal'];
+
+        if (!email || !nama) return { success: false, error: 'Data tidak lengkap' };
+
+        let result;
+        if (status === 'lolos') {
+            result = await sendAnnouncementLolosEmail(email, nama, sekolah);
+        } else if (status === 'gagal') {
+            result = await sendAnnouncementGagalEmail(email, nama, reason || undefined, sekolah);
+        } else {
+            return { success: false, error: 'Status tidak dikenal' };
+        }
+
+        if (!result.success) {
+            return { success: false, error: result.error instanceof Error ? result.error.message : String(result.error) };
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error sending single blast:", error);
+        return { success: false, error: "Gagal mengirim email" };
     }
 }

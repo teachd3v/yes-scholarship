@@ -38,6 +38,15 @@ export default defineConfig({
                                     .schemaType('faqs')
                                     .documentId('faqs')
                             ),
+                        // Singleton for Announcement
+                        S.listItem()
+                            .title('Pengumuman Hasil')
+                            .id('announcement')
+                            .child(
+                                S.document()
+                                    .schemaType('announcement')
+                                    .documentId('announcement')
+                            ),
                         S.divider(),
                         // Regular blog posts
                         S.documentTypeListItem('post').title('Blog Posts'),

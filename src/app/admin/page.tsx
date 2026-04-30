@@ -19,13 +19,14 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const jenjang = params.jenjang || 'All';
 
   const isEmails = currentTab === 'emails';
+  const isAnnouncement = currentTab === 'announcement';
 
   const [applicantsData, mentorsData, adminUser, emailsData, emailsMetrics] = await Promise.all([
     getApplications(currentTab === 'applicants' ? page : 1, { search: q, province, status, screening, income }),
     getMentors(currentTab === 'mentors' ? page : 1, { search: q, province, status, jenjang }),
     getAdminUser(),
-    isEmails ? getEmailLogs(50, cursor, direction) : { items: [], hasNextPage: false },
-    isEmails ? getRecentEmailMetrics() : { sent: 0, delivered: 0, bounced: 0, failed: 0, total: 0 }
+    (isEmails || isAnnouncement) ? getEmailLogs(50, cursor, direction) : { items: [], hasNextPage: false },
+    (isEmails || isAnnouncement) ? getRecentEmailMetrics() : { sent: 0, delivered: 0, bounced: 0, failed: 0, total: 0 }
   ]);
 
   const isSuperAdmin = adminUser?.role === 'superadmin';

@@ -6,6 +6,7 @@ import { testimonialType } from './testimonial'
 import distribution from './distribution'
 import ptn from './ptn'
 import mentor from './mentor'
+import announcement from './announcement'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
     types: [
@@ -16,7 +17,8 @@ export const schema: { types: SchemaTypeDefinition[] } = {
         distribution,
         ptn,
         mentor,
+        announcement,
     ],
 }
 
-export const singletonTypes = new Set(['hero', 'faqs'])
+export const singletonTypes = new Set(['hero', 'faqs', 'announcement'])
