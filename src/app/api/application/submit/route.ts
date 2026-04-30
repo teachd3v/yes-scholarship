@@ -302,7 +302,7 @@ export async function POST(req: NextRequest) {
 
     // Send Confirmation Email (menunggu selesai agar proses tidak di-kill oleh Next.js server)
     try {
-      const emailResult = await sendConfirmationEmail(doc.biodata.email, doc.biodata.nama, emailData);
+      const emailResult = await sendConfirmationEmail(doc.biodata.email, emailData);
       console.log("Email sent successfully:", emailResult);
     } catch (emailError) {
       // Log email error but don't fail the entire submission
