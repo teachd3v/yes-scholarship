@@ -43,6 +43,7 @@ export interface EmailDocData {
     nilai_raport_2: number;
     nilai_raport_3: number;
     status_beasiswa: string;
+    keterangan_beasiswa?: string;
     motivasi: string;
     sumber_info: string;
     foto_raport_1_assetId?: string;
