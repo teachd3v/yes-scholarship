@@ -6,7 +6,7 @@ import Link from "next/link";
 
 // WIB = UTC+7 → 15:00 WIB = 08:00 UTC
 export const OPEN_DATE = new Date("2026-04-10T08:00:00.000Z");
-export const CLOSE_DATE = new Date("2026-04-30T08:00:00.000Z");
+export const CLOSE_DATE = new Date("2026-04-30T16:59:00.000Z");
 
 
 function formatWIB(date: Date) {
