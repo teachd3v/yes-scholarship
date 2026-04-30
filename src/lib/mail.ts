@@ -56,6 +56,25 @@ export interface EmailDocData {
   };
 }
 
+export interface MentorEmailData {
+  nama_lengkap: string;
+  email: string;
+  whatsapp: string;
+  jenis_kelamin: string;
+  tempat_lahir: string;
+  tanggal_lahir: string;
+  alamat_lengkap: string;
+  status_pernikahan: string;
+  jenjang_pendidikan: string;
+  jurusan: string;
+  social_media?: string;
+  lancar_quran: string;
+  sumber_info: string;
+  motivasi: string;
+  foto_profil_assetId?: string;
+  cv_resume_assetId?: string;
+}
+
 function getSanityImageUrl(assetId?: string) {
   if (!assetId) return null;
   // Sanity asset ID format: image-d7e41e809b45...-720x1280-webp
@@ -171,7 +190,7 @@ export async function sendConfirmationEmail(to: string, data: EmailDocData) {
   }
 }
 
-export async function sendMentorConfirmationEmail(to: string, data: any) {
+export async function sendMentorConfirmationEmail(to: string, data: MentorEmailData) {
   try {
     const { error } = await resend.emails.send({
       from: 'YES Scholarship <admin@youthekselensia.id>',
@@ -181,7 +200,7 @@ export async function sendMentorConfirmationEmail(to: string, data: any) {
         <div style="font-family:Arial,sans-serif; max-width:600px; margin:0 auto; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
           <div style="background-color:#059669; padding:32px 24px; text-align:center;">
             <h1 style="color:white; margin:0; font-size:24px;">Pendaftaran Mentor Berhasil!</h1>
-            <p style="color:#d1fae5; margin:8px 0 0;">Terima kasih atas dedikasi Anda, Kak ${data.biodata.nama_lengkap}.</p>
+            <p style="color:#d1fae5; margin:8px 0 0;">Terima kasih atas dedikasi Anda, Kak ${data.nama_lengkap}.</p>
           </div>
           <div style="padding:24px; background-color:#ffffff;">
              <p style="font-size:16px; color:#334155;">Data pendaftaran mentor Anda telah masuk ke sistem kami.</p>

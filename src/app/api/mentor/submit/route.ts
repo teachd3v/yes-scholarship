@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
         cv_resume_assetId: cvResumeAssetId
     };
 
-    await sendMentorConfirmationEmail(rawData.email, rawData.nama_lengkap, emailData);
+    await sendMentorConfirmationEmail(rawData.email, emailData);
 
     return NextResponse.json({ success: true, message: "Pendaftaran mentor berhasil dikirim" });
 
