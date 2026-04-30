@@ -557,7 +557,8 @@ export default function DashboardClient({
                 onConfirm={() => modal.onConfirm(modalInput)}
                 showInput={modal.showInput}
                 inputPlaceholder={modal.inputPlaceholder}
-                onInputChange={(e) => setModalInput(e.target.value)}
+                onInputChange={(val) => setModalInput(val)}
+                inputValue={modalInput}
                 inputType={modal.inputType}
             />
 
