@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { MasterSchemaType } from "@/lib/schema-master";
 import { Upload, AlertCircle, CheckCircle2 } from "lucide-react";
-import { WILAYAH_VALID } from "@/lib/constants";
+import { WILAYAH_VALID, WILAYAH_EXTENDED } from "@/lib/constants";
+import { CLOSE_DATE, EXTENDED_CLOSE_DATE } from "@/components/RegistrationGate";
 
 const MAX_FOTO_SIZE = 20 * 1024 * 1024; // 20MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -143,10 +144,14 @@ export default function SectionBiodata() {
                 return res.json();
             })
             .then((data: Region[]) => {
-                // Filter hanya provinsi yang ada di WILAYAH_VALID
+                const now = Date.now();
+                const isExtended = now > CLOSE_DATE.getTime() && now < EXTENDED_CLOSE_DATE.getTime();
+                const activeWilayah = isExtended ? WILAYAH_EXTENDED : WILAYAH_VALID;
+
+                // Filter hanya provinsi yang ada di activeWilayah
                 const allowedProvs = data.filter(p => {
                     const name = cleanRegionName(p.name);
-                    return Object.keys(WILAYAH_VALID).includes(name);
+                    return Object.keys(activeWilayah).includes(name);
                 });
                 setProvinces(allowedProvs);
                 // Auto-detect provinsi dari IP (hanya jika provinsi belum diisi)
@@ -185,11 +190,14 @@ export default function SectionBiodata() {
                     return res.json();
                 })
                 .then((data: Region[]) => {
-                    // Filter kabupaten berdasarkan WILAYAH_VALID jika ada batasan kabupaten
+                    // Filter kabupaten berdasarkan activeWilayah jika ada batasan kabupaten
                     const provFound = provinces.find(p => p.id === selectedProvinsi);
                     if (provFound) {
                         const provName = cleanRegionName(provFound.name);
-                        const allowedCities = WILAYAH_VALID[provName];
+                        const now = Date.now();
+                        const isExtended = now > CLOSE_DATE.getTime() && now < EXTENDED_CLOSE_DATE.getTime();
+                        const activeWilayah = isExtended ? WILAYAH_EXTENDED : WILAYAH_VALID;
+                        const allowedCities = activeWilayah[provName];
 
                         if (allowedCities && allowedCities.length > 0) {
                             const normalizedAllowed = allowedCities.map(normalizeForMatch);

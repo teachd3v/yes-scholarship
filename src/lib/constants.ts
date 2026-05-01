@@ -13,3 +13,9 @@ export const WILAYAH_VALID: Record<string, string[]> = {
     "SULAWESI SELATAN": ["KABUPATEN SINJAI"],
     "ACEH": ["KABUPATEN PIDIE JAYA", "KABUPATEN ACEH UTARA"],
 };
+
+export const WILAYAH_EXTENDED: Record<string, string[]> = {
+    "DI YOGYAKARTA": [], 
+    "JAWA TIMUR": ["KOTA SURABAYA"],
+    "ACEH": ["KABUPATEN PIDIE JAYA", "KABUPATEN ACEH UTARA"],
+};

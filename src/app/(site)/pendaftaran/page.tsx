@@ -13,7 +13,7 @@ import { checkPreScreening, calculateScore } from "@/lib/scoring";
 import { Save, Loader2, User, Users, GraduationCap, CheckCircle, Mail, X, Check, AlertTriangle, ChevronRight, Image, BookOpen } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { compressImage } from "@/lib/image-compression";
-import { CLOSE_DATE, useCountdown, pad } from "@/components/RegistrationGate";
+import { CLOSE_DATE, EXTENDED_CLOSE_DATE, useCountdown, pad } from "@/components/RegistrationGate";
 import { Clock } from "lucide-react";
 import Link from "next/link";
 
@@ -244,7 +244,11 @@ export default function PendaftaranPage() {
   const errorBannerRef = useRef<HTMLDivElement>(null);
 
   // Countdown logic
-  const countdown = useCountdown(CLOSE_DATE);
+  // Pilih target countdown yang tepat: jika sudah lewat CLOSE_DATE tapi belum EXTENDED_CLOSE_DATE, gunakan EXTENDED_CLOSE_DATE
+  const targetDate = Date.now() > CLOSE_DATE.getTime() && Date.now() < EXTENDED_CLOSE_DATE.getTime() 
+    ? EXTENDED_CLOSE_DATE 
+    : CLOSE_DATE;
+  const countdown = useCountdown(targetDate);
   const [showCountdown, setShowCountdown] = useState(false);
 
   useEffect(() => {

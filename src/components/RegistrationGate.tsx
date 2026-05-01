@@ -7,6 +7,7 @@ import Link from "next/link";
 // WIB = UTC+7 → 15:00 WIB = 08:00 UTC
 export const OPEN_DATE = new Date("2026-04-10T08:00:00.000Z");
 export const CLOSE_DATE = new Date("2026-04-30T16:59:00.000Z");
+export const EXTENDED_CLOSE_DATE = new Date("2026-05-02T05:00:00.000Z"); // 2 Mei 2026 12:00 WIB
 
 
 function formatWIB(date: Date) {
@@ -187,16 +188,19 @@ function ClosedScreen() {
 }
 
 // ─── Gate Wrapper ─────────────────────────────────────────────────────────────
-type Status = "loading" | "countdown" | "open" | "closed";
+type Status = "loading" | "countdown" | "open" | "extended" | "closed";
 
 export default function RegistrationGate({ children }: { children: React.ReactNode }) {
     const [status, setStatus] = useState<Status>("loading");
+    const [ipChecked, setIpChecked] = useState(false);
+    const [isRegionAllowed, setIsRegionAllowed] = useState(false);
 
     useEffect(() => {
         const update = () => {
             const now = Date.now();
             if (now < OPEN_DATE.getTime()) setStatus("countdown");
             else if (now < CLOSE_DATE.getTime()) setStatus("open");
+            else if (now < EXTENDED_CLOSE_DATE.getTime()) setStatus("extended");
             else setStatus("closed");
         };
         update();
@@ -205,15 +209,39 @@ export default function RegistrationGate({ children }: { children: React.ReactNo
         return () => clearInterval(id);
     }, []);
 
-    if (status === "loading") {
-        // Hindari flash: tampilkan minimal sampai status diketahui
+    useEffect(() => {
+        if (status === "extended" && !ipChecked) {
+            // Lakukan pengecekan IP untuk 3 wilayah (Jatim, DIY, Aceh)
+            fetch("https://ipapi.co/json/")
+                .then(r => r.ok ? r.json() : null)
+                .then(geo => {
+                    if (geo?.region) {
+                        const regionLower = geo.region.toLowerCase();
+                        // Mapping region name yang mungkin muncul dari IP
+                        const allowed = ["jawa timur", "east java", "di yogyakarta", "yogyakarta", "daerah istimewa yogyakarta", "aceh"];
+                        if (allowed.some(a => regionLower.includes(a) || a.includes(regionLower))) {
+                            setIsRegionAllowed(true);
+                        }
+                    }
+                })
+                .catch((e) => console.error("IP Check Failed:", e))
+                .finally(() => setIpChecked(true));
+        }
+    }, [status, ipChecked]);
+
+    if (status === "loading" || (status === "extended" && !ipChecked)) {
+        // Hindari flash: tampilkan minimal sampai status diketahui atau IP selesai dicek
         return (
             <main className="min-h-screen flex items-center justify-center bg-slate-50">
                 <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
             </main>
         );
     }
+    
     if (status === "countdown") return <CountdownScreen />;
-    if (status === "closed") return <ClosedScreen />;
+    if (status === "closed" || (status === "extended" && !isRegionAllowed)) return <ClosedScreen />;
+    
+    // Form bisa diakses saat: status === "open" atau (status === "extended" && isRegionAllowed)
     return <>{children}</>;
 }
+
