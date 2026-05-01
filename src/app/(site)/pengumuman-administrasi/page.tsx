@@ -115,7 +115,7 @@ export default async function AnnouncementPage() {
             <ul className="space-y-4 text-yellow-800">
               <li className="flex gap-3">
                 <span className="w-6 h-6 bg-yellow-200 rounded-full flex items-center justify-center text-xs font-bold shrink-0">1</span>
-                <p>Segera bergabung ke dalam grup WhatsApp koordinasi melalui link di email atau dokumen.</p>
+                <p>Segera cek kotak masuk email atau spam untuk melihat pengumuman yang terpersonalisasi.</p>
               </li>
               <li className="flex gap-3">
                 <span className="w-6 h-6 bg-yellow-200 rounded-full flex items-center justify-center text-xs font-bold shrink-0">2</span>
@@ -123,7 +123,7 @@ export default async function AnnouncementPage() {
               </li>
               <li className="flex gap-3">
                 <span className="w-6 h-6 bg-yellow-200 rounded-full flex items-center justify-center text-xs font-bold shrink-0">3</span>
-                <p>Persiapkan diri untuk Tes Tahap 2 (Wawancara & Tes Akademik).</p>
+                <p>Persiapkan diri untuk Tes Tahap 2 (Tes Akademik).</p>
               </li>
             </ul>
           </div>
@@ -136,7 +136,7 @@ export default async function AnnouncementPage() {
               Jangan patah semangat! Perjalananmu masih panjang. Jadikan ini sebagai pengalaman berharga untuk terus bertumbuh.
             </p>
             <p className="text-slate-600">
-              Kamu bisa meminta feedback hasil seleksimu melalui fitur "Cek Status" di dashboard pendaftar (mulai 3 Mei).
+              Kamu bisa meminta feedback hasil seleksimu melalui <a href="https://instagram.com/youthekselensia" target="_blank" className="font-bold underline">@youthekselensia</a>.
             </p>
           </div>
         </div>
