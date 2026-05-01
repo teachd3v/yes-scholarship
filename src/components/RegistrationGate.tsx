@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Clock, Instagram, CalendarDays, CheckCircle2, Lock } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 // WIB = UTC+7 → 15:00 WIB = 08:00 UTC
 export const OPEN_DATE = new Date("2026-04-10T08:00:00.000Z");
@@ -191,9 +192,11 @@ function ClosedScreen() {
 type Status = "loading" | "countdown" | "open" | "extended" | "closed";
 
 export default function RegistrationGate({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const disableIpCheck = pathname === "/pendaftaran-extend";
     const [status, setStatus] = useState<Status>("loading");
-    const [ipChecked, setIpChecked] = useState(false);
-    const [isRegionAllowed, setIsRegionAllowed] = useState(false);
+    const [ipChecked, setIpChecked] = useState(disableIpCheck);
+    const [isRegionAllowed, setIsRegionAllowed] = useState(disableIpCheck);
 
     useEffect(() => {
         const update = () => {
