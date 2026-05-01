@@ -256,7 +256,9 @@ export function getAnnouncementLolosHtml(name: string, school?: string): string 
             </div>
 
             <p style="font-size: 14px; color: #64748b; text-align: center; margin-top: 40px; line-height: 1.5;">
-              Sekali lagi selamat ya! Manfaatin waktu ini buat belajar dan persiapin mental. Sampai ketemu di tahap selanjutnya!
+              Sekali lagi selamat ya! Manfaatin waktu ini buat belajar dan persiapin mental. Sampai ketemu di tahap selanjutnya!<br/><br/>
+              Untuk melihat informasi lengkap dan daftar seluruh peserta yang lolos, silakan kunjungi:<br/>
+              <a href="https://youthekselensia.id/pengumuman-administrasi" style="color: #2563eb; font-weight: bold; text-decoration: underline;">youthekselensia.id/pengumuman-administrasi</a>
             </p>
           </div>
 
@@ -336,7 +338,9 @@ export function getAnnouncementGagalHtml(name: string, reason?: string, school?:
             </div>
 
             <p style="font-size: 14px; color: #94a3b8; text-align: center; margin-top: 40px; line-height: 1.5;">
-              Kami mendoakan yang terbaik buat langkah pendidikan kamu ke depan. Stay inspired!
+              Kami mendoakan yang terbaik buat langkah pendidikan kamu ke depan. Stay inspired!<br/><br/>
+              Informasi rekap lengkap terkait pengumuman ini juga bisa dicek di:<br/>
+              <a href="https://youthekselensia.id/pengumuman-administrasi" style="color: #64748b; font-weight: bold; text-decoration: underline;">youthekselensia.id/pengumuman-administrasi</a>
             </p>
           </div>
 
