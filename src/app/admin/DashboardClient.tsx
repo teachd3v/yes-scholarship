@@ -547,21 +547,6 @@ export default function DashboardClient({
 
     return (
         <div className="space-y-4 md:space-y-6 p-3 md:p-6">
-            <ConfirmationModal
-                isOpen={modal.isOpen}
-                onClose={closeModal}
-                title={modal.title}
-                message={modal.message}
-                type={modal.type || 'info'}
-                confirmLabel={modal.confirmLabel || "Konfirmasi"}
-                onConfirm={() => modal.onConfirm(modalInput)}
-                showInput={modal.showInput}
-                inputPlaceholder={modal.inputPlaceholder}
-                onInputChange={(val) => setModalInput(val)}
-                inputValue={modalInput}
-                inputType={modal.inputType}
-            />
-
             {/* Tabs Header */}
             <div className="flex border-b border-slate-200 gap-4 md:gap-8 overflow-x-auto scrollbar-none">
                 <button 
@@ -852,8 +837,8 @@ export default function DashboardClient({
                                             return (
                                                 <tr key={email.id} className="hover:bg-slate-50 transition">
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="font-bold text-slate-700">{new Date(email.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
-                                                        <div className="text-[10px] text-slate-400">{new Date(email.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</div>
+                                                        <div className="font-bold text-slate-700">{new Date(email.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}</div>
+                                                        <div className="text-[10px] text-slate-400">{new Date(email.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' })}</div>
                                                     </td>
                                                     <td className="px-6 py-4 font-medium text-slate-800">{Array.isArray(email.to) ? email.to[0] : email.to}</td>
                                                     <td className="px-6 py-4 text-slate-500 truncate max-w-[200px]">{email.subject}</td>
@@ -1025,10 +1010,10 @@ export default function DashboardClient({
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="text-[10px] font-bold text-slate-500">
-                                                    {new Date(email.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    {new Date(email.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' })}
                                                 </div>
                                                 <div className="text-[9px] text-slate-400">
-                                                    {new Date(email.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                    {new Date(email.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
@@ -1061,10 +1046,10 @@ export default function DashboardClient({
                                             <td className="px-6 py-4 text-slate-600">{app.provinsi_nama}</td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="text-[10px] font-bold text-slate-500">
-                                                    {new Date(app._createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    {new Date(app._createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' })}
                                                 </div>
                                                 <div className="text-[9px] text-slate-400">
-                                                    {new Date(app._createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                    {new Date(app._createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
@@ -1104,10 +1089,10 @@ export default function DashboardClient({
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="text-[10px] font-bold text-slate-500">
-                                                    {new Date(mentor._createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    {new Date(mentor._createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' })}
                                                 </div>
                                                 <div className="text-[9px] text-slate-400">
-                                                    {new Date(mentor._createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                    {new Date(mentor._createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center"><StatusBadge status={mentor.status} /></td>
