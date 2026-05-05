@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 // WIB = UTC+7 → 15:00 WIB = 08:00 UTC
 export const OPEN_DATE = new Date("2026-04-10T08:00:00.000Z");
 export const CLOSE_DATE = new Date("2026-04-30T16:59:00.000Z");
-export const EXTENDED_CLOSE_DATE = new Date("2026-05-02T05:00:00.000Z"); // 2 Mei 2026 12:00 WIB
+export const EXTENDED_CLOSE_DATE = new Date("2026-05-08T10:00:00.000Z"); // 8 Mei 2026 17:00 WIB
 
 
 function formatWIB(date: Date) {
