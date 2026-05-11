@@ -19,11 +19,38 @@ async function getAnnouncementData() {
   return await safeFetch(query);
 }
 
+export const revalidate = 60;
+
 export default async function AnnouncementPage() {
   const data = await getAnnouncementData();
 
-  // If no active announcement, show a "Coming Soon" or redirect
-  if (!data || !data.pdfUrl) {
+  // Cek apakah tanggal publikasi sudah lewat dibandingkan waktu sekarang
+  const isPublished = data && data.publishDate 
+    ? new Date(data.publishDate) <= new Date() 
+    : false;
+
+  // Jika belum ada data, belum ada file PDF, atau tanggal publikasi belum tercapai
+  if (!data || !data.pdfUrl || !isPublished) {
+    let publishDateStr = 'tanggal 11 Mei 2026';
+    if (data && data.publishDate) {
+      try {
+        const dateObj = new Date(data.publishDate);
+        // Format ke gaya Indonesia, contoh: "11 Mei 2026 pukul 17:00 WIB"
+        const options: Intl.DateTimeFormatOptions = {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'Asia/Jakarta'
+        };
+        const formatter = new Intl.DateTimeFormat('id-ID', options);
+        publishDateStr = `${formatter.format(dateObj)} WIB`;
+      } catch (e) {
+        console.error("Error formatting publish date", e);
+      }
+    }
+
     return (
       <main className="min-h-screen bg-[#F8F9FB] flex items-center justify-center px-4">
         <div className="text-center max-w-lg">
@@ -34,7 +61,7 @@ export default async function AnnouncementPage() {
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-4">Pengumuman Belum Tersedia</h1>
           <p className="text-slate-600 mb-8">
-            Hasil seleksi administrasi akan diumumkan pada tanggal 2 Mei 2026. Silakan pantau terus website dan media sosial kami.
+            Hasil seleksi administrasi akan diumumkan pada {publishDateStr}. Silakan pantau terus website dan media sosial kami.
           </p>
           <Link
             href="/"

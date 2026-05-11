@@ -2,7 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
 // Semua path publik yang perlu di-revalidate saat konten Sanity berubah
-const PUBLIC_PATHS = ["/", "/blog", "/program", "/tentang-kami", "/alumni"];
+const PUBLIC_PATHS = ["/", "/blog", "/program", "/tentang-kami", "/alumni", "/pengumuman-administrasi"];
 
 // Map: tipe dokumen Sanity → path yang perlu di-revalidate
 const TYPE_PATH_MAP: Record<string, string[]> = {
@@ -17,6 +17,7 @@ const TYPE_PATH_MAP: Record<string, string[]> = {
     about: ["/tentang-kami"],
     team: ["/tentang-kami"],
     ptn: ["/alumni"],
+    announcement: ["/pengumuman-administrasi"],
 };
 
 export async function POST(req: NextRequest) {
