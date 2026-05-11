@@ -56,7 +56,7 @@ export default function Navbar() {
                             </Link>
                         ))}
                         <Link
-                            href="/pengumuman-administrasi"
+                            href="/pengumuman"
                             className="bg-blue-900 text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-blue-800 transition shadow-lg shadow-blue-900/20"
                         >
                             Pengumuman
@@ -96,7 +96,7 @@ export default function Navbar() {
                     </Link>
                 ))}
                 <Link
-                    href="/pengumuman-administrasi"
+                    href="/pengumuman"
                     onClick={closeMenu}
                     className="mt-2 bg-blue-900 text-white px-8 py-3 rounded-full text-base font-bold shadow-xl hover:bg-blue-800 transition transform hover:scale-105"
                 >

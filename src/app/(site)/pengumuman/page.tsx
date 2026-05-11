@@ -5,8 +5,8 @@ import { safeFetch } from '@/sanity/client';
 import { groq } from 'next-sanity';
 
 export const metadata: Metadata = {
-  title: 'Pengumuman Hasil Seleksi Administrasi | YES 2026',
-  description: 'Pengumuman hasil seleksi administrasi program Youth Ekselensia Scholarship 2026.',
+  title: 'Pengumuman Hasil Seleksi | YES 2026',
+  description: 'Pengumuman hasil seleksi program Youth Ekselensia Scholarship 2026.',
 };
 
 async function getAnnouncementData() {
@@ -61,7 +61,7 @@ export default async function AnnouncementPage() {
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-4">Pengumuman Belum Tersedia</h1>
           <p className="text-slate-600 mb-8">
-            Hasil seleksi administrasi akan diumumkan pada {publishDateStr}. Silakan pantau terus website dan media sosial kami.
+            Hasil seleksi akan diumumkan pada {publishDateStr}. Silakan pantau terus website dan media sosial kami.
           </p>
           <Link
             href="/"

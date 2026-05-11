@@ -635,7 +635,7 @@ export default function DashboardClient({
                             Pastikan Anda sudah mengunggah file PDF hasil seleksi di Sanity Studio dan mengaktifkan statusnya agar dapat diakses oleh pendaftar melalui link berikut:
                         </p>
                         <Link 
-                            href="/pengumuman-administrasi" 
+                            href="/pengumuman" 
                             target="_blank"
                             className="inline-flex items-center gap-2 text-blue-600 font-bold hover:underline"
                         >

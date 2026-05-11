@@ -6,7 +6,7 @@ export const contentType = ogContentType;
 
 export default function OgImage() {
   return generateOgImage({
-    title: 'Pengumuman Seleksi Administrasi',
+    title: 'Pengumuman Hasil Seleksi',
     subtitle: 'Cek status kelulusanmu dan persiapkan diri untuk tahapan selanjutnya.',
     badge: '📢 Seleksi YES Angkatan 5',
   });
