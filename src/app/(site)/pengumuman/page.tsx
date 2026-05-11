@@ -150,7 +150,7 @@ export default async function AnnouncementPage() {
               </li>
               <li className="flex gap-3">
                 <span className="w-6 h-6 bg-yellow-200 rounded-full flex items-center justify-center text-xs font-bold shrink-0">3</span>
-                <p>Persiapkan diri untuk Tes Tahap 2 (Tes Akademik).</p>
+                <p>Persiapkan diri untuk tahap selanjutnya.</p>
               </li>
             </ul>
           </div>
