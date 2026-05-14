@@ -17,12 +17,13 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const screening = params.screening || 'All';
   const income = params.income || 'All';
   const jenjang = params.jenjang || 'All';
+  const kabupaten = params.kabupaten || 'All';
 
   const isEmails = currentTab === 'emails';
   const isAnnouncement = currentTab === 'announcement';
 
   const [applicantsData, mentorsData, adminUser, emailsData, emailsMetrics] = await Promise.all([
-    getApplications(currentTab === 'applicants' ? page : 1, { search: q, province, status, screening, income }),
+    getApplications(currentTab === 'applicants' ? page : 1, { search: q, province, status, screening, income, kabupaten }),
     getMentors(currentTab === 'mentors' ? page : 1, { search: q, province, status, jenjang }),
     getAdminUser(),
     (isEmails || isAnnouncement) ? getEmailLogs(50, cursor, direction) : { items: [], hasNextPage: false },

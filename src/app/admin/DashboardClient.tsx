@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { ACEH_KABUPATENS } from '@/lib/aceh';
 import { 
     updateApplicationStatus, 
     deleteApplication, 
@@ -337,7 +338,7 @@ export default function DashboardClient({
         setIsExporting(true);
         try {
             if (activeTab === 'applicants') {
-                const data = await exportAllApplications();
+                const data = await exportAllApplications(false, filterKabupaten);
                 const worksheet = XLSX.utils.json_to_sheet(data.map(app => ({
                     'Nama': app.biodata.nama,
                     'NIK': app.biodata.nik,
@@ -445,6 +446,9 @@ export default function DashboardClient({
     // Mentor Specific Filters
     const [filterJenjang, setFilterJenjang] = useState<string>(searchParams.get('jenjang') || 'All');
 
+    // Kabupaten filter – only used by Aceh admin
+    const [filterKabupaten, setFilterKabupaten] = useState<string>(searchParams.get('kabupaten') || 'All');
+
     const [sortBy, setSortBy] = useState<string>(searchParams.get('sort') || 'date_desc');
 
     // Debounced search effect
@@ -468,11 +472,12 @@ export default function DashboardClient({
         if (filterIncome !== 'All') params.set('income', filterIncome); else params.delete('income');
         if (filterScreening !== 'All') params.set('screening', filterScreening); else params.delete('screening');
         if (filterJenjang !== 'All') params.set('jenjang', filterJenjang); else params.delete('jenjang');
+        if (filterKabupaten !== 'All') params.set('kabupaten', filterKabupaten); else params.delete('kabupaten');
         if (sortBy !== 'date_desc') params.set('sort', sortBy); else params.delete('sort');
         
         params.set('page', '1'); // Reset to page 1 on filter change
         router.push(`/admin?${params.toString()}`);
-    }, [filterProvince, filterStatus, filterIncome, filterScreening, filterJenjang, sortBy, router]);
+    }, [filterProvince, filterStatus, filterIncome, filterScreening, filterJenjang, filterKabupaten, sortBy, router]);
 
     // Run updateFilters when dropdowns change
     const firstUpdate = useState(true);
@@ -482,7 +487,7 @@ export default function DashboardClient({
             return;
         }
         updateFilters();
-    }, [filterProvince, filterStatus, filterIncome, filterScreening, filterJenjang, sortBy]);
+    }, [filterProvince, filterStatus, filterIncome, filterScreening, filterJenjang, filterKabupaten, sortBy]);
 
     // Pagination constants
     const currentData = activeTab === 'applicants' ? initialApplicants : initialMentors;
@@ -923,16 +928,34 @@ export default function DashboardClient({
                         <option value="rejected">Rejected</option>
                     </select>
 
-                    <select className="filter-select" value={filterProvince} onChange={(e) => setFilterProvince(e.target.value)}>
-                         <option value="All">Semua Wilayah</option>
-                         {Array.from(new Set([
-                             ...["JAWA BARAT", "JAWA TIMUR", "SUMATERA UTARA", "SUMATERA BARAT", "SUMATERA SELATAN", "RIAU", "DI YOGYAKARTA", "SULAWESI SELATAN", "ACEH", "DKI JAKARTA", "BANTEN", "JAWA TENGAH", "BALI", "LAMPUNG", "KALIMANTAN TIMUR", "KALIMANTAN BARAT"],
-                             ...initialApplicants.items.map(a => a.provinsi_nama?.toUpperCase()).filter(Boolean),
-                             ...initialMentors.items.map(m => m.provinsi_nama?.toUpperCase()).filter(Boolean)
-                         ])).sort().map(p => (
-                             <option key={p} value={p}>{p}</option>
-                         ))}
-                    </select>
+                    {/* Province filter – hidden for admin_wilayah (server already restricts data to their region) */}
+                    {role === 'superadmin' && (
+                        <select className="filter-select" value={filterProvince} onChange={(e) => setFilterProvince(e.target.value)}>
+                            <option value="All">Semua Wilayah</option>
+                            {Array.from(new Set([
+                                ...["JAWA BARAT", "JAWA TIMUR", "SUMATERA UTARA", "SUMATERA BARAT", "SUMATERA SELATAN", "RIAU", "DI YOGYAKARTA", "SULAWESI SELATAN", "ACEH", "DKI JAKARTA", "BANTEN", "JAWA TENGAH", "BALI", "LAMPUNG", "KALIMANTAN TIMUR", "KALIMANTAN BARAT"],
+                                ...initialApplicants.items.map(a => a.provinsi_nama?.toUpperCase()).filter(Boolean),
+                                ...initialMentors.items.map(m => m.provinsi_nama?.toUpperCase()).filter(Boolean)
+                            ])).sort().map(p => (
+                                <option key={p} value={p}>{p}</option>
+                            ))}
+                        </select>
+                    )}
+
+                    {/* Kabupaten filter – only for Aceh admin */}
+                    {role === 'admin_wilayah' && region === 'Aceh' && activeTab === 'applicants' && (
+                        <select
+                            id="kabupaten-select"
+                            className="filter-select"
+                            value={filterKabupaten}
+                            onChange={(e) => setFilterKabupaten(e.target.value)}
+                        >
+                            <option value="All">Semua Kabupaten</option>
+                            {ACEH_KABUPATENS.map(kab => (
+                                <option key={kab} value={kab}>{kab}</option>
+                            ))}
+                        </select>
+                    )}
 
                     {activeTab === 'applicants' ? (
                         <>
@@ -1071,6 +1094,7 @@ export default function DashboardClient({
                                                     onDelete={handleDelete}
                                                     detailUrl={`/admin/application/${app._id}`}
                                                     onResendEmail={() => handleResendWelcomeApp(app._id, app.nama || '')}
+                                                    role={role}
                                                 />
                                             </td>
                                         </tr>
@@ -1105,6 +1129,7 @@ export default function DashboardClient({
                                                     onStatusUpdate={handleStatusUpdate} 
                                                     onDelete={handleDelete}
                                                     detailUrl={`/admin/mentor/${mentor._id}`}
+                                                    role={role}
                                                 />
                                             </td>
                                         </tr>
@@ -1235,7 +1260,7 @@ function ResendStatusBadge({ status }: { status: string }) {
     }
 }
 
-function ActionButtons({ id, status, type, isLoading, onStatusUpdate, onDelete, detailUrl, onResendEmail }: any) {
+function ActionButtons({ id, status, type, isLoading, onStatusUpdate, onDelete, detailUrl, onResendEmail, role }: any) {
     return (
         <div className="flex items-center justify-center gap-2">
             {isLoading ? (
@@ -1268,14 +1293,16 @@ function ActionButtons({ id, status, type, isLoading, onStatusUpdate, onDelete, 
                     >
                         <X size={16} />
                     </button>
-                    <button
-                        onClick={() => onDelete(id, type)}
-                        title="Hapus"
-                        className="action-btn hover:bg-red-100 hover:text-red-700 text-slate-400"
-                    >
-                        <Trash2 size={16} />
-                    </button>
-                    {type === 'applicant' && onResendEmail && (
+                    {role === 'superadmin' && (
+                        <button
+                            onClick={() => onDelete(id, type)}
+                            title="Hapus"
+                            className="action-btn hover:bg-red-100 hover:text-red-700 text-slate-400"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    )}
+                    {type === 'applicant' && onResendEmail && role === 'superadmin' && (
                         <button
                             onClick={onResendEmail}
                             title="Paksa Kirim Ulang Email Pendaftaran"

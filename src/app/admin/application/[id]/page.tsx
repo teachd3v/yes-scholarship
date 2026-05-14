@@ -250,7 +250,7 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                         <DetailActions id={app._id} currentStatus={app.status} />
                     </div>
 
-                    {(adminUser?.role === 'superadmin' || adminUser?.role === 'admin_wilayah') && (
+                    {adminUser?.role === 'superadmin' && (
                         <div className="border-t border-slate-100 pt-5">
                             <h3 className="font-bold text-slate-800 mb-3">Edit Data</h3>
                             <EditDataModal app={app} />

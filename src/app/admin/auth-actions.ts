@@ -21,8 +21,21 @@ const ADMIN_MAPPING = [
   { username: 'admin_aceh', region: 'Aceh' },
 ];
 
+// Kabupatens allowed for Aceh admin
+const ACEH_KABUPATENS = ['Pidie Jaya', 'Aceh Utara'];
+
+/**
+ * Checks if a given kabupaten is allowed for Aceh admin.
+ * @param kabupaten Name of the kabupaten to check.
+ * @returns true if the kabupaten is in the permitted list.
+ */
+function isAcehKabupatenAllowed(kabupaten: string): boolean {
+  return ACEH_KABUPATENS.includes(kabupaten);
+}
+
+
 const USERS = [
-  { username: 'superadmin', password: '1234', role: 'superadmin' as const },
+  { username: 'superadmin', password: 'YES5', role: 'superadmin' as const },
   ...ADMIN_MAPPING.map(adm => ({
     username: adm.username,
     password: '1234',

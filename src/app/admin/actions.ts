@@ -41,8 +41,8 @@ export async function updateApplicationData(
     const adminUser = await getAdminUser();
     if (!adminUser) return { success: false, error: "Tidak terautentikasi" };
 
-    const isAuthorized = adminUser.role === 'superadmin' || adminUser.role === 'admin_wilayah';
-    if (!isAuthorized) return { success: false, error: "Tidak punya akses edit" };
+    const isAuthorized = adminUser.role === 'superadmin';
+    if (!isAuthorized) return { success: false, error: "Hanya Super Admin yang dapat mengubah data" };
 
     const valid = await verifyAdminPassword(password);
     if (!valid) return { success: false, error: "Password salah" };
@@ -93,6 +93,11 @@ export async function updateApplicationStatus(id: string, status: 'approved' | '
 
 export async function deleteApplication(id: string, password?: string) {
   try {
+    const adminUser = await getAdminUser();
+    if (!adminUser || adminUser.role !== 'superadmin') {
+      return { success: false, error: "Hanya Super Admin yang dapat menghapus data" };
+    }
+
     if (!password) return { success: false, error: "Password wajib diisi" };
     const valid = await verifyAdminPassword(password);
     if (!valid) return { success: false, error: "Password salah" };
@@ -186,7 +191,8 @@ export async function getApplications(
         province?: string, 
         status?: string, 
         screening?: string, 
-        income?: string 
+        income?: string,
+        kabupaten?: string
     } = {}
 ): Promise<PaginatedResult<ApplicationListItem>> {
     try {
@@ -216,6 +222,10 @@ export async function getApplications(
         }
         if (filters.income && filters.income !== 'All') {
             baseCondition += ` && keluarga.penghasilan_ortu == "${filters.income}"`;
+        }
+        // Kabupaten filter – only meaningful for Aceh admin
+        if (filters.kabupaten && filters.kabupaten !== 'All') {
+            baseCondition += ` && biodata.kabupaten_nama match "*${filters.kabupaten}*"`;
         }
         if (filters.search) {
             baseCondition += ` && (biodata.nama match "*${filters.search}*" || biodata.email match "*${filters.search}*")`;
@@ -265,7 +275,7 @@ export async function getApplications(
     }
 }
 
-export async function exportAllApplications(onlyLolos: boolean = false): Promise<ApplicationDetail[]> {
+export async function exportAllApplications(onlyLolos: boolean = false, kabupaten?: string): Promise<ApplicationDetail[]> {
     try {
         const adminUser = await getAdminUser();
         if (!adminUser) throw new Error("Unauthorized");
@@ -277,6 +287,11 @@ export async function exportAllApplications(onlyLolos: boolean = false): Promise
         
         if (onlyLolos) {
             baseCondition += ` && scoring.lolos_screening == true`;
+        }
+
+        // Kabupaten filter – useful when Aceh admin filters by kabupaten
+        if (kabupaten && kabupaten !== 'All') {
+            baseCondition += ` && biodata.kabupaten_nama match "*${kabupaten}*"`;
         }
 
         const query = `*[${baseCondition}] | order(_createdAt desc) {
@@ -435,6 +450,11 @@ export async function updateMentorStatus(id: string, status: 'approved' | 'rejec
 
 export async function deleteMentor(id: string, password?: string) {
   try {
+    const adminUser = await getAdminUser();
+    if (!adminUser || adminUser.role !== 'superadmin') {
+      return { success: false, error: "Hanya Super Admin yang dapat menghapus data mentor" };
+    }
+
     if (!password) return { success: false, error: "Password wajib diisi" };
     const valid = await verifyAdminPassword(password);
     if (!valid) return { success: false, error: "Password salah" };
@@ -480,7 +500,12 @@ export async function exportAllMentors(): Promise<MentorDetail[]> {
         const adminUser = await getAdminUser();
         if (!adminUser) throw new Error("Unauthorized");
 
-        const query = `*[_type == "mentor"] | order(_createdAt desc) {
+        let baseCondition = `_type == "mentor"`;
+        if (adminUser.role === 'admin_wilayah' && adminUser.region) {
+             baseCondition += ` && domisili.provinsi_nama match "${adminUser.region}"`;
+        }
+
+        const query = `*[${baseCondition}] | order(_createdAt desc) {
             ...,
             biodata {
                 ...,
